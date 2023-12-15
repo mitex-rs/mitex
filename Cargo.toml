@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 wasm-minimal-protocol = {  git = "https://github.com/astrale-sharp/wasm-minimal-protocol" }
 regex = { version = "1.3", default-features = false }
+phf = { version = "0.11", features = ["macros"] }
 once_cell = "1.19.0"
 
 

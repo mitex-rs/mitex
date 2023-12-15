@@ -1,3 +1,4 @@
+use phf::phf_map;
 use wasm_minimal_protocol::*;
 use regex::bytes::Regex;
 use once_cell::sync::Lazy;
@@ -72,6 +73,157 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   (Regex::new(r"^[0-9]+").unwrap(), b"", MapType::Default),
 ]});
 
+// Command maps, [key] to (replacement, add_space)
+static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
+  // greek letters
+  b"alpha" => (b"alpha", true),
+  b"beta" => (b"beta", true),
+  b"gamma" => (b"gamma", true),
+  b"delta" => (b"delta", true),
+  b"epsilon" => (b"epsilon", true),
+  b"zeta" => (b"zeta", true),
+  b"eta" => (b"eta", true),
+  b"theta" => (b"theta", true),
+  b"iota" => (b"iota", true),
+  b"kappa" => (b"kappa", true),
+  b"lambda" => (b"lambda", true),
+  b"mu" => (b"mu", true),
+  b"nu" => (b"nu", true),
+  b"xi" => (b"xi", true),
+  b"omicron" => (b"omicron", true),
+  b"pi" => (b"pi", true),
+  b"rho" => (b"rho", true),
+  b"sigma" => (b"sigma", true),
+  b"tau" => (b"tau", true),
+  b"upsilon" => (b"upsilon", true),
+  b"phi" => (b"phi", true),
+  b"chi" => (b"chi", true),
+  b"psi" => (b"psi", true),
+  b"omega" => (b"omega", true),
+  b"Alpha" => (b"Alpha", true),
+  b"Beta" => (b"Beta", true),
+  b"Gamma" => (b"Gamma", true),
+  b"Delta" => (b"Delta", true),
+  b"Epsilon" => (b"Epsilon", true),
+  b"Zeta" => (b"Zeta", true),
+  b"Eta" => (b"Eta", true),
+  b"Theta" => (b"Theta", true),
+  b"Iota" => (b"Iota", true),
+  b"Kappa" => (b"Kappa", true),
+  b"Lambda" => (b"Lambda", true),
+  b"Mu" => (b"Mu", true),
+  b"Nu" => (b"Nu", true),
+  b"Xi" => (b"Xi", true),
+  b"Omicron" => (b"Omicron", true),
+  b"Pi" => (b"Pi", true),
+  b"Rho" => (b"Rho", true),
+  b"Sigma" => (b"Sigma", true),
+  b"Tau" => (b"Tau", true),
+  b"Upsilon" => (b"Upsilon", true),
+  b"Phi" => (b"Phi", true),
+  b"Chi" => (b"Chi", true),
+  b"Psi" => (b"Psi", true),
+  b"Omega" => (b"Omega", true),
+  // Symbols
+  b"infty" => (b"oo", true),
+  // Functions
+  b"sin" => (b"sin", true),
+  b"cos" => (b"cos", true),
+  b"tan" => (b"tan", true),
+  b"cot" => (b"cot", true),
+  b"sec" => (b"sec", true),
+  b"csc" => (b"csc", true),
+  b"arcsin" => (b"arcsin", true),
+  b"arccos" => (b"arccos", true),
+  b"arctan" => (b"arctan", true),
+  b"sinh" => (b"sinh", true),
+  b"cosh" => (b"cosh", true),
+  b"tanh" => (b"tanh", true),
+  b"coth" => (b"coth", true),
+  b"ln" => (b"ln", true),
+  b"log" => (b"log", true),
+  b"lg" => (b"lg", true),
+  b"lim" => (b"lim", true),
+  b"limsup" => (b"limsup", true),
+  b"liminf" => (b"liminf", true),
+  b"max" => (b"max", true),
+  b"min" => (b"min", true),
+  b"sup" => (b"sup", true),
+  b"inf" => (b"inf", true),
+  b"det" => (b"det", true),
+  b"dim" => (b"dim", true),
+  b"ker" => (b"ker", true),
+  b"hom" => (b"hom", true),
+  b"exp" => (b"exp", true),
+  b"Pr" => (b"Pr", true),
+  b"arg" => (b"arg", true),
+  b"deg" => (b"deg", true),
+  b"gcd" => (b"gcd", true),
+  b"lcm" => (b"lcm", true),
+  b"sum" => (b"sum", true),
+  b"prod" => (b"product", true),
+  // Integrals
+  b"int" => (b"integral", true),
+  b"iint" => (b"integral.double", true),
+  b"iiint" => (b"integral.triple", true),
+  b"oint" => (b"integral.cont", true),
+  b"oiint" => (b"integral.surf", true),
+  b"oiiint" => (b"integral.vol", true),
+  // Operators
+  b"mod" => (b"mod", true),
+  b"cdot" => (b"dot.c", true),
+  b"times" => (b"times", true),
+  b"oplus" => (b"plus.circle", true),
+  b"ominus" => (b"minus.circle", true),
+  b"pm" => (b"plus.minus", true),
+  b"mp" => (b"minus.plus", true),
+  b"div" => (b"div", true),
+  b"star" => (b"star", true),
+  b"cap" => (b"sect", true),
+  b"cup" => (b"union", true),
+  b"in" => (b"in", true),
+  b"subset" => (b"subset", true),
+  b"subseteq" => (b"subset.eq", true),
+  b"lt" => (b"<", true),
+  b"gt" => (b">", true),
+  b"le" => (b"<=", true),
+  b"ge" => (b">=", true),
+  b"leq" => (b"<=", true),
+  b"geq" => (b">=", true),
+  b"leqslant" => (b"lt.eq.slant", true),
+  b"geqslant" => (b"gt.eq.slant", true),
+  b"approx" => (b"approx", true),
+  // Hack
+  b"over" => (b")/(", false),
+  // Accents
+  b"not" => (b"cancel", false),
+  b"grave" => (b"grave", false),
+  b"acute" => (b"acute", false),
+  b"hat" => (b"hat", false),
+  b"tilde" => (b"tilde", false),
+  b"bar" => (b"macron", false),
+  b"breve" => (b"breve", false),
+  b"dot" => (b"dot", false),
+  b"ddot" => (b"dot.double", false),
+  b"dddot" => (b"dot.triple", false),
+  b"ddddot" => (b"dot.quad", false),
+  b"H" => (b"acute.double", false),
+  b"v" => (b"caron", false),
+  b"vec" => (b"arrow", false),
+  b"overrightarrow" => (b"arrow", false),
+  b"overleftarrow" => (b"arrow.l", false),
+  b"overline" => (b"overline", false),
+  b"underline" => (b"underline", false),
+  // Styles and variants
+  b"mathbf" => (b"bold", false),
+  b"mathrm" => (b"upright", false),
+  b"mathit" => (b"italic", false),
+  b"mathsf" => (b"sans", false),
+  b"mathfrak" => (b"mathfrak", false),
+  b"mathtt" => (b"mono", false),
+  b"mathbb" => (b"bb", false),
+  b"mathcal" => (b"cal", false),
+};
 
 #[wasm_func]
 pub fn convert(input: &[u8]) -> Result<Vec<u8>, String> {
@@ -134,9 +286,16 @@ pub fn convert(input: &[u8]) -> Result<Vec<u8>, String> {
             }
           },
           MapType::Command => {
-            // group 1
-            output.extend_from_slice(&input[i+m.get(1).unwrap().start()..i+m.get(1).unwrap().end()]);
-            output.extend_from_slice(b" ");
+            // COMMAND_MAP[group 1]
+            let key = &input[i+m.get(1).unwrap().start()..i+m.get(1).unwrap().end()];
+            if let Some((replacement, add_space)) = COMMAND_MAP.get(key) {
+              output.extend_from_slice(*replacement);
+              if *add_space {
+                output.extend_from_slice(b" ");
+              }
+            } else {
+              return Result::Err(String::from(format!("invalid command \"\\{}\" at {}", String::from_utf8_lossy(key), i)));
+            }
           },
           MapType::Default => {
             // group 0

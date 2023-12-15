@@ -7,11 +7,13 @@
 test #mi("x") yd
 
 #mitex(`
-f(x) & = \begin{bmatrix}
-  1 & 2 & 3  \\
-  1 & 2 & 3  \\
-  1 & 2 & 3  \\
-\end{bmatrix} \\
-& =2  \ 
-& = del  \\
+  \begin{aligned}
+    f(x) & = \begin{bmatrix}
+      1 & 2 & 3  \\
+      1 & 2 & 3  \\
+      1 & 2 & 3  \\
+    \end{bmatrix} \\
+    & = 2  \\
+    & = \beta x \leqslant y \\
+  \end{aligned}
 `)
