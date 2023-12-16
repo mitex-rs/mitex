@@ -41,9 +41,14 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   // Just a hack for "}{" in "frac{}{}"
   (Regex::new(r"^\}[ \n]*\{").unwrap(), b", ", MapType::NoSpace),
   (Regex::new(r"^\}").unwrap(), b")", MapType::NoSpace),
-  // Left/Right with .
+  // Left/Right
   (Regex::new(r"^\\left[ \n]*\.").unwrap(), b"lr(", MapType::Normal),
+  (Regex::new(r"^\\left").unwrap(), b"lr(", MapType::Normal),
   (Regex::new(r"^\\right[ \n]*\.").unwrap(), b")", MapType::Normal),
+  (Regex::new(r"^\\right[ \n]*\)").unwrap(), b"))", MapType::Normal),
+  (Regex::new(r"^\\right[ \n]*\]").unwrap(), b"])", MapType::Normal),
+  (Regex::new(r"^\\right[ \n]*\\\}").unwrap(), b"})", MapType::Normal),
+  (Regex::new(r"^\\right[ \n]*\|").unwrap(), b"|)", MapType::Normal),
   // Brackets
   (Regex::new(r"^\(").unwrap(), b"(", MapType::NoSpace),
   (Regex::new(r"^\)").unwrap(), b")", MapType::NoSpace),
@@ -256,8 +261,6 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"geqslant" => (b"gt.eq.slant", true),
   b"approx" => (b"approx", true),
   // Hacks
-  b"left" => (b"lr(", false),
-  b"right" => (b")", false),
   b"over" => (b")/(", false),
   // Accents
   b"not" => (b"cancel", false),
@@ -428,6 +431,7 @@ mod tests {
 
   #[test]
   fn test_convert() {
-    assert_eq!(convert(b"abc").unwrap(), b"a b c ");
+    println!("{}", String::from_utf8_lossy(&convert(br"\left[\int_1^2 x \mathrm{d} x\right]").unwrap()));
+    assert_eq!(convert(br"abc").unwrap(), b"a b c ");
   }
 }
