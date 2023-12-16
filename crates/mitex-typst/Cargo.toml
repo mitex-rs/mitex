@@ -1,6 +1,6 @@
 [package]
 name = "mitex-typst"
-description = "Parser for MiTeX"
+description = "Typst Plugin which uses mitex"
 authors.workspace = true
 version.workspace = true
 license.workspace = true
