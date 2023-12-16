@@ -10,6 +10,7 @@ enum MapType {
   Normal,  // normal map, add a space after the replacement
   NoSpace,  // normal map, but no space after the replacement
   SqrtN,  // sqrt with n
+  Accent,  // accent, like \hat x
   MatrixBegin,  // matrix begin, for convert & to , and \\ to ;
   MatrixEnd,  // matrix end, for convert & to & and \\ to \
   Text,  // text mode, like \text and \operatorname
@@ -86,6 +87,9 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   (Regex::new(r"^\\int[ \n]*\\nolimits").unwrap(), b"scripts(int)", MapType::NoSpace),
   // Sqrt
   (Regex::new(r"^\\sqrt[ \n]*\[[ \n]*([0-9]+)[ \n]*\][ \n]*\{").unwrap(), b"", MapType::SqrtN),
+  // Accents
+  (Regex::new(r"^\\(not|grave|acute|hat|tilde|bar|breve|dot|ddot|dddot|ddddot|H|v|vec|overrightarrow|overleftarrow|overline|underline|bold|mathbf|boldsymbol|mathrm|mathit|mathsf|mathfrak|mathtt|mathbb|mathcal)[ \n]+([0-9a-zA-Z])").unwrap(), b"", MapType::Accent),
+  (Regex::new(r"^\\(not|grave|acute|hat|tilde|bar|breve|dot|ddot|dddot|ddddot|H|v|vec|overrightarrow|overleftarrow|overline|underline|bold|mathbf|boldsymbol|mathrm|mathit|mathsf|mathfrak|mathtt|mathbb|mathcal)[ \n]+\\([a-zA-Z]+)").unwrap(), b"", MapType::Accent),
   // Aligned
   (Regex::new(r"^\\begin[ \n]*\{[ \n]*aligned[ \n]*\}").unwrap(), b"", MapType::Normal),
   (Regex::new(r"^\\end[ \n]*\{[ \n]*aligned[ \n]*\}").unwrap(), b"", MapType::Normal),
@@ -169,6 +173,13 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"Chi" => (b"Chi", true),
   b"Psi" => (b"Psi", true),
   b"Omega" => (b"Omega", true),
+  b"varepsilon" => (b"epsilon", true),
+  b"varphi" => (b"phi", true),
+  b"varpi" => (b"pi.alt", true),
+  b"varrho" => (b"rho.alt", true),
+  b"varsigma" => (b"sigma.alt", true),
+  b"vartheta" => (b"theta.alt", true),
+  b"ell" => (b"ell", true),
   // Functions
   b"sin" => (b"sin", true),
   b"cos" => (b"cos", true),
@@ -526,13 +537,6 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"vDash" => (b"tack.r.double", true),
   b"nvDash" => (b"tack.r.double.not", true),
   b"dashv" => (b"tack.l", true),
-  b"varepsilon" => (b"epsilon", true),
-  b"varphi" => (b"phi", true),
-  b"varpi" => (b"pi.alt", true),
-  b"varrho" => (b"rho.alt", true),
-  b"varsigma" => (b"sigma.alt", true),
-  b"vartheta" => (b"theta.alt", true),
-  b"ell" => (b"ell", true),
   b"hslash" => (b"planck.reduce", true),
   b"Re" => (b"Re", true),
   b"Im" => (b"Im", true),
@@ -600,6 +604,34 @@ pub fn convert(input: &[u8]) -> Result<Vec<u8>, String> {
             // group 1
             output.extend_from_slice(&input[i+m.get(1).unwrap().start()..i+m.get(1).unwrap().end()]);
             output.extend_from_slice(b", ");
+          },
+          MapType::Accent => {
+            // COMMAND_MAP[group 1]
+            let key1 = &input[i+m.get(1).unwrap().start()..i+m.get(1).unwrap().end()];
+            if let Some((replacement, add_space)) = COMMAND_MAP.get(key1) {
+              output.extend_from_slice(*replacement);
+              if *add_space {
+                output.extend_from_slice(b" ");
+              }
+            } else {
+              return Result::Err(String::from(format!("invalid command \"\\{}\" at {}", String::from_utf8_lossy(key1), i)));
+            }
+            output.extend_from_slice(b"(");
+            // COMMAND_MAP[group 2]
+            let key2 = &input[i+m.get(2).unwrap().start()..i+m.get(2).unwrap().end()];
+            if key2.len() == 1 {
+              output.extend_from_slice(key2);
+            } else {
+              if let Some((replacement, add_space)) = COMMAND_MAP.get(key2) {
+                output.extend_from_slice(*replacement);
+                if *add_space {
+                  output.extend_from_slice(b" ");
+                }
+              } else {
+                return Result::Err(String::from(format!("invalid command \"\\{}\" at {}", String::from_utf8_lossy(key2), i)));
+              }
+            }
+            output.extend_from_slice(b")");
           },
           MapType::MatrixBegin => {
             output.extend_from_slice(replacement);
