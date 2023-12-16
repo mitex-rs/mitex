@@ -43,6 +43,7 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   (Regex::new(r"^\{[ \n]*\\frak[ \n]").unwrap(), b"frak(", MapType::Normal),
   (Regex::new(r"^\{[ \n]*\\tt[ \n]").unwrap(), b"mono(", MapType::Normal),
   (Regex::new(r"^\{[ \n]*\\cal[ \n]").unwrap(), b"cal(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\}").unwrap(), b"#box();", MapType::NoSpace),
   (Regex::new(r"^\{").unwrap(), b"(", MapType::NoSpace),
   // Just a hack for "}{" in "frac{}{}"
   (Regex::new(r"^\}[ \n]*\{").unwrap(), b", ", MapType::NoSpace),
@@ -88,8 +89,8 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   // Sqrt
   (Regex::new(r"^\\sqrt[ \n]*\[[ \n]*([0-9]+)[ \n]*\][ \n]*\{").unwrap(), b"", MapType::SqrtN),
   // Accents
-  (Regex::new(r"^\\(not|grave|acute|hat|tilde|bar|breve|dot|ddot|dddot|ddddot|H|v|vec|overrightarrow|overleftarrow|overline|underline|bold|mathbf|boldsymbol|mathrm|mathit|mathsf|mathfrak|mathtt|mathbb|mathcal)[ \n]+([0-9a-zA-Z])").unwrap(), b"", MapType::Accent),
-  (Regex::new(r"^\\(not|grave|acute|hat|tilde|bar|breve|dot|ddot|dddot|ddddot|H|v|vec|overrightarrow|overleftarrow|overline|underline|bold|mathbf|boldsymbol|mathrm|mathit|mathsf|mathfrak|mathtt|mathbb|mathcal)[ \n]+\\([a-zA-Z]+)").unwrap(), b"", MapType::Accent),
+  (Regex::new(r"^\\(not|grave|acute|hat|tilde|bar|breve|dot|ddot|dddot|ddddot|H|v|vec|overrightarrow|overleftarrow|overline|underline|bold|mathbf|boldsymbol|mathrm|mathit|mathsf|mathfrak|mathtt|mathbb|mathcal|sqrt)[ \n]+([0-9a-zA-Z])").unwrap(), b"", MapType::Accent),
+  (Regex::new(r"^\\(not|grave|acute|hat|tilde|bar|breve|dot|ddot|dddot|ddddot|H|v|vec|overrightarrow|overleftarrow|overline|underline|bold|mathbf|boldsymbol|mathrm|mathit|mathsf|mathfrak|mathtt|mathbb|mathcal|sqrt)[ \n]*\\([a-zA-Z]+)").unwrap(), b"", MapType::Accent),
   // Aligned
   (Regex::new(r"^\\begin[ \n]*\{[ \n]*aligned[ \n]*\}").unwrap(), b"", MapType::Normal),
   (Regex::new(r"^\\end[ \n]*\{[ \n]*aligned[ \n]*\}").unwrap(), b"", MapType::Normal),
@@ -113,13 +114,16 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   (Regex::new(r"^~").unwrap(), b"thick", MapType::Normal),
   // Text
   (Regex::new(r"^\\text[ \n]*\{([^\}]+)\}").unwrap(), b"", MapType::Text),
+  (Regex::new(r"^\\mbox[ \n]*\{([^\}]+)\}").unwrap(), b"upright(", MapType::Text),
   (Regex::new(r"^\\operatorname[ \n]*\{([^\}]+)\}").unwrap(), b"op(", MapType::Text),
   (Regex::new(r"^\\operatorname\*[ \n]*\{([^\}]+)\}").unwrap(), b"op(limits: #false, ", MapType::Text),
   (Regex::new(r"^\\operatornamewithlimits[ \n]*\{([^\}]+)\}").unwrap(), b"op(limits: #false, ", MapType::Text),
+  // Ignore
+  (Regex::new(r"^\\label[ \n]*\{[^\}]*\}").unwrap(), b"", MapType::NoSpace),
   // Commands and default
   (Regex::new(r"^\\([a-zA-Z]+)").unwrap(), b"", MapType::Command),
-  (Regex::new(r"^[a-zA-Z+\-*!<>=]").unwrap(), b"", MapType::Default),
-  (Regex::new(r"^[0-9]+").unwrap(), b"", MapType::Default),
+  (Regex::new(r"^[a-zA-Z+\-*!<>=\|\']").unwrap(), b"", MapType::Default),
+  (Regex::new(r"^[0-9\.]+").unwrap(), b"", MapType::Default),
 ]});
 
 // Command maps, [key] to (replacement, add_space)
@@ -285,6 +289,7 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"mathbb" => (b"bb", false),
   b"mathcal" => (b"cal", false),
   // Functions with no space
+  b"sqrt" => (b"sqrt", false),
   b"frac" => (b"frac", false),
   b"cfrac" => (b"cfrac", false),
   b"dfrac" => (b"dfrac", false),
@@ -315,7 +320,8 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"Longleftrightarrow" => (b"<==>", true),
   b"to" => (b"->", true),
   b"mapsto" => (b"|->", true),
-  b"quad" => (b"space.quad", true),
+  b"quad" => (b"quad", true),
+  b"qquad" => (b"wide", true),
   b"overbrace{}" => (b"brace.t", true),
   b"underbrace{}" => (b"brace.b", true),
   b"lbrack" => (b"bracket.l", true),
@@ -537,11 +543,14 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"vDash" => (b"tack.r.double", true),
   b"nvDash" => (b"tack.r.double.not", true),
   b"dashv" => (b"tack.l", true),
+  b"hbar" => (b"planck.reduce", true),
   b"hslash" => (b"planck.reduce", true),
   b"Re" => (b"Re", true),
   b"Im" => (b"Im", true),
   b"imath" => (b"dotless.i", true),
   b"jmath" => (b"dotless.j", true),
+  b"lbrace" => (b"{", true),
+  b"rbrace" => (b"}", true),
   // Ignores
   b"displaystyle" => (b"", false),
   b"textstyle" => (b"", false),
