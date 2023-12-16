@@ -13,7 +13,7 @@
   let res = mitex-convert({
     if type(it) == str {
       it
-    } else if type(it) == content {
+    } else if type(it) == content and it.has("text") {
       it.text
     } else {
       panic("Unsupported type: " + str(type(it)))

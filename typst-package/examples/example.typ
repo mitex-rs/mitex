@@ -4,16 +4,10 @@
 
 #assert.eq(mitex-convert("\alpha x"), "alpha x ")
 
-test #mi("x") yd
+Write inline equations like #mi("x") or #mi[y].
+
+Also block equations:
 
 #mitex(`
-  \begin{aligned}
-    f(x) & = \begin{bmatrix}
-      1 & 2 & 3  \\
-      1 & 2 & 3  \\
-      1 & 2 & 3  \\
-    \end{bmatrix} \\
-    & = 2  \\
-    & = \beta \hat{x} \leqslant y \\
-  \end{aligned}
+  \int_1^2 x \mathrm{d} x
 `)
