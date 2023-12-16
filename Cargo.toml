@@ -1,12 +1,13 @@
 [workspace.package]
 description = "Minimal TeX Equations Support."
+# todo: add OrangeX4 to author
 authors = ["Myriad-Dreamin <camiyoru@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 readme = "README.md"
 license = "Apache-2.0"
-homepage = "https://myriad-dreamin.github.io/"
-repository = "https://github.com/Myriad-Dreamin/mitex-typst"
+homepage = "https://github.com/OrangeX4/typst-mitex"
+repository = "https://github.com/OrangeX4/typst-mitex"
 rust-version = "1.74"
 
 [workspace]
