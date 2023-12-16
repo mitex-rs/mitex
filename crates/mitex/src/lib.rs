@@ -413,6 +413,8 @@ impl MathConverter {
                     }
 
                     f.write_char(')')?;
+                } else {
+                    f.write_char(' ')?
                 }
             }
             ENVIRONMENT => {
