@@ -1,21 +1,21 @@
-[package]
-name = "mitex"
+[workspace.package]
+description = "Minimal TeX Equations Support."
+authors = ["Myriad-Dreamin <camiyoru@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
+license = "Apache-2.0"
+homepage = "https://myriad-dreamin.github.io/"
+repository = "https://github.com/Myriad-Dreamin/mitex-typst"
+rust-version = "1.74"
 
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-wasm-minimal-protocol = {  git = "https://github.com/astrale-sharp/wasm-minimal-protocol" }
-regex = { version = "1.3", default-features = false }
-phf = { version = "0.11", features = ["macros"] }
-once_cell = "1.19.0"
-
+[workspace]
+resolver = "2"
+members = ["crates/*"]
 
 [profile.release]
-lto = true          # Enable link-time optimization
-strip = true        # Strip symbols from binary*
-opt-level = 'z'     # Optimize for size
-codegen-units = 1   # Reduce number of codegen units to increase optimizations
-panic = 'abort'     # Abort on panic
+lto = true        # Enable link-time optimization
+strip = true      # Strip symbols from binary*
+opt-level = 'z'   # Optimize for size
+codegen-units = 1 # Reduce number of codegen units to increase optimizations
+panic = 'abort'   # Abort on panic

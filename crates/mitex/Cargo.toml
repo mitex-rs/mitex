@@ -1,0 +1,9 @@
+[package]
+name = "mitex"
+version = "0.1.0"
+
+[dependencies]
+
+mitex-parser = { path = "../mitex-parser" }
+rowan = "0.15.13"
+bitflags = "2.4.1"
