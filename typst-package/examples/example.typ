@@ -2,7 +2,7 @@
 
 #set page(width: 500pt)
 
-#assert.eq(mitex-convert("abc"), "a b c ")
+#assert.eq(mitex-convert("\alpha x"), "alpha x ")
 
 test #mi("x") yd
 
@@ -14,6 +14,6 @@ test #mi("x") yd
       1 & 2 & 3  \\
     \end{bmatrix} \\
     & = 2  \\
-    & = \beta x \leqslant y \\
+    & = \beta \hat{x} \leqslant y \\
   \end{aligned}
 `)

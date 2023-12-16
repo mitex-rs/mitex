@@ -12,6 +12,7 @@ enum MapType {
   SqrtN,  // sqrt with n
   MatrixBegin,  // matrix begin, for convert & to , and \\ to ;
   MatrixEnd,  // matrix end, for convert & to & and \\ to \
+  Text,  // text mode, like \text and \operatorname
   Command,  // commands like "\alpha", add a space after the command
   Default,  // straight copy, add a space after the string
 }
@@ -24,8 +25,20 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   (Regex::new(r"^,").unwrap(), b"\\,", MapType::Normal),
   (Regex::new(r"^;").unwrap(), b"\\;", MapType::Normal),
   (Regex::new(r"^/").unwrap(), b"\\/", MapType::Normal),
-  // Just a hack for "}{" in "frac{}{}"
+  // Hack for {\displaystyle ...} and {\rm ...}
+  (Regex::new(r"^\{[ \n]*\\displaystyle[ \n]").unwrap(), b"display(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\textstyle[ \n]").unwrap(), b"inline(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\scriptstyle[ \n]").unwrap(), b"script(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\scriptscriptstyle[ \n]").unwrap(), b"sscript(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\bf[ \n]").unwrap(), b"bold(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\rm[ \n]").unwrap(), b"upright(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\it[ \n]").unwrap(), b"italic(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\sf[ \n]").unwrap(), b"sans(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\frak[ \n]").unwrap(), b"frak(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\tt[ \n]").unwrap(), b"mono(", MapType::Normal),
+  (Regex::new(r"^\{[ \n]*\\cal[ \n]").unwrap(), b"cal(", MapType::Normal),
   (Regex::new(r"^\{").unwrap(), b"(", MapType::NoSpace),
+  // Just a hack for "}{" in "frac{}{}"
   (Regex::new(r"^\}[ \n]*\{").unwrap(), b", ", MapType::NoSpace),
   (Regex::new(r"^\}").unwrap(), b")", MapType::NoSpace),
   // Left/Right with .
@@ -41,11 +54,27 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   // Sups and subs
   (Regex::new(r"^\^").unwrap(), b"^", MapType::NoSpace),
   (Regex::new(r"^\_").unwrap(), b"_", MapType::NoSpace),
-  // Frac
-  (Regex::new(r"^\\([tdc])?frac[ \n]*\{").unwrap(), b"frac(", MapType::Normal),
+  // Limits and scripts
+  (Regex::new(r"^\\max[ \n]*\\limits").unwrap(), b"limits(max)", MapType::NoSpace),
+  (Regex::new(r"^\\min[ \n]*\\limits").unwrap(), b"limits(min)", MapType::NoSpace),
+  (Regex::new(r"^\\argmax[ \n]*\\limits").unwrap(), b"limits(arg max)", MapType::NoSpace),
+  (Regex::new(r"^\\argmin[ \n]*\\limits").unwrap(), b"limits(arg min)", MapType::NoSpace),
+  (Regex::new(r"^\\sup[ \n]*\\limits").unwrap(), b"limits(sup)", MapType::NoSpace),
+  (Regex::new(r"^\\inf[ \n]*\\limits").unwrap(), b"limits(inf)", MapType::NoSpace),
+  (Regex::new(r"^\\sum[ \n]*\\limits").unwrap(), b"limits(sum)", MapType::NoSpace),
+  (Regex::new(r"^\\prod[ \n]*\\limits").unwrap(), b"limits(prod)", MapType::NoSpace),
+  (Regex::new(r"^\\int[ \n]*\\limits").unwrap(), b"limits(int)", MapType::NoSpace),
+  (Regex::new(r"^\\max[ \n]*\\nolimits").unwrap(), b"scripts(max)", MapType::NoSpace),
+  (Regex::new(r"^\\min[ \n]*\\nolimits").unwrap(), b"scripts(min)", MapType::NoSpace),
+  (Regex::new(r"^\\argmax[ \n]*\\nolimits").unwrap(), b"scripts(arg max)", MapType::NoSpace),
+  (Regex::new(r"^\\argmin[ \n]*\\nolimits").unwrap(), b"scripts(arg min)", MapType::NoSpace),
+  (Regex::new(r"^\\sup[ \n]*\\nolimits").unwrap(), b"scripts(sup)", MapType::NoSpace),
+  (Regex::new(r"^\\inf[ \n]*\\nolimits").unwrap(), b"scripts(inf)", MapType::NoSpace),
+  (Regex::new(r"^\\sum[ \n]*\\nolimits").unwrap(), b"scripts(sum)", MapType::NoSpace),
+  (Regex::new(r"^\\prod[ \n]*\\nolimits").unwrap(), b"scripts(prod)", MapType::NoSpace),
+  (Regex::new(r"^\\int[ \n]*\\nolimits").unwrap(), b"scripts(int)", MapType::NoSpace),
   // Sqrt
   (Regex::new(r"^\\sqrt[ \n]*\[[ \n]*([0-9]+)[ \n]*\][ \n]*\{").unwrap(), b"", MapType::SqrtN),
-  (Regex::new(r"^\\sqrt[ \n]*\{").unwrap(), b"sqrt(", MapType::Normal),
   // Aligned
   (Regex::new(r"^\\begin[ \n]*\{[ \n]*aligned[ \n]*\}").unwrap(), b"", MapType::Normal),
   (Regex::new(r"^\\end[ \n]*\{[ \n]*aligned[ \n]*\}").unwrap(), b"", MapType::Normal),
@@ -67,6 +96,11 @@ static TOKEN_MAP_LIST: Lazy<Vec<(Regex, &[u8], MapType)>> = Lazy::new(|| { vec![
   (Regex::new(r"^\\;").unwrap(), b"thick", MapType::Normal),
   (Regex::new(r"^\\[ \n]").unwrap(), b"thick", MapType::Normal),
   (Regex::new(r"^~").unwrap(), b"thick", MapType::Normal),
+  // Text
+  (Regex::new(r"^\\text[ \n]*\{([^\}]+)\}").unwrap(), b"", MapType::Text),
+  (Regex::new(r"^\\operatorname[ \n]*\{([^\}]+)\}").unwrap(), b"op(", MapType::Text),
+  (Regex::new(r"^\\operatorname\*[ \n]*\{([^\}]+)\}").unwrap(), b"op(limits: #false, ", MapType::Text),
+  (Regex::new(r"^\\operatornamewithlimits[ \n]*\{([^\}]+)\}").unwrap(), b"op(limits: #false, ", MapType::Text),
   // Commands and default
   (Regex::new(r"^\\([a-zA-Z]+)").unwrap(), b"", MapType::Command),
   (Regex::new(r"^[a-zA-Z+\-*!<>=]").unwrap(), b"", MapType::Default),
@@ -126,6 +160,29 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"Omega" => (b"Omega", true),
   // Symbols
   b"infty" => (b"oo", true),
+  b"leftarrow" => (b"<-", true),
+  b"rightarrow" => (b"->", true),
+  b"leftrightarrow" => (b"<->", true),
+  b"Leftarrow" => (b"arrow.l.double", true),
+  b"Rightarrow" => (b"=>", true),
+  b"Leftrightarrow" => (b"<=>", true),
+  b"larr" => (b"<-", true),
+  b"rarr" => (b"->", true),
+  b"lrarr" => (b"<->", true),
+  b"lArr" => (b"arrow.l.double", true),
+  b"rArr" => (b"=>", true),
+  b"lrArr" => (b"<=>", true),
+  b"Larr" => (b"arrow.l.double", true),
+  b"Rarr" => (b"=>", true),
+  b"Lrarr" => (b"<=>", true),
+  b"longleftarrow" => (b"<--", true),
+  b"longrightarrow" => (b"-->", true),
+  b"longleftrightarrow" => (b"<-->", true),
+  b"Longleftarrow" => (b"<==", true),
+  b"Longrightarrow" => (b"==>", true),
+  b"Longleftrightarrow" => (b"<==>", true),
+  b"to" => (b"->", true),
+  b"mapsto" => (b"|->", true),
   // Functions
   b"sin" => (b"sin", true),
   b"cos" => (b"cos", true),
@@ -146,20 +203,23 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"lim" => (b"lim", true),
   b"limsup" => (b"limsup", true),
   b"liminf" => (b"liminf", true),
-  b"max" => (b"max", true),
-  b"min" => (b"min", true),
-  b"sup" => (b"sup", true),
-  b"inf" => (b"inf", true),
-  b"det" => (b"det", true),
-  b"dim" => (b"dim", true),
-  b"ker" => (b"ker", true),
   b"hom" => (b"hom", true),
+  b"det" => (b"det", true),
   b"exp" => (b"exp", true),
-  b"Pr" => (b"Pr", true),
-  b"arg" => (b"arg", true),
   b"deg" => (b"deg", true),
   b"gcd" => (b"gcd", true),
   b"lcm" => (b"lcm", true),
+  b"dim" => (b"dim", true),
+  b"ker" => (b"ker", true),
+  b"arg" => (b"arg", true),
+  b"Pr" => (b"Pr", true),
+  // Limits
+  b"max" => (b"max", true),
+  b"min" => (b"min", true),
+  b"argmax" => (b"op(limits: #true, arg max)", true),
+  b"argmin" => (b"op(limits: #true, arg min)", true),
+  b"sup" => (b"sup", true),
+  b"inf" => (b"inf", true),
   b"sum" => (b"sum", true),
   b"prod" => (b"product", true),
   // Integrals
@@ -182,8 +242,10 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"cap" => (b"sect", true),
   b"cup" => (b"union", true),
   b"in" => (b"in", true),
+  b"notin" => (b"in.not", true),
   b"subset" => (b"subset", true),
   b"subseteq" => (b"subset.eq", true),
+  b"neq" => (b"!=", true),
   b"lt" => (b"<", true),
   b"gt" => (b">", true),
   b"le" => (b"<=", true),
@@ -193,7 +255,9 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"leqslant" => (b"lt.eq.slant", true),
   b"geqslant" => (b"gt.eq.slant", true),
   b"approx" => (b"approx", true),
-  // Hack
+  // Hacks
+  b"left" => (b"lr(", false),
+  b"right" => (b")", false),
   b"over" => (b")/(", false),
   // Accents
   b"not" => (b"cancel", false),
@@ -215,14 +279,36 @@ static COMMAND_MAP: phf::Map<&'static [u8], (&'static [u8], bool)> = phf_map! {
   b"overline" => (b"overline", false),
   b"underline" => (b"underline", false),
   // Styles and variants
+  b"bold" => (b"bold", false),
   b"mathbf" => (b"bold", false),
+  b"boldsymbol" => (b"bold", false),
   b"mathrm" => (b"upright", false),
   b"mathit" => (b"italic", false),
   b"mathsf" => (b"sans", false),
-  b"mathfrak" => (b"mathfrak", false),
+  b"mathfrak" => (b"frak", false),
   b"mathtt" => (b"mono", false),
   b"mathbb" => (b"bb", false),
   b"mathcal" => (b"cal", false),
+  // Functions with no space
+  b"frac" => (b"frac", false),
+  b"cfrac" => (b"cfrac", false),
+  b"dfrac" => (b"dfrac", false),
+  b"tfrac" => (b"tfrac", false),
+  b"binom" => (b"binom", false),
+  // Ignores
+  b"displaystyle" => (b"", false),
+  b"textstyle" => (b"", false),
+  b"scriptstyle" => (b"", false),
+  b"scriptscriptstyle" => (b"", false),
+  b"bf" => (b"", false),
+  b"rm" => (b"", false),
+  b"it" => (b"", false),
+  b"sf" => (b"", false),
+  b"frak" => (b"", false),
+  b"tt" => (b"", false),
+  b"cal" => (b"", false),
+  b"limits" => (b"", false),
+  b"nolimits" => (b"", false),
 };
 
 #[wasm_func]
@@ -283,6 +369,23 @@ pub fn convert(input: &[u8]) -> Result<Vec<u8>, String> {
             matrix_count -= 1;
             if matrix_count < 0 {
               return Result::Err(String::from(format!("matrix environment end without begin at {}", i)));
+            }
+          },
+          MapType::Text => {
+            // group 1
+            let text = &input[i+m.get(1).unwrap().start()..i+m.get(1).unwrap().end()];
+            if replacement != b"" {
+              // \text{}
+              output.extend_from_slice(replacement);
+              output.extend_from_slice(b"\"");
+              output.extend_from_slice(text);
+              output.extend_from_slice(b"\"");
+              output.extend_from_slice(b")");
+            } else {
+              // \operatorname{}
+              output.extend_from_slice(b"\"");
+              output.extend_from_slice(text);
+              output.extend_from_slice(b"\"");
             }
           },
           MapType::Command => {

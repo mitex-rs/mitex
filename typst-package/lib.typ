@@ -4,6 +4,9 @@
 
 #let mitex-scope = (
   frac: (num, den) => $(num)/(den)$,
+  cfrac: (num, den) => $display((num)/(den))$,
+  dfrac: (num, den) => $display((num)/(den))$,
+  tfrac: (num, den) => $inline((num)/(den))$,
 )
 
 #let mitex(it, block: true, mitex-scope: mitex-scope) = {
