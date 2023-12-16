@@ -10,7 +10,6 @@ Therefore, it is **FAST**, while the disadvantage is that it cannot guarantee co
 ## Limitations
 
 - It will directly translate all occurrences of `}{` into `,` to support `\frac{a}{b}` to `frac(a, b)`.
-- Syntax like `\hat x` is not allowed; you must use `\hat{x}` instead.
 
 
 ## Example
