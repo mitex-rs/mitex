@@ -16,7 +16,7 @@ Therefore, it is **FAST**, while the disadvantage is that it cannot guarantee co
 ## Example
 
 ```typst
-#import "lib.typ": *
+#import "./typst-package/lib.typ": *
 // #import "@preview/mitex:0.1.0": *
 
 #assert.eq(mitex-convert("\alpha x"), "alpha x ")
@@ -30,4 +30,4 @@ Also block equations:
 `)
 ```
 
-![example](examples/example.png)
+![example](typst-package/examples/example.png)
