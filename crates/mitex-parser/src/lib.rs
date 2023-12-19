@@ -64,8 +64,6 @@ pub mod command_preludes {
             alias: Some(alias.to_owned()),
         })
     }
-
-
     pub const fn define_const_command(args: ArgShape) -> CommandSpecItem {
         CommandSpecItem::Cmd(crate::CmdShape { args, alias: None })
     }
@@ -93,7 +91,6 @@ pub mod command_preludes {
         ctx_feature: crate::ContextFeature::None,
         alias: None,
     });
-
 
     #[derive(Default)]
     pub struct SpecBuilder {
@@ -434,21 +431,32 @@ mod tests {
     }
 
     #[test]
-    fn test_cmd_infix() {
-        assert_debug_snapshot!(parse(r#"a \over b"#), @r###"
-        ScopeRoot@0..9
-          ItemCmd@0..9
+    fn test_cmd_infix_bug() {
+        assert_debug_snapshot!(parse(r#"a \over b'_1"#), @r###"
+        ScopeRoot@0..12
+          ItemCmd@0..12
             ClauseArgument@0..2
               ItemText@0..2
                 TokenWord@0..1 "a"
                 TokenWhiteSpace@1..2 " "
             ClauseCommandName@2..7 "\\over"
-            ClauseArgument@7..9
+            ClauseArgument@7..12
               TokenWhiteSpace@7..8 " "
-              ItemText@8..9
-                TokenWord@8..9 "b"
+              ItemAttachComponent@8..12
+                ClauseArgument@8..10
+                  ItemAttachComponent@8..10
+                    ClauseArgument@8..9
+                      ItemText@8..9
+                        TokenWord@8..9 "b"
+                    TokenWord@9..10 "'"
+                TokenUnderline@10..11 "_"
+                TokenWord@11..12 "1"
         "###);
-        assert_debug_snapshot!(parse(r#"a \over b'"#), @r###"
+    }
+
+    #[test]
+    fn test_cmd_infix() {
+        assert_debug_snapshot!(parse(r#"a \over b"#), @r###"
         ScopeRoot@0..9
           ItemCmd@0..9
             ClauseArgument@0..2
@@ -748,6 +756,58 @@ mod tests {
               TokenWord@5..6 "'"
             ClauseArgument@6..7
               TokenWord@6..7 "'"
+        "###);
+    }
+
+    #[test]
+    fn test_attachment_may_weird() {
+        assert_debug_snapshot!(parse(r#"\frac ab_c"#), @r###"
+        ScopeRoot@0..10
+          ItemAttachComponent@0..10
+            ClauseArgument@0..8
+              ItemCmd@0..8
+                ClauseCommandName@0..5 "\\frac"
+                TokenWhiteSpace@5..6 " "
+                ClauseArgument@6..7
+                  TokenWord@6..7 "a"
+                ClauseArgument@7..8
+                  TokenWord@7..8 "b"
+            TokenUnderline@8..9 "_"
+            TokenWord@9..10 "c"
+        "###);
+        assert_debug_snapshot!(parse(r#"\frac a_c b"#), @r###"
+        ScopeRoot@0..11
+          ItemAttachComponent@0..9
+            ClauseArgument@0..7
+              ItemCmd@0..7
+                ClauseCommandName@0..5 "\\frac"
+                TokenWhiteSpace@5..6 " "
+                ClauseArgument@6..7
+                  TokenWord@6..7 "a"
+            TokenUnderline@7..8 "_"
+            TokenWord@8..9 "c"
+          TokenWhiteSpace@9..10 " "
+          ItemText@10..11
+            TokenWord@10..11 "b"
+        "###);
+        assert_debug_snapshot!(parse(r#"\frac {a_c} b"#), @r###"
+        ScopeRoot@0..13
+          ItemCmd@0..13
+            ClauseCommandName@0..5 "\\frac"
+            TokenWhiteSpace@5..6 " "
+            ClauseArgument@6..12
+              ItemCurly@6..12
+                TokenLBrace@6..7 "{"
+                ItemAttachComponent@7..10
+                  ClauseArgument@7..8
+                    ItemText@7..8
+                      TokenWord@7..8 "a"
+                  TokenUnderline@8..9 "_"
+                  TokenWord@9..10 "c"
+                TokenRBrace@10..11 "}"
+                TokenWhiteSpace@11..12 " "
+            ClauseArgument@12..13
+              TokenWord@12..13 "b"
         "###);
     }
 

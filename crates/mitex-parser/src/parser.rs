@@ -104,6 +104,24 @@ mod list_state {
             self.has_last = true;
             self.last = MaybeUninit::new(current);
         }
+
+        /// Store the last position of the list
+        pub fn may_store_start(&mut self, current: Option<Checkpoint>) {
+            if let Some(current) = current {
+                self.store_start(current);
+            } else {
+                self.has_start = false;
+            }
+        }
+
+        /// Store the last position of the list
+        pub fn may_store_last(&mut self, current: Option<Checkpoint>) {
+            if let Some(current) = current {
+                self.store_last(current);
+            } else {
+                self.has_last = false;
+            }
+        }
     }
 }
 use list_state::ListState;
@@ -563,17 +581,27 @@ impl<'a> Parser<'a> {
     /// - Parenthesis/p: ()
     /// - Term/t: any rest of terms, typically {} or single char
     #[inline]
-    fn match_arguments<const WRAP_ARGS: bool>(&mut self, mut searcher: ArgMatcher) {
-        fn arg<'a, const WRAP_ARGS: bool>(this: &mut Parser<'a>, f: impl FnOnce(&mut Parser<'a>)) {
+    fn match_arguments_<const WRAP_ARGS: bool>(&mut self, mut searcher: ArgMatcher) {
+        fn arg<'a, const WRAP_ARGS: bool, T>(
+            this: &mut Parser<'a>,
+            f: impl FnOnce(&mut Parser<'a>) -> T,
+        ) -> T {
             if WRAP_ARGS {
                 this.builder.start_node(ClauseArgument.into());
-                f(this);
+                let res = f(this);
                 this.builder.finish_node();
+
+                res
             } else {
-                f(this);
+                f(this)
             }
         }
 
+        let mut current = if !WRAP_ARGS {
+            Some(self.builder.checkpoint())
+        } else {
+            None
+        };
         while let Some(kind) = self.peek() {
             match kind {
                 Token::LineBreak | Token::Whitespace | Token::LineComment => self.eat(),
@@ -589,14 +617,22 @@ impl<'a> Parser<'a> {
                         }
                         split_cnt += 1;
 
-                        arg::<WRAP_ARGS>(self, |this| {
+                        arg::<WRAP_ARGS, _>(self, |this| {
                             this.builder.token(TokenWord.into(), &c.to_string())
                         });
                     }
 
+                    if !WRAP_ARGS {
+                        // If consumed to end, this is right
+                        // Otherwise, whether it is right does not matter
+                        current = Some(self.builder.checkpoint());
+                    }
                     // Consume part of the word
                     if split_cnt > 0 {
                         self.lexer.consume_word(split_cnt);
+                    }
+                    if !WRAP_ARGS {
+                        self.list_state.may_store_last(current);
                     }
                 }
                 Token::Left(bk) => {
@@ -610,9 +646,20 @@ impl<'a> Parser<'a> {
                         return;
                     }
 
-                    arg::<WRAP_ARGS>(self, |this| {
+                    if !WRAP_ARGS {
+                        // If consumed to end, this is right
+                        // Otherwise, whether it is right does not matter
+                        current = Some(self.builder.checkpoint());
+                    }
+                    arg::<WRAP_ARGS, _>(self, |this| {
                         this.item_group(sk);
                     });
+                    if !WRAP_ARGS {
+                        self.list_state.may_store_last(current);
+                    }
+                }
+                Token::Caret | Token::Underline if WRAP_ARGS => {
+                    return;
                 }
                 // rest of any item
                 kind => {
@@ -620,12 +667,37 @@ impl<'a> Parser<'a> {
                         return;
                     }
 
-                    arg::<WRAP_ARGS>(self, |this| {
-                        this.content(true);
-                    });
+                    if !WRAP_ARGS {
+                        // If consumed to end, this is right
+                        // Otherwise, whether it is right does not matter
+                        current = Some(self.builder.checkpoint());
+                    }
+                    let has_rev_argument = arg::<WRAP_ARGS, _>(self, |this| this.content(true));
+                    if !WRAP_ARGS && !has_rev_argument {
+                        self.list_state.may_store_last(current);
+                    }
                 }
             }
         }
+    }
+
+    #[inline]
+    fn match_arguments<const WRAP_ARGS: bool>(&mut self, searcher: ArgMatcher) {
+        self.list_state.may_store_last(None);
+        let last = self.list_last();
+        let start = if WRAP_ARGS {
+            self.list_state.may_store_start(None);
+            self.list_start()
+        } else {
+            None
+        };
+
+        self.match_arguments_::<WRAP_ARGS>(searcher);
+
+        if WRAP_ARGS {
+            self.list_state.may_store_start(start);
+        }
+        self.list_state.may_store_last(last);
     }
 
     /// Clause parsers
