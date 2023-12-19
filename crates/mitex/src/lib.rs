@@ -894,6 +894,9 @@ fn default_spec() -> CommandSpec {
     }));
     // Specials
     builder.add_command("label", define_command_with_alias(1, "mitexlabel"));
+    builder.add_command("operatorname", TEX_CMD1);
+    builder.add_command("operatornamewithlimits", TEX_CMD1);
+    builder.add_command("operatorname*", define_command_with_alias(1, "operatornamewithlimits"));
     builder.add_command("vspace", TEX_CMD1);
     builder.add_command("hspace", TEX_CMD1);
     builder.add_command("text", TEX_CMD1);

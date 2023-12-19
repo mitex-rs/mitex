@@ -72,6 +72,8 @@
   stackrel: (sup, base) => $limits(base)^(sup)$,
   overset: (sup, base) => $limits(base)^(sup)$,
   underset: (sub, base) => $limits(base)_(sub)$,
+  operatorname: it => math.op(math.upright(it)),
+  operatornamewithlimits: it => math.op(limits: true, math.upright(it)),
   mitexsqrt: (..args) => {
     if args.pos().len() == 1 {
       $sqrt(#args.pos().at(0))$
