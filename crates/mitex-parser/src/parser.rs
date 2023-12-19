@@ -1,18 +1,13 @@
-use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
-use crate::syntax::SyntaxKind::{self, *};
-use crate::{ArgPattern, ArgShape, CommandSpec};
 use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 
-use crate::syntax::SyntaxNode;
-
+use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
 use crate::lexer::{BraceKind, CommandName, Lexer, Token};
-
-/// The character used for term matching
-const TERM_CH: char = 't';
-/// The character used for bracket matching
-const BRACKET_CH: char = 'b';
-/// The character used for parenthesis matching
-const PAREN_CH: char = 'p';
+use crate::spec::argument_kind::*;
+use crate::syntax::{
+    SyntaxKind::{self, *},
+    SyntaxNode,
+};
+use crate::{ArgPattern, ArgShape, CommandSpec};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -586,7 +581,7 @@ impl<'a> Parser<'a> {
                     // Split the word into single characters for term matching
                     let mut split_cnt = 0usize;
                     for c in self.lexer.peek_text().unwrap().chars() {
-                        if !searcher.try_match(TERM_CH) {
+                        if !searcher.try_match(ARGUMENT_KIND_TERM) {
                             if split_cnt > 0 {
                                 self.lexer.consume_word(split_cnt);
                             }
@@ -606,9 +601,9 @@ impl<'a> Parser<'a> {
                 }
                 Token::Left(bk) => {
                     let (encoded, sk) = match bk {
-                        BraceKind::Curly => (TERM_CH, ItemCurly),
-                        BraceKind::Bracket => (BRACKET_CH, ItemBracket),
-                        BraceKind::Paren => (PAREN_CH, ItemParen),
+                        BraceKind::Curly => (ARGUMENT_KIND_TERM, ItemCurly),
+                        BraceKind::Bracket => (ARGUMENT_KIND_BRACKET, ItemBracket),
+                        BraceKind::Paren => (ARGUMENT_KIND_PAREN, ItemParen),
                     };
 
                     if !searcher.try_match(encoded) {
@@ -621,7 +616,7 @@ impl<'a> Parser<'a> {
                 }
                 // rest of any item
                 kind => {
-                    if self.stop_by_scope(kind) || !searcher.try_match(TERM_CH) {
+                    if self.stop_by_scope(kind) || !searcher.try_match(ARGUMENT_KIND_TERM) {
                         return;
                     }
 

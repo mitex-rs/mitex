@@ -1,6 +1,17 @@
+//! Specification structure of a set of LaTeX commands
+//!
+//! The specification object will be passed to MiTeX Parser and MiTeX Converter.
+//! It is used by the parser to produce ASTs which respects shape of commands.
+//! It is used by the converter to convert ASTs into a valid typst code.
+//!
+//! Note: since we need process environments statically, users cannot override
+//! `\begin`, `\end`, `\left`, and `\right` command.
+//!
+//! See <https://github.com/OrangeX4/mitex/blob/main/docs/spec.typ> for detailed description.
+
 use std::{collections::HashMap, sync::Arc};
 
-/// A command specification.
+/// An item of command specification.
 /// It is either a command or an environment.
 #[derive(Debug, Clone)]
 pub enum CommandSpecItem {
@@ -77,6 +88,17 @@ pub struct EnvShape {
     pub alias: Option<String>,
 }
 
+/// The character encoding used for argument matching
+pub mod argument_kind {
+    /// The character used for matching argument in a term (curly group or
+    /// others)
+    pub const ARGUMENT_KIND_TERM: char = 't';
+    /// The character used for matching argument in a bracket group
+    pub const ARGUMENT_KIND_BRACKET: char = 'b';
+    /// The character used for matching argument in a parenthesis group
+    pub const ARGUMENT_KIND_PAREN: char = 'p';
+}
+
 /// An efficient pattern used for matching.
 /// It is essential regex things but one
 /// can specify the pattern by fixed, range,
@@ -92,7 +114,7 @@ pub struct EnvShape {
 ///   Here, `{,b}t` matches and
 ///   yields string `bt` (correspond to `[1]{2}`)
 ///
-/// Kind of item to match:
+/// Kind of item to match, also see [`argument_kind`]:
 /// - Bracket/b: []
 /// - Parenthesis/p: ()
 /// - Term/t: any rest of terms, typically {} or single char

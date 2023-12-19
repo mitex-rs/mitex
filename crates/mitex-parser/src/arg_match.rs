@@ -1,7 +1,7 @@
 use core::fmt;
 use std::sync::Arc;
 
-use crate::ArgPattern;
+use crate::{argument_kind::ARGUMENT_KIND_TERM, ArgPattern};
 use mitex_glob::glob_match_prefix;
 
 /// A matcher for arguments of a TeX command
@@ -46,7 +46,7 @@ impl ArgMatcher {
             Self::Greedy => true,
             Self::AtMostTerm { ref max, counter } => {
                 // println!("try match {} {}, {}", text, self.counter, max);
-                if text != 't' {
+                if text != ARGUMENT_KIND_TERM {
                     return false;
                 }
                 let ct = *counter < *max;
