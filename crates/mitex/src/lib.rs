@@ -136,12 +136,12 @@ impl MathConverter {
                         LatexSyntaxElem::Node(node) => {
                             self.convert(f, LatexSyntaxElem::Node(node), spec)?;
                         }
-                        LatexSyntaxElem::Token(token) => {
-                            match token.kind() {
-                                TokenWord if token.text() == "." => {},
-                                _ => self.convert(f, rowan::NodeOrToken::Token(token), spec).expect("fail to convert token"),
-                            }
-                        }
+                        LatexSyntaxElem::Token(token) => match token.kind() {
+                            TokenWord if token.text() == "." => {}
+                            _ => self
+                                .convert(f, rowan::NodeOrToken::Token(token), spec)
+                                .expect("fail to convert token"),
+                        },
                     }
                 }
                 if name == "right" {
@@ -219,8 +219,6 @@ impl MathConverter {
             TokenAnd => {
                 if matches!(self.env, LaTeXEnv::Matrix) {
                     f.write_str(",")?;
-                } else if matches!(self.env, LaTeXEnv::Cases) {
-                    f.write_str("&")?;
                 } else {
                     f.write_str("&")?;
                 }
@@ -247,7 +245,7 @@ impl MathConverter {
                 let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
                 // write to output
                 write!(f, "{}", typst_name)?;
-            },
+            }
             ItemCmd => {
                 let cmd = CmdItem::cast(elem.as_node().unwrap().clone()).unwrap();
                 let name = cmd.name_tok().unwrap();
@@ -335,7 +333,11 @@ impl MathConverter {
             }
             ItemEnv => {
                 let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
-                let name = env.name_tok().expect("environment name must be non-empty").text().to_string();
+                let name = env
+                    .name_tok()
+                    .expect("environment name must be non-empty")
+                    .text()
+                    .to_string();
                 let name = name.trim();
                 let args = env.arguments();
                 // todo: handle options
@@ -344,7 +346,7 @@ impl MathConverter {
                     .get_env(name)
                     .expect(format!("unknown environment: \\{}", name).as_str());
                 let typst_name = env_shape.alias.as_deref().unwrap_or(name);
-                
+
                 let env_kind = match env_shape.ctx_feature {
                     ContextFeature::None => LaTeXEnv::None,
                     ContextFeature::IsMatrix => LaTeXEnv::Matrix,
@@ -360,17 +362,17 @@ impl MathConverter {
                     self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
                     f.write_char(',')?;
                 }
-                
+
                 let prev = self.enter_env(env_kind);
-                
+
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     if matches!(child.kind(), ItemBegin | ItemEnd) {
                         continue;
                     }
-                    
+
                     self.convert(f, child, spec)?;
                 }
-                
+
                 f.write_char(')')?;
 
                 self.exit_env(prev);
@@ -887,16 +889,22 @@ fn default_spec() -> CommandSpec {
     builder.add_command("equation*", define_normal_env(None, "aligned"));
     builder.add_command("split", define_normal_env(None, "aligned"));
     builder.add_command("gather", define_normal_env(None, "aligned"));
-    builder.add_command("cases", CommandSpecItem::Env(EnvShape {
-        args: ArgPattern::None,
-        ctx_feature: ContextFeature::IsCases,
-        alias: Some("cases".to_owned()),
-    }));
+    builder.add_command(
+        "cases",
+        CommandSpecItem::Env(EnvShape {
+            args: ArgPattern::None,
+            ctx_feature: ContextFeature::IsCases,
+            alias: Some("cases".to_owned()),
+        }),
+    );
     // Specials
     builder.add_command("label", define_command_with_alias(1, "mitexlabel"));
     builder.add_command("operatorname", TEX_CMD1);
     builder.add_command("operatornamewithlimits", TEX_CMD1);
-    builder.add_command("operatorname*", define_command_with_alias(1, "operatornamewithlimits"));
+    builder.add_command(
+        "operatorname*",
+        define_command_with_alias(1, "operatornamewithlimits"),
+    );
     builder.add_command("vspace", TEX_CMD1);
     builder.add_command("hspace", TEX_CMD1);
     builder.add_command("text", TEX_CMD1);
@@ -965,6 +973,8 @@ mod tests {
         )
         "###
         );
+        // Note: the following is invalid in TeX, hence we may output anything.
+        let _ = convert_math(r#"$\frac a_c b$"#);
     }
 
     #[test]
@@ -1041,11 +1051,11 @@ mod tests {
         )
         "###
         );
-        // assert_debug_snapshot!(convert_math(r#"${l \over 2'}$"#), @r###"
-        // Ok(
-        //     "a b c ",
-        // )
-        // "###);
+        assert_debug_snapshot!(convert_math(r#"${l \over 2'}$"#), @r###"
+        Ok(
+            "frac(l  , zws 2 ' )",
+        )
+        "###);
     }
 
     #[test]
