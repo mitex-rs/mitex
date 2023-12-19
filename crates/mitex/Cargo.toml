@@ -1,0 +1,19 @@
+[package]
+name = "mitex"
+description = "MiTeX is a TeX2Typst converter."
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+mitex-parser = { path = "../mitex-parser" }
+rowan = "0.15.13"
+bitflags = "2.4.1"
+once_cell = "1"
+
+[dev-dependencies]
+insta = "1.34"

@@ -2,9 +2,9 @@
 name = "mitex"
 version = "0.1.0"
 entrypoint = "lib.typ"
-authors = ["OrangeX4"]
+authors = ["Myriad-Dreamin", "OrangeX4"]
 license = "MIT"
-description = "Convert LaTeX equation to Typst equation, powered by wasm."
+description = "LaTeX support for Typst, powered by wasm."
 
 homepage = "https://github.com/OrangeX4/typst-mitex"
 repository = "https://github.com/OrangeX4/typst-mitex"
