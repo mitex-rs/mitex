@@ -666,10 +666,10 @@ impl<'a> Parser<'a> {
         self.eat();
         self.trivia();
         match self.peek() {
-            // invalid syntax
             Some(Token::CommandName(CommandName::Generic)) => {
                 self.eat_as(TokenCommandSym);
             }
+            // invalid syntax
             Some(Token::CommandName(..) | Token::Dollar) | None => {}
             Some(Token::Word) => {
                 self.single_char();

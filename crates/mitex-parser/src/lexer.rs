@@ -89,6 +89,7 @@ impl<'a> Lexer<'a> {
         self.peeked.map(|(_, text)| text)
     }
 
+    /// Peek the next token's first char
     pub fn peek_char(&self) -> Option<char> {
         self.peek_text().map(str::chars).and_then(|mut e| e.next())
     }
@@ -126,29 +127,38 @@ fn classify(name: &str) -> CommandName {
     }
 }
 
+/// Brace kinds in TeX, used by defining [`Token`]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum BraceKind {
+    /// Curly braces: `{` or `}`
     Curly,
+    /// brackets: `[` or `]`
     Bracket,
+    /// Parenthesis: `(` or `)`
     Paren,
 }
 
+/// Mark the brace kind of a token as curly
 #[inline(always)]
 fn bc(_: &mut logos::Lexer<Token>) -> BraceKind {
     BraceKind::Curly
 }
 
+/// Mark the brace kind of a token as bracket
 #[inline(always)]
 fn bb(_: &mut logos::Lexer<Token>) -> BraceKind {
     BraceKind::Bracket
 }
 
+/// Mark the brace kind of a token as parenthesis
 #[inline(always)]
 fn bp(_: &mut logos::Lexer<Token>) -> BraceKind {
     BraceKind::Paren
 }
 
-/// The token type defined by logos
+/// The token types defined in logos
+///
+/// It also specifies how logos would lex the token
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Logos)]
 #[logos(extras = CommandSpec)]
 pub enum Token {
@@ -201,6 +211,9 @@ pub enum Token {
     #[regex(r"\$\$?")]
     Dollar,
 
+    /// Though newline is also a valid command, whose name is `\`, we lex it
+    /// independently so to help later AST consumers. This also means that user
+    /// cannot redefine `\` as a command.
     #[regex(r"\\\\", priority = 4)]
     NewLine,
 
@@ -208,12 +221,16 @@ pub enum Token {
     CommandName(CommandName),
 }
 
-/// Lex the command name
+/// Lex a valid command name
+// todo: handle commands with underscores, whcih would require command names
+// todo: from specification
 fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
-    let mut chars = lexer.source()[lexer.span().end..].chars();
+    let command_start = &lexer.source()[lexer.span().end..];
 
-    let Some(c) = chars.next() else {
-        return CommandName::Generic;
+    // Get the first char in utf8 case
+    let c = match command_start.chars().next() {
+        Some(c) => c,
+        None => return CommandName::Generic,
     };
 
     // Case1: `\ ` is not a command name hence the command is empty
