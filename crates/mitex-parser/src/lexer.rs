@@ -231,24 +231,22 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
         return CommandName::Generic;
     }
 
-    for c in chars {
+    /// The utf8 length of ascii chars
+    const LEN_ASCII: usize = 1;
+
+    // Case3 (Rest): lex a general ascii command name
+    // We treat the command name as ascii to improve performance slightly
+    let ascii_str = command_start.as_bytes()[LEN_ASCII..].iter();
+
+    for c in ascii_str {
         match c {
-            '*' => {
-                const LEN_ASK: usize = 1;
-                lexer.bump(LEN_ASK);
+            b'*' => {
+                lexer.bump(LEN_ASCII);
                 break;
             }
-            c if c.is_alphanumeric() => {
-                const LEN_WORD: usize = 1;
-                lexer.bump(LEN_WORD);
-            }
-            '@' | ':' => {
-                const LEN_SPECIAL: usize = 1;
-                lexer.bump(LEN_SPECIAL);
-            }
-            _ => {
-                break;
-            }
+            c if c.is_ascii_alphanumeric() => lexer.bump(LEN_ASCII),
+            b'@' | b':' => lexer.bump(LEN_ASCII),
+            _ => break,
         };
     }
 
