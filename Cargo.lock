@@ -308,6 +308,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mitex-cli"
+version = "0.1.0"
+dependencies = [
+ "mitex-spec",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "mitex-evaluator"
 version = "0.1.0"
 dependencies = [

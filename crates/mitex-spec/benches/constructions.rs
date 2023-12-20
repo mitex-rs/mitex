@@ -36,7 +36,9 @@ fn prelude_100000() {
 fn bench_json_deserialize(bencher: Bencher, n: i32) {
     use mitex_spec::query;
     const JSON_TEX_SYMBOL: query::CommandSpecItem = query::CommandSpecItem::Cmd(query::CmdShape {
-        args: query::ArgShape::Right(query::ArgPattern::None),
+        args: query::ArgShape::Right {
+            pattern: query::ArgPattern::None,
+        },
         alias: None,
     });
 

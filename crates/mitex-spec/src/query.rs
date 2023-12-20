@@ -2,23 +2,60 @@ use std::{collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
+/// A package specification.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageSpec {
+    /// The name of the package.
+    pub name: String,
+    /// The command specification of the package.
+    pub spec: CommandSpecRepr,
+}
+
+/// A ordered list of package specifications.
+///
+/// The latter package specification will override the former one.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagesVec(pub Vec<PackageSpec>);
+
 /// An item of command specification.
 /// This contains more sugar than the canonical representation.
 ///
 /// See [`mitex_spec::CommandSpecItem`] for more details.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind")]
 pub enum CommandSpecItem {
+    #[serde(rename = "cmd")]
     Cmd(CmdShape),
+    #[serde(rename = "env")]
     Env(EnvShape),
     /// A command that takes no argument, and its handler is also a typst
     /// symbol.
+    #[serde(rename = "sym")]
     Symbol,
     /// A command that takes zero argument, and its handler is a typst function.
+    #[serde(rename = "cmd0")]
     Command0,
     /// A command that takes one argument.
+    #[serde(rename = "cmd1")]
     Command1,
     /// A command that takes two arguments.
+    #[serde(rename = "cmd2")]
     Command2,
+    #[serde(rename = "left1-cmd")]
+    CmdLeft1,
+    #[serde(rename = "matrix-env")]
+    EnvMatrix,
+    #[serde(rename = "normal-env")]
+    EnvNormal,
+
+    #[serde(rename = "alias-sym")]
+    SymAlias { alias: String },
+    #[serde(rename = "greedy-cmd")]
+    CmdGreedy { alias: String },
+    #[serde(rename = "infix-cmd")]
+    CmdInfix { alias: String },
+    #[serde(rename = "glob-cmd")]
+    CmdGlob { pattern: String, alias: String },
 }
 
 impl From<CommandSpecItem> for crate::CommandSpecItem {
@@ -31,6 +68,16 @@ impl From<CommandSpecItem> for crate::CommandSpecItem {
             CommandSpecItem::Command0 => TEX_CMD0,
             CommandSpecItem::Command1 => TEX_CMD1,
             CommandSpecItem::Command2 => TEX_CMD2,
+            CommandSpecItem::CmdLeft1 => TEX_LEFT1_OPEARTOR,
+            CommandSpecItem::EnvMatrix => TEX_MATRIX_ENV,
+            CommandSpecItem::EnvNormal => TEX_NORMAL_ENV,
+            CommandSpecItem::SymAlias { alias } => define_symbol(&alias),
+            CommandSpecItem::CmdGreedy { alias } => define_greedy_command(&alias),
+            CommandSpecItem::CmdInfix { alias } => crate::CommandSpecItem::Cmd(crate::CmdShape {
+                args: crate::ArgShape::InfixGreedy,
+                alias: Some(alias.to_owned()),
+            }),
+            CommandSpecItem::CmdGlob { pattern, alias } => define_glob_command(&pattern, &alias),
         }
     }
 }
@@ -90,23 +137,30 @@ impl From<EnvShape> for crate::EnvShape {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind")]
 pub enum ArgPattern {
+    #[default]
+    #[serde(rename = "none")]
     None,
-    FixedLenTerm(u8),
-    RangeLenTerm(u8, u8),
+    #[serde(rename = "fixed-len")]
+    FixedLenTerm { len: u8 },
+    #[serde(rename = "range-len")]
+    RangeLenTerm { min: u8, max: u8 },
+    #[serde(rename = "greedy")]
     Greedy,
-    Glob(Box<str>),
+    #[serde(rename = "glob")]
+    Glob { pattern: Box<str> },
 }
 
 impl From<ArgPattern> for crate::ArgPattern {
     fn from(pattern: ArgPattern) -> Self {
         match pattern {
             ArgPattern::None => Self::None,
-            ArgPattern::FixedLenTerm(len) => Self::FixedLenTerm(len),
-            ArgPattern::RangeLenTerm(min, max) => Self::RangeLenTerm(min, max),
+            ArgPattern::FixedLenTerm { len } => Self::FixedLenTerm(len),
+            ArgPattern::RangeLenTerm { min, max } => Self::RangeLenTerm(min, max),
             ArgPattern::Greedy => Self::Greedy,
-            ArgPattern::Glob(glob) => Self::Glob(glob.into()),
+            ArgPattern::Glob { pattern } => Self::Glob(pattern.into()),
         }
     }
 }
@@ -114,26 +168,35 @@ impl From<ArgPattern> for crate::ArgPattern {
 // struct ArgShape(ArgPattern, Direction);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind")]
 pub enum ArgShape {
-    Right(ArgPattern),
+    #[serde(rename = "right")]
+    Right { pattern: ArgPattern },
+    #[serde(rename = "left1")]
     Left1,
+    #[serde(rename = "infix-greedy")]
     InfixGreedy,
 }
 
 impl From<ArgShape> for crate::ArgShape {
     fn from(shape: ArgShape) -> Self {
         match shape {
-            ArgShape::Right(pattern) => Self::Right(pattern.into()),
+            ArgShape::Right { pattern } => Self::Right(pattern.into()),
             ArgShape::Left1 => Self::Left1,
             ArgShape::InfixGreedy => Self::InfixGreedy,
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind")]
 pub enum ContextFeature {
+    #[default]
+    #[serde(rename = "none")]
     None,
+    #[serde(rename = "is-matrix")]
     IsMatrix,
+    #[serde(rename = "is-cases")]
     IsCases,
 }
 

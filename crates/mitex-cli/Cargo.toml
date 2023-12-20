@@ -1,0 +1,16 @@
+[package]
+name = "mitex-cli"
+description = "CLI for MiTeX."
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+mitex-spec = { path = "../mitex-spec" }
+
+serde.workspace = true
+serde_json.workspace = true
