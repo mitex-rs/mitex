@@ -1,7 +1,6 @@
 mod arg_match;
-mod lexer;
 pub mod parser;
-pub mod spec;
+pub use mitex_spec as spec;
 pub mod syntax;
 
 pub use parser::parse;

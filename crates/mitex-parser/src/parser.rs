@@ -1,13 +1,13 @@
 use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 
 use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
-use crate::lexer::{BraceKind, CommandName, Lexer, Token};
 use crate::spec::argument_kind::*;
 use crate::syntax::{
     SyntaxKind::{self, *},
     SyntaxNode,
 };
 use crate::{ArgPattern, ArgShape, CommandSpec};
+use mitex_lexer::{BraceKind, CommandName, Lexer, Token};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,6 +188,7 @@ impl<'a> Parser<'a> {
     /// Consume the next token and attach it to the syntax tree
     fn eat(&mut self) {
         let (kind, text) = self.lexer.eat().unwrap();
+        let kind: SyntaxKind = kind.into();
         self.builder.token(kind.into(), text);
     }
 

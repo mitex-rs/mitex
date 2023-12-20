@@ -1,4 +1,4 @@
-use crate::lexer::{BraceKind, Token};
+use mitex_lexer::{BraceKind, Token};
 use rowan::ast::AstNode;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]

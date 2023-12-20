@@ -1,0 +1,9 @@
+[package]
+name = "mitex-spec"
+description = "Specification Library for MiTeX"
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
