@@ -11,6 +11,8 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+pub mod preludes;
+
 /// An item of command specification.
 /// It is either a command or an environment.
 #[derive(Debug, Clone)]
