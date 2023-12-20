@@ -448,7 +448,7 @@ mod tests {
                     ClauseArgument@8..9
                       ItemText@8..9
                         TokenWord@8..9 "b"
-                    TokenWord@9..10 "'"
+                    TokenApostrophe@9..10 "'"
                 TokenUnderline@10..11 "_"
                 TokenWord@11..12 "1"
         "###);
@@ -709,6 +709,103 @@ mod tests {
             TokenUnderline@4..5 "_"
             TokenWord@5..6 "1"
         "###);
+        assert_debug_snapshot!(parse(r#"\frac{1}{2}_{3}"#), @r###"
+        ScopeRoot@0..15
+          ItemAttachComponent@0..15
+            ClauseArgument@0..11
+              ItemCmd@0..11
+                ClauseCommandName@0..5 "\\frac"
+                ClauseArgument@5..8
+                  ItemCurly@5..8
+                    TokenLBrace@5..6 "{"
+                    ItemText@6..7
+                      TokenWord@6..7 "1"
+                    TokenRBrace@7..8 "}"
+                ClauseArgument@8..11
+                  ItemCurly@8..11
+                    TokenLBrace@8..9 "{"
+                    ItemText@9..10
+                      TokenWord@9..10 "2"
+                    TokenRBrace@10..11 "}"
+            TokenUnderline@11..12 "_"
+            ItemCurly@12..15
+              TokenLBrace@12..13 "{"
+              ItemText@13..14
+                TokenWord@13..14 "3"
+              TokenRBrace@14..15 "}"
+        "###);
+        assert_debug_snapshot!(parse(r#"\overbrace{a + b + c}^{\text{This is an overbrace}}"#), @r###"
+        ScopeRoot@0..51
+          ItemCmd@0..10
+            ClauseCommandName@0..10 "\\overbrace"
+          ItemAttachComponent@10..51
+            ClauseArgument@10..21
+              ItemCurly@10..21
+                TokenLBrace@10..11 "{"
+                ItemText@11..20
+                  TokenWord@11..12 "a"
+                  TokenWhiteSpace@12..13 " "
+                  TokenWord@13..14 "+"
+                  TokenWhiteSpace@14..15 " "
+                  TokenWord@15..16 "b"
+                  TokenWhiteSpace@16..17 " "
+                  TokenWord@17..18 "+"
+                  TokenWhiteSpace@18..19 " "
+                  TokenWord@19..20 "c"
+                TokenRBrace@20..21 "}"
+            TokenCaret@21..22 "^"
+            ItemCurly@22..51
+              TokenLBrace@22..23 "{"
+              ItemCmd@23..28
+                ClauseCommandName@23..28 "\\text"
+              ItemCurly@28..50
+                TokenLBrace@28..29 "{"
+                ItemText@29..49
+                  TokenWord@29..33 "This"
+                  TokenWhiteSpace@33..34 " "
+                  TokenWord@34..36 "is"
+                  TokenWhiteSpace@36..37 " "
+                  TokenWord@37..39 "an"
+                  TokenWhiteSpace@39..40 " "
+                  TokenWord@40..49 "overbrace"
+                TokenRBrace@49..50 "}"
+              TokenRBrace@50..51 "}"
+        "###);
+        assert_debug_snapshot!(parse(r#"\underbrace{x \times y}_{\text{This is an underbrace}}"#), @r###"
+        ScopeRoot@0..54
+          ItemCmd@0..11
+            ClauseCommandName@0..11 "\\underbrace"
+          ItemAttachComponent@11..54
+            ClauseArgument@11..23
+              ItemCurly@11..23
+                TokenLBrace@11..12 "{"
+                ItemText@12..14
+                  TokenWord@12..13 "x"
+                  TokenWhiteSpace@13..14 " "
+                ItemCmd@14..20
+                  ClauseCommandName@14..20 "\\times"
+                TokenWhiteSpace@20..21 " "
+                ItemText@21..22
+                  TokenWord@21..22 "y"
+                TokenRBrace@22..23 "}"
+            TokenUnderline@23..24 "_"
+            ItemCurly@24..54
+              TokenLBrace@24..25 "{"
+              ItemCmd@25..30
+                ClauseCommandName@25..30 "\\text"
+              ItemCurly@30..53
+                TokenLBrace@30..31 "{"
+                ItemText@31..52
+                  TokenWord@31..35 "This"
+                  TokenWhiteSpace@35..36 " "
+                  TokenWord@36..38 "is"
+                  TokenWhiteSpace@38..39 " "
+                  TokenWord@39..41 "an"
+                  TokenWhiteSpace@41..42 " "
+                  TokenWord@42..52 "underbrace"
+                TokenRBrace@52..53 "}"
+              TokenRBrace@53..54 "}"
+        "###);
         assert_debug_snapshot!(parse(r#"x_1''^2"#), @r###"
         ScopeRoot@0..7
           ItemAttachComponent@0..7
@@ -723,8 +820,8 @@ mod tests {
                             TokenWord@0..1 "x"
                         TokenUnderline@1..2 "_"
                         TokenWord@2..3 "1"
-                    TokenWord@3..4 "'"
-                TokenWord@4..5 "'"
+                    TokenApostrophe@3..4 "'"
+                TokenApostrophe@4..5 "'"
             TokenCaret@5..6 "^"
             TokenWord@6..7 "2"
         "###);
@@ -738,24 +835,24 @@ mod tests {
                     ClauseArgument@0..1
                       ItemText@0..1
                         TokenWord@0..1 "x"
-                    TokenWord@1..2 "'"
-                TokenWord@2..3 "'"
+                    TokenApostrophe@1..2 "'"
+                TokenApostrophe@2..3 "'"
             TokenUnderline@3..4 "_"
             TokenWord@4..5 "1"
         "###);
         assert_debug_snapshot!(parse(r#"''"#), @r###"
         ScopeRoot@0..2
-          TokenWord@0..1 "'"
-          TokenWord@1..2 "'"
+          TokenApostrophe@0..1 "'"
+          TokenApostrophe@1..2 "'"
         "###);
         assert_debug_snapshot!(parse(r#"\frac''"#), @r###"
         ScopeRoot@0..7
           ItemCmd@0..7
             ClauseCommandName@0..5 "\\frac"
             ClauseArgument@5..6
-              TokenWord@5..6 "'"
+              TokenApostrophe@5..6 "'"
             ClauseArgument@6..7
-              TokenWord@6..7 "'"
+              TokenApostrophe@6..7 "'"
         "###);
     }
 

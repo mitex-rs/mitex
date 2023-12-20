@@ -196,7 +196,7 @@ impl MathConverter {
                 f.write_str("\\,")?;
             }
             TokenTilde => {
-                f.write_str("med ")?;
+                f.write_str("space.nobreak ")?;
             }
             TokenDivide => {
                 f.write_str("\\/")?;
@@ -272,9 +272,8 @@ impl MathConverter {
                 let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
 
                 if typst_name.starts_with("text") {
-                    f.write_char('#')?;
                     f.write_str(typst_name)?;
-                    f.write_char('[')?;
+                    f.write_str("(\"")?;
 
                     fn is_trivia_elem(elem: &LatexSyntaxElem) -> bool {
                         elem.as_token()
@@ -311,7 +310,7 @@ impl MathConverter {
                         }
                     }
 
-                    f.write_str("];")?;
+                    f.write_str("\")")?;
                     return Ok(());
                 }
 
@@ -422,12 +421,20 @@ fn default_spec() -> CommandSpec {
     use mitex_parser::command_preludes::*;
     let mut builder = SpecBuilder::default();
     // Spaces: \! \, \> \: \; \ \quad \qquad
-    builder.add_command("!", define_symbol("negativespace"));
+    builder.add_command("!", define_symbol("negthinspace"));
+    builder.add_command("negthinspace", TEX_SYMBOL);
+    builder.add_command("negmedspace", TEX_SYMBOL);
+    builder.add_command("negthickspace", TEX_SYMBOL);
     builder.add_command(",", define_symbol("thin"));
+    builder.add_command("thinspace", define_symbol("thin"));
     builder.add_command(">", define_symbol("med"));
     builder.add_command(":", define_symbol("med"));
+    builder.add_command("medspace", define_symbol("med"));
     builder.add_command(";", define_symbol("thick"));
     builder.add_command("", define_symbol("thick"));
+    builder.add_command("thickspace", define_symbol("thick"));
+    builder.add_command("enspace", TEX_SYMBOL);
+    builder.add_command("nobreakspace", define_symbol("space.nobreak"));
     builder.add_command("quad", TEX_SYMBOL);
     builder.add_command("qquad", define_symbol("wide"));
     // Escape symbols
@@ -440,6 +447,12 @@ fn default_spec() -> CommandSpec {
     builder.add_command("$", define_symbol("dollar"));
     builder.add_command("{", define_symbol("{"));
     builder.add_command("}", define_symbol("}"));
+    builder.add_command("lparen", define_symbol("paren.l"));
+    builder.add_command("rparen", define_symbol("paren.r"));
+    builder.add_command("lceil", define_symbol(" ⌈ "));
+    builder.add_command("rceil", define_symbol("⌉ "));
+    builder.add_command("lfloor", define_symbol("⌊ "));
+    builder.add_command("rfloor", define_symbol("⌋"));
     // Sizes and styles
     builder.add_command("displaystyle", define_greedy_command("mitexdisplay"));
     builder.add_command("textstyle", define_greedy_command("mitexinline"));
@@ -501,6 +514,10 @@ fn default_spec() -> CommandSpec {
     builder.add_command("overleftarrow", define_command_with_alias(1, "arrow.l"));
     builder.add_command("overline", TEX_CMD1);
     builder.add_command("underline", TEX_CMD1);
+    builder.add_command("overbrace", define_command_with_alias(1, "mitexoverbrace"));
+    builder.add_command("underbrace", define_command_with_alias(1, "mitexunderbrace"));
+    builder.add_command("overbracket", define_command_with_alias(1, "mitexoverbracket"));
+    builder.add_command("underbracket", define_command_with_alias(1, "mitexunderbracket"));
     // Greeks
     builder.add_command("alpha", TEX_SYMBOL);
     builder.add_command("beta", TEX_SYMBOL);
@@ -606,6 +623,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("oiiint", define_symbol("integral.vol"));
     // Symbols
     builder.add_command("mod", define_symbol("mod"));
+    builder.add_command("bmod", define_symbol("mod"));
     builder.add_command("cdot", define_symbol("dot.c"));
     builder.add_command("times", define_symbol("times"));
     builder.add_command("oplus", define_symbol("plus.circle"));
@@ -620,6 +638,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("notin", define_symbol("in.not"));
     builder.add_command("subset", define_symbol("subset"));
     builder.add_command("subseteq", define_symbol("subset.eq"));
+    builder.add_command("ne", define_symbol("!="));
     builder.add_command("neq", define_symbol("!="));
     builder.add_command("lt", define_symbol("<"));
     builder.add_command("gt", define_symbol(">"));
@@ -883,6 +902,35 @@ fn default_spec() -> CommandSpec {
     builder.add_command("jmath", define_symbol("dotless.j"));
     builder.add_command("lbrace", define_symbol("\\{"));
     builder.add_command("rbrace", define_symbol("\\}"));
+    builder.add_command("doteq", define_symbol("≐"));
+    builder.add_command("Vdash", define_symbol("⊩"));
+    builder.add_command("Doteq", define_symbol("≑"));
+    builder.add_command("smallsmile", define_symbol("⌣"));
+    builder.add_command("Vvdash", define_symbol("⊪"));
+    builder.add_command("gnapprox", define_symbol("⪊"));
+    builder.add_command("ngeqslant", define_symbol("gt.eq.not"));
+    builder.add_command("precneqq", define_symbol("prec.nequiv"));
+    builder.add_command("gneq", define_symbol("⪈"));
+    builder.add_command("xleftarrow", TEX_CMD1);
+    builder.add_command("xrightarrow", TEX_CMD1);
+    builder.add_command("xLeftarrow", TEX_CMD1);
+    builder.add_command("xRightarrow", TEX_CMD1);
+    builder.add_command("xleftrightarrow", TEX_CMD1);
+    builder.add_command("xLeftrightarrow", TEX_CMD1);
+    builder.add_command("xhookleftarrow", TEX_CMD1);
+    builder.add_command("xhookrightarrow", TEX_CMD1);
+    builder.add_command("xtwoheadleftarrow", TEX_CMD1);
+    builder.add_command("xtwoheadrightarrow", TEX_CMD1);
+    builder.add_command("xleftharpoonup", TEX_CMD1);
+    builder.add_command("xrightharpoonup", TEX_CMD1);
+    builder.add_command("xleftharpoondown", TEX_CMD1);
+    builder.add_command("xrightharpoondown", TEX_CMD1);
+    builder.add_command("xleftrightharpoons", TEX_CMD1);
+    builder.add_command("xrightleftharpoons", TEX_CMD1);
+    builder.add_command("xtofrom", TEX_CMD1);
+    builder.add_command("xmapsto", TEX_CMD1);
+    builder.add_command("xlongequal", TEX_CMD1);
+    builder.add_command("pmod", TEX_CMD1);
     // Matrices
     builder.add_command("matrix", TEX_MATRIX_ENV);
     builder.add_command("pmatrix", TEX_MATRIX_ENV);
@@ -899,6 +947,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("equation*", define_normal_env(None, "aligned"));
     builder.add_command("split", define_normal_env(None, "aligned"));
     builder.add_command("gather", define_normal_env(None, "aligned"));
+    builder.add_command("gathered", define_normal_env(None, "aligned"));
     builder.add_command(
         "cases",
         CommandSpecItem::Env(EnvShape {
@@ -1011,7 +1060,7 @@ mod tests {
 
     #[test]
     fn test_convert_limits() {
-        assert_debug_snapshot!(convert_math(r#"\sum\limits_1^2$"#), @r###"
+        assert_debug_snapshot!(convert_math(r#"$\sum\limits_1^2$"#), @r###"
         Ok(
             "zws zws limits(sum )_(1 )^(2 )",
         )
@@ -1021,31 +1070,37 @@ mod tests {
 
     #[test]
     fn test_convert_subsup() {
-        assert_debug_snapshot!(convert_math(r#"x_1^2$"#), @r###"
+        assert_debug_snapshot!(convert_math(r#"$x_1^2$"#), @r###"
         Ok(
             "zws zws x _(1 )^(2 )",
         )
         "###
         );
-        assert_debug_snapshot!(convert_math(r#"x^2_1$"#), @r###"
+        assert_debug_snapshot!(convert_math(r#"$x^2_1$"#), @r###"
         Ok(
             "zws zws x ^(2 )_(1 )",
         )
         "###
         );
-        assert_debug_snapshot!(convert_math(r#"x''_1$"#), @r###"
+        assert_debug_snapshot!(convert_math(r#"$x''_1$"#), @r###"
         Ok(
             "zws zws zws x ''_(1 )",
         )
         "###
         );
-        assert_debug_snapshot!(convert_math(r#"x_1''$"#), @r###"
+        assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
+        Ok(
+            "zws mitexoverbrace(a  +  b  +  c )^(text(\"This is an overbrace\"))",
+        )
+        "###
+        );
+        assert_debug_snapshot!(convert_math(r#"$x_1''$"#), @r###"
         Ok(
             "zws zws zws x _(1 )''",
         )
         "###
         );
-        assert_debug_snapshot!(convert_math(r#"{}_1^2x_3^4$"#), @r###"
+        assert_debug_snapshot!(convert_math(r#"${}_1^2x_3^4$"#), @r###"
         Ok(
             "zws zws _(1 )^(2 )zws zws x _(3 )^(4 )",
         )
@@ -1088,7 +1143,7 @@ mod tests {
     fn test_convert_space() {
         assert_debug_snapshot!(convert_math(r#"$x~\! \, \> \: \; \ \quad \qquad y$"#), @r###"
         Ok(
-            "x med negativespace  thin  med  med  thick  thick  quad  wide  y ",
+            "x space.nobreak negthinspace  thin  med  med  thick  thick  quad  wide  y ",
         )
         "###
         );
@@ -1264,12 +1319,12 @@ a & b & c
 
     #[test]
     fn test_convert_text() {
-        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""#text[abc];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""#text[ a b c ];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""#text[abc];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""#text[abc];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""#text[ab c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""text(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""text(\" a b c \")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""text(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""text(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""text(\"ab c\")""###);
         // note: hack doesn't work in this case
-        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""#text[ab\\colorredc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""text(\"ab\\colorredc\")""###);
     }
 }

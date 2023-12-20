@@ -262,7 +262,9 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
                 break;
             }
             c if c.is_ascii_alphabetic() => lexer.bump(LEN_ASCII),
-            b'@' | b':' => lexer.bump(LEN_ASCII),
+            // todo: math mode don't want :
+            // b'@' | b':' => lexer.bump(LEN_ASCII),
+            b'@' => lexer.bump(LEN_ASCII),
             _ => break,
         };
     }

@@ -1,3 +1,4 @@
+#import "@preview/xarrow:0.2.0": xarrow
 #let mitex-wasm = plugin("./mitex.wasm")
 
 #let mitex-convert(it) = {
@@ -34,13 +35,15 @@
 #let greedy-command(cmd) = (..args) => $cmd(#args.pos().sum())$
 #let get-tex-str(tex) = tex.children.filter(it => it != [ ]).map(it => it.text).sum()
 #let get-tex-color(texcolor) = {
-    mitex-color-map.at(get-tex-str(texcolor), default: none)
+    mitex-color-map.at(lower(get-tex-str(texcolor)), default: none)
 }
-#let text-start-space(it) = if it.has("children") and it.children.first() == [ ] { " " }
-#let text-end-space(it) = if it.has("children") and it.children.last() == [ ] { " " }
+#let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
 #let mitex-scope = (
-  negativespace: h(-(1/6) * 1em),
+  negthinspace: h(-(3/18) * 1em),
+  negmedspace: h(-(4/18) * 1em),
+  negthickspace: h(-(5/18) * 1em),
+  enspace: h((1/2) * 1em),
   mitexdisplay: greedy-command(math.display),
   mitexinline: greedy-command(math.inline),
   mitexscript: greedy-command(math.script),
@@ -82,11 +85,11 @@
   tfrac: (num, den) => $inline((num)/(den))$,
   text: it => it,
   textnormal: it => it,
-  textbf: it => text-start-space(it) + $bold(it)$ + text-end-space(it),
-  textrm: it => text-start-space(it) + $upright(it)$ + text-end-space(it),
-  textit: it => text-start-space(it) + $italic(it)$ + text-end-space(it),
-  textsf: it => text-start-space(it) + $sans(it)$ + text-end-space(it),
-  texttt: it => text-start-space(it) + $mono(it)$ + text-end-space(it),
+  textbf: it => $bold(it)$ + text-end-space(it),
+  textrm: it => $upright(it)$ + text-end-space(it),
+  textit: it => $italic(it)$ + text-end-space(it),
+  textsf: it => $sans(it)$ + text-end-space(it),
+  texttt: it => $mono(it)$ + text-end-space(it),
   matrix: math.mat.with(delim: none),
   pmatrix: math.mat.with(delim: "("),
   bmatrix: math.mat.with(delim: "["),
@@ -100,6 +103,30 @@
   stackrel: (sup, base) => $limits(base)^(sup)$,
   overset: (sup, base) => $limits(base)^(sup)$,
   underset: (sub, base) => $limits(base)_(sub)$,
+  mitexoverbrace: (it) => math.limits(math.overbrace(it)),
+  mitexunderbrace: (it) => math.limits(math.underbrace(it)),
+  mitexoverbracket: (it) => math.limits(math.overbracket(it)),
+  mitexunderbracket: (it) => math.limits(math.underbracket(it)),
+  xleftarrow: it => $limits(xarrow(sym: <--, it))$,
+  xrightarrow: it => $limits(xarrow(sym: -->, it))$,
+  xLeftarrow: it => $limits(xarrow(sym: <==, it))$,
+  xRightarrow: it => $limits(xarrow(sym: ==>, it))$,
+  xleftrightarrow: it => $limits(xarrow(sym: <->, it))$,
+  xLeftrightarrow: it => $limits(xarrow(sym: <=>, it))$,
+  xhookleftarrow: it => $limits(xarrow(sym: -->, it))$,
+  xhookrightarrow: it => $limits(xarrow(sym: arrow.l.hook, it))$,
+  xtwoheadleftarrow: it => $limits(xarrow(sym: arrow.l.twohead, it))$,
+  xtwoheadrightarrow: it => $limits(xarrow(sym: arrow.r.twohead, it))$,
+  xleftharpoonup: it => $limits(xarrow(sym: harpoon.lt, it))$,
+  xrightharpoonup: it => $limits(xarrow(sym: harpoon.rt, it))$,
+  xleftharpoondown: it => $limits(xarrow(sym: harpoon.lb, it))$,
+  xrightharpoondown: it => $limits(xarrow(sym: harpoon.rb, it))$,
+  xleftrightharpoons: it => $limits(xarrow(sym: harpoons.ltrb, it))$,
+  xrightleftharpoons: it => $limits(xarrow(sym: harpoons.rtlb, it))$,
+  xtofrom: it => $limits(xarrow(sym: arrows.rl, it))$,
+  xmapsto: it => $limits(xarrow(sym: |->, it))$,
+  xlongequal: it => $limits(xarrow(sym: eq, it))$,
+  pmod: it => $quad (mod thick it)$,
   operatorname: it => math.op(math.upright(it)),
   operatornamewithlimits: it => math.op(limits: true, math.upright(it)),
   mitexarray: (arg0: ("l",), ..args) => {
@@ -115,11 +142,7 @@
         arg0 = (arg0.text,)
       }
     }
-    let matrix = if type(args.pos().at(0)) == array {
-      args.pos()
-    } else {
-      (args.pos(),)
-    }
+    let matrix = args.pos().map(row => if type(row) == array { row } else { (row,) } )
     let n = matrix.len()
     let m = calc.max(..matrix.map(row => row.len()))
     matrix = matrix.map(row => row + (m - row.len()) * (none,))
