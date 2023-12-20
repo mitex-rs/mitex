@@ -271,8 +271,10 @@ impl MathConverter {
                 // typst alias name
                 let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
 
-                if typst_name == "text" {
-                    f.write_str("#[")?;
+                if typst_name.starts_with("text") {
+                    f.write_char('#')?;
+                    f.write_str(typst_name)?;
+                    f.write_char('[')?;
 
                     fn is_trivia_elem(elem: &LatexSyntaxElem) -> bool {
                         elem.as_token()
@@ -309,7 +311,7 @@ impl MathConverter {
                         }
                     }
 
-                    f.write_char(']')?;
+                    f.write_str("];")?;
                     return Ok(());
                 }
 
@@ -461,7 +463,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("mathbb", define_command_with_alias(1, "bb"));
     builder.add_command("mathcal", define_command_with_alias(1, "cal"));
     builder.add_command("color", define_greedy_command("mitexcolor"));
-    builder.add_command("textcolor", TEX_CMD2);
+    builder.add_command("textcolor", define_command_with_alias(2, "colortext"));
     builder.add_command("colorbox", TEX_CMD2);
     builder.add_command("limits", TEX_LEFT1_OPEARTOR);
     builder.add_command(
@@ -548,12 +550,14 @@ fn default_spec() -> CommandSpec {
     builder.add_command("Chi", TEX_SYMBOL);
     builder.add_command("Psi", TEX_SYMBOL);
     builder.add_command("Omega", TEX_SYMBOL);
-    builder.add_command("varepsilon", TEX_SYMBOL);
-    builder.add_command("varphi", TEX_SYMBOL);
-    builder.add_command("varpi", TEX_SYMBOL);
-    builder.add_command("varrho", TEX_SYMBOL);
-    builder.add_command("varsigma", TEX_SYMBOL);
-    builder.add_command("vartheta", TEX_SYMBOL);
+    builder.add_command("varbeta", define_symbol("beta.alt"));
+    builder.add_command("varepsilon", define_symbol("epsilon.alt"));
+    builder.add_command("varkappa", define_symbol("kappa.alt"));
+    builder.add_command("varphi", define_symbol("phi.alt"));
+    builder.add_command("varpi", define_symbol("pi.alt"));
+    builder.add_command("varrho", define_symbol("rho.alt"));
+    builder.add_command("varsigma", define_symbol("sigma.alt"));
+    builder.add_command("vartheta", define_symbol("theta.alt"));
     builder.add_command("ell", TEX_SYMBOL);
     // Function symbols
     builder.add_command("sin", TEX_SYMBOL);
@@ -648,6 +652,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("Longrightarrow", define_symbol("==>"));
     builder.add_command("Longleftrightarrow", define_symbol("<==>"));
     builder.add_command("to", define_symbol("->"));
+    builder.add_command("gets", define_symbol("<-"));
     builder.add_command("mapsto", define_symbol("|->"));
     builder.add_command("infty", define_symbol("oo"));
     builder.add_command("lbrack", define_symbol("bracket.l"));
@@ -666,6 +671,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("odot", define_symbol("dot.circle"));
     builder.add_command("bigodot", define_symbol("dot.circle.big"));
     builder.add_command("boxdot", define_symbol("dot.square"));
+    builder.add_command("dots", define_symbol("dots.h"));
     builder.add_command("cdots", define_symbol("dots.h.c"));
     builder.add_command("ldots", define_symbol("dots.h"));
     builder.add_command("vdots", define_symbol("dots.v"));
@@ -834,6 +840,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("Uparrow", define_symbol("arrow.t.double"));
     builder.add_command("downarrow", define_symbol("arrow.b"));
     builder.add_command("Downarrow", define_symbol("arrow.b.double"));
+    builder.add_command("iff", define_symbol("arrow.l.r.double.long"));
     builder.add_command("nLeftrightarrow", define_symbol("arrow.l.r.double.not"));
     builder.add_command("nleftrightarrow", define_symbol("arrow.l.r.not"));
     builder.add_command("leftrightsquigarrow", define_symbol("arrow.l.r.wave"));
@@ -911,6 +918,12 @@ fn default_spec() -> CommandSpec {
     builder.add_command("vspace", TEX_CMD1);
     builder.add_command("hspace", TEX_CMD1);
     builder.add_command("text", TEX_CMD1);
+    builder.add_command("textnormal", TEX_CMD1);
+    builder.add_command("textbf", TEX_CMD1);
+    builder.add_command("textrm", TEX_CMD1);
+    builder.add_command("textit", TEX_CMD1);
+    builder.add_command("textsf", TEX_CMD1);
+    builder.add_command("texttt", TEX_CMD1);
     builder.add_command(
         "over",
         CommandSpecItem::Cmd(CmdShape {
@@ -1147,12 +1160,12 @@ mod tests {
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\textcolor{red}yz$"#), @r###"
         Ok(
-            "x textcolor(r e d ,y )z ",
+            "x colortext(r e d ,y )z ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\textcolor{red}{yz}$"#), @r###"
         Ok(
-            "x textcolor(r e d ,y z )",
+            "x colortext(r e d ,y z )",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\colorbox{red}yz$"#), @r###"
@@ -1251,12 +1264,12 @@ a & b & c
 
     #[test]
     fn test_convert_text() {
-        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""#[abc]""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""#[ a b c ]""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""#[abc]""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""#[abc]""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""#[ab c]""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""#text[abc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""#text[ a b c ];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""#text[abc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""#text[abc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""#text[ab c];""###);
         // note: hack doesn't work in this case
-        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""#[ab\\colorredc]""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""#text[ab\\colorredc];""###);
     }
 }
