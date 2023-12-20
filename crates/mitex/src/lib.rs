@@ -437,6 +437,9 @@ fn default_spec() -> CommandSpec {
     builder.add_command("nobreakspace", define_symbol("space.nobreak"));
     builder.add_command("quad", TEX_SYMBOL);
     builder.add_command("qquad", define_symbol("wide"));
+    builder.add_command("phantom", TEX_CMD1);
+    builder.add_command("hphantom", TEX_CMD1);
+    builder.add_command("vphantom", TEX_CMD1);
     // Escape symbols
     builder.add_command("_", define_symbol("\\_"));
     builder.add_command("^", define_symbol("hat"));
@@ -475,9 +478,38 @@ fn default_spec() -> CommandSpec {
     builder.add_command("mathtt", define_command_with_alias(1, "mono"));
     builder.add_command("mathbb", define_command_with_alias(1, "bb"));
     builder.add_command("mathcal", define_command_with_alias(1, "cal"));
+    // todo: \big \Big need to accept paren as arg like "\big("
+    // Now just ignore them
+    builder.add_command("big", define_symbol(""));
+    builder.add_command("Big", define_symbol(""));
+    builder.add_command("bigg", define_symbol(""));
+    builder.add_command("Bigg", define_symbol(""));
+    builder.add_command("bigl", define_symbol(""));
+    builder.add_command("Bigl", define_symbol(""));
+    builder.add_command("biggl", define_symbol(""));
+    builder.add_command("Biggl", define_symbol(""));
+    builder.add_command("bigm", define_symbol(""));
+    builder.add_command("Bigm", define_symbol(""));
+    builder.add_command("biggm", define_symbol(""));
+    builder.add_command("Biggm", define_symbol(""));
+    builder.add_command("bigr", define_symbol(""));
+    builder.add_command("Bigr", define_symbol(""));
+    builder.add_command("biggr", define_symbol(""));
+    builder.add_command("Biggr", define_symbol(""));
+    builder.add_command("Huge", define_symbol(""));
+    builder.add_command("normalsize", define_symbol(""));
+    builder.add_command("huge", define_symbol(""));
+    builder.add_command("small", define_symbol(""));
+    builder.add_command("footnotesize", define_symbol(""));
+    builder.add_command("Large", define_symbol(""));
+    builder.add_command("scriptsize", define_symbol(""));
+    builder.add_command("large", define_symbol(""));
+    builder.add_command("tiny", define_symbol(""));
+    // Colors
     builder.add_command("color", define_greedy_command("mitexcolor"));
     builder.add_command("textcolor", define_command_with_alias(2, "colortext"));
     builder.add_command("colorbox", TEX_CMD2);
+    // Limits
     builder.add_command("limits", TEX_LEFT1_OPEARTOR);
     builder.add_command(
         "nolimits",
@@ -629,6 +661,7 @@ fn default_spec() -> CommandSpec {
     builder.add_command("oplus", define_symbol("plus.circle"));
     builder.add_command("ominus", define_symbol("minus.circle"));
     builder.add_command("pm", define_symbol("plus.minus"));
+    builder.add_command("plusmn", define_symbol("plus.minus"));
     builder.add_command("mp", define_symbol("minus.plus"));
     builder.add_command("div", define_symbol("div"));
     builder.add_command("star", define_symbol("star"));
@@ -770,6 +803,10 @@ fn default_spec() -> CommandSpec {
     builder.add_command("equiv", define_symbol("equiv"));
     builder.add_command("propto", define_symbol("prop"));
     builder.add_command("varnothing", define_symbol("nothing"));
+    builder.add_command("setminus", define_symbol("without"));
+    builder.add_command("And", define_symbol("amp"));
+    builder.add_command("bigcirc", define_symbol("circle.stroked.big"));
+    builder.add_command("bigcirc", define_symbol("circle.stroked.big"));
     builder.add_command("smallsetminus", define_symbol("without"));
     builder.add_command("complement", define_symbol("complement"));
     builder.add_command("ni", define_symbol("in.rev"));
@@ -938,7 +975,9 @@ fn default_spec() -> CommandSpec {
     builder.add_command("Bmatrix", TEX_MATRIX_ENV);
     builder.add_command("vmatrix", TEX_MATRIX_ENV);
     builder.add_command("Vmatrix", TEX_MATRIX_ENV);
+    builder.add_command("smallmatrix", TEX_MATRIX_ENV);
     builder.add_command("array", define_matrix_env(Some(1), "mitexarray"));
+    builder.add_command("subarray", define_matrix_env(Some(1), "mitexarray"));
     // Environments
     builder.add_command("aligned", TEX_NORMAL_ENV);
     builder.add_command("align", define_normal_env(None, "aligned"));
@@ -954,6 +993,14 @@ fn default_spec() -> CommandSpec {
             args: ArgPattern::None,
             ctx_feature: ContextFeature::IsCases,
             alias: Some("cases".to_owned()),
+        }),
+    );
+    builder.add_command(
+        "rcases",
+        CommandSpecItem::Env(EnvShape {
+            args: ArgPattern::None,
+            ctx_feature: ContextFeature::IsCases,
+            alias: Some("rcases".to_owned()),
         }),
     );
     // Specials
