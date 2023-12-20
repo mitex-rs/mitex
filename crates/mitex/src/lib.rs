@@ -167,6 +167,9 @@ impl MathConverter {
                     f.write_char(')')?;
                 }
             }
+            TokenApostrophe => {
+                f.write_char('\'')?;
+            }
             ClauseCommandName => Err("command name outside of command".to_owned())?,
             ItemBegin | ItemEnd => Err("clauses outside of environment".to_owned())?,
             ClauseArgKey => Err("clauses outside of group".to_owned())?,
@@ -1019,13 +1022,13 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"x''_1$"#), @r###"
         Ok(
-            "zws zws zws x ' ' _(1 )",
+            "zws zws zws x ''_(1 )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"x_1''$"#), @r###"
         Ok(
-            "zws zws zws x _(1 )' ' ",
+            "zws zws zws x _(1 )''",
         )
         "###
         );
@@ -1053,7 +1056,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"${l \over 2'}$"#), @r###"
         Ok(
-            "frac(l  , zws 2 ' )",
+            "frac(l  , zws 2 ')",
         )
         "###);
     }
