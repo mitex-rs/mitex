@@ -17,7 +17,7 @@ fn main() {
             "--root",
             project_root.to_str().unwrap(),
             project_root
-                .join("packages/latex-spec/mod.typ")
+                .join("packages/mitex/specs/mod.typ")
                 .to_str()
                 .unwrap(),
             "<mitex-packages>",

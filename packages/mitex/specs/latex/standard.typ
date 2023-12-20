@@ -1,5 +1,5 @@
 
-#import "prelude.typ": *
+#import "../prelude.typ": *
 
 #let spec = (
   // Spaces: \! \, \> \: \; \ \quad \qquad
