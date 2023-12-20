@@ -1,7 +1,6 @@
-extern crate logos;
-
-use crate::{syntax::SyntaxKind, CommandSpec};
 use logos::Logos;
+
+use mitex_spec::CommandSpec;
 
 /// A peeked token
 type PeekTok<'a> = (Token, &'a str);
@@ -107,10 +106,10 @@ impl<'a> Lexer<'a> {
     }
 
     /// Update the peeked token and return the old one
-    pub fn eat(&mut self) -> Option<(SyntaxKind, &'a str)> {
+    pub fn eat(&mut self) -> Option<(Token, &'a str)> {
         let (kind, text) = self.peeked.take()?;
         self.next();
-        Some((kind.into(), text))
+        Some((kind, text))
     }
 }
 
