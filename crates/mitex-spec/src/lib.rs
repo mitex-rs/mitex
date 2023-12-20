@@ -15,7 +15,9 @@ use std::{collections::HashMap, sync::Arc};
 use rkyv::{Archive, Deserialize as rDeser, Serialize as rSer};
 
 pub mod preludes;
+pub mod query;
 mod stream;
+pub use query::CommandSpecRepr as JsonCommandSpec;
 
 /// An item of command specification.
 /// It is either a command or an environment.
