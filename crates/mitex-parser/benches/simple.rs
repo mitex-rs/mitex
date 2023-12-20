@@ -1,5 +1,8 @@
-use divan::Bencher;
+use divan::{AllocProfiler, Bencher};
 use mitex_parser::{parse, CommandSpec};
+
+#[global_allocator]
+static ALLOC: AllocProfiler = AllocProfiler::system();
 
 fn main() {
     // Run registered benchmarks.
