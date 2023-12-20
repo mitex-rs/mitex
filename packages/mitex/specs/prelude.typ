@@ -1,21 +1,21 @@
 
-#let define-sym(s) = {
+#let define-sym(s, sym: none) = {
   (kind: "alias-sym", alias: s)
 }
 
-#let define-greedy-cmd(s) ={
+#let define-greedy-cmd(s, handle: none) ={
   (kind: "greedy-cmd", alias: s)
 }
 
-#let define-infix-cmd(s) ={
+#let define-infix-cmd(s, handle: none) ={
   (kind: "infix-cmd", alias: s)
 }
 
-#let define-glob-cmd(pat, s) ={
+#let define-glob-cmd(pat, s, handle: none) ={
   (kind: "glob-cmd", pattern: pat, alias: s)
 }
 
-#let define-cmd(num, alias: none) = {
+#let define-cmd(num, alias: none, handle: none) = {
   (
     kind: "cmd",
     args: ( "kind": "right", "pattern": ( kind: "fixed-len", len: num ) ),
@@ -23,7 +23,7 @@
   )
 }
 
-#let define-env(num, alias: none) = {
+#let define-env(num, alias: none, handle: none) = {
   (
     kind: "env",
     args: if num != none {
@@ -36,7 +36,7 @@
   )
 }
 
-#let define-matrix-env(num, alias: none) = {
+#let define-matrix-env(num, alias: none, handle: none) = {
   (
     kind: "env",
     args: if num != none {
@@ -50,6 +50,7 @@
 }
 
 #let sym = (kind: "sym")
+#let of-sym(handle) = (kind: "sym")
 #let cmd1 = (kind: "cmd1")
 #let cmd2 = (kind: "cmd2")
 #let left1-op = (kind: "left1-cmd")

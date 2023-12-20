@@ -1,12 +1,29 @@
+#import "@preview/xarrow:0.2.0": xarrow
 
 #import "../prelude.typ": *
 
+// todo: bad spec?
+  // mitexbig: it => scale(x: 120%, y: 120%, it),
+  // mitexBig: it => scale(x: 180%, y: 180%, it),
+  // mitexbigg: it => scale(x: 240%, y: 240%, it),
+  // mitexBigg: it => scale(x: 300%, y: 300%, it),
+  // aligned: it => block(math.op(it)),
+
+#let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
+#let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: arrow-sym, it))$)
+#let _greedy-handle(cmd) = (..args) => $cmd(#args.pos().sum())$
+#let greedy-handle(alias) = define-greedy-cmd(alias, handle: _greedy-handle)
+#let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
+#let matrix-handle(delim: none, handle: none) = matrix-env
+#let text-handle(wrap) = define-cmd(1, handle: it => $wrap(it)$ + text-end-space(it),)
+#let ignore-me = it => {}
+
 #let spec = (
   // Spaces: \! \, \> \: \; \ \quad \qquad
-  "!": define-sym("negthinspace"),
-  negthinspace: sym,
-  negmedspace: sym,
-  negthickspace: sym,
+  "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
+  negthinspace: of-sym(h(-(3/18) * 1em)),
+  negmedspace: of-sym(h(-(4/18) * 1em)),
+  negthickspace: of-sym(h(-(5/18) * 1em)),
   ",": define-sym("thin"),
   thinspace: define-sym("thin"),
   ">": define-sym("med"),
@@ -15,13 +32,13 @@
   ";": define-sym("thick"),
   "": define-sym("thick"),
   thickspace: define-sym("thick"),
-  enspace: sym,
+  enspace: of-sym(h((1/2) * 1em)),
   nobreakspace: define-sym("space.nobreak"),
   quad: sym,
   qquad: define-sym("wide"),
-  phantom: cmd1,
-  hphantom: cmd1,
-  vphantom: cmd1,
+  phantom: define-cmd(1, handle: hide),
+  hphantom: define-cmd(1, handle: hide),
+  vphantom: define-cmd(1, handle: hide),
   // Escape symbols
   "_": define-sym("\\_"),
   "^": define-sym("hat"),
@@ -39,17 +56,17 @@
   lfloor: define-sym("⌊ "),
   rfloor: define-sym("⌋"),
   // Sizes and styles
-  displaystyle: define-greedy-cmd("mitexdisplay"),
-  textstyle: define-greedy-cmd("mitexinline"),
-  scriptstyle: define-greedy-cmd("mitexscript"),
-  scriptscriptstyle: define-greedy-cmd("mitexsscript"),
-  bf: define-greedy-cmd("mitexbold"),
-  rm: define-greedy-cmd("mitexupright"),
-  it: define-greedy-cmd("mitexitalic"),
-  sf: define-greedy-cmd("mitexsans"),
-  frak: define-greedy-cmd("mitexfrak"),
-  tt: define-greedy-cmd("mitexmono"),
-  cal: define-greedy-cmd("mitexcal"),
+  displaystyle: greedy-handle("mitexdisplay"),
+  textstyle: greedy-handle("mitexinline"),
+  scriptstyle: greedy-handle("mitexscript"),
+  scriptscriptstyle: greedy-handle("mitexsscript"),
+  bf: greedy-handle("mitexbold"),
+  rm: greedy-handle("mitexupright"),
+  it: greedy-handle("mitexitalic"),
+  sf: greedy-handle("mitexsans"),
+  frak: greedy-handle("mitexfrak"),
+  tt: greedy-handle("mitexmono"),
+  cal: greedy-handle("mitexcal"),
   bold: define-cmd(1, alias: "bold"),
   mathbf: define-cmd(1, alias: "bold"),
   boldsymbol: define-cmd(1, alias: "bold"),
@@ -88,9 +105,30 @@
   large: define-sym(""),
   tiny: define-sym(""),
   // Colors
-  color: define-greedy-cmd("mitexcolor"),
-  textcolor: define-cmd(2, alias: "colortext"),
-  colorbox: cmd2,
+  color: define-greedy-cmd("mitexcolor", handle: (texcolor, ..args) => {
+    let color = get-tex-color(texcolor)
+    if color != none {
+      text(fill: color, args.pos().sum())
+    } else {
+      args.pos().sum()
+    }
+  }),
+  textcolor: define-cmd(2, alias: "colortext", handle: (texcolor, body) => {
+    let color = get-tex-color(texcolor)
+    if color != none {
+      text(fill: get-tex-color(texcolor), body)
+    } else {
+      body
+    }
+  }),
+  colorbox: define-cmd(2, handle: (texcolor, body) => {
+    let color = get-tex-color(texcolor)
+    if color != none {
+      box(fill: get-tex-color(texcolor), $body$)
+    } else {
+      body
+    }
+  }),
   // Limits
   limits: left1-op,
   
@@ -100,14 +138,15 @@
     alias: "scripts",
   ),
   // Commands
-  frac: define-cmd(2),
-  cfrac: define-cmd(2),
-  dfrac: define-cmd(2),
-  tfrac: define-cmd(2),
+  frac: define-cmd(2, handle: (num, den) => $(num)/(den)$),
+  // todo: cfrac, dfrac are same?
+  cfrac: define-cmd(2, handle: (num, den) => $display((num)/(den))$),
+  dfrac: define-cmd(2, handle: (num, den) => $display((num)/(den))$),
+  tfrac: define-cmd(2, handle: (num, den) => $inline((num)/(den))$),
   binom: define-cmd(2),
-  stackrel: define-cmd(2),
-  overset: define-cmd(2),
-  underset: define-cmd(2),
+  stackrel: define-cmd(2, handle: (sup, base) => $limits(base)^(sup)$),
+  overset: define-cmd(2, handle: (sup, base) => $limits(base)^(sup)$),
+  underset: define-cmd(2, handle: (sub, base) => $limits(base)_(sub)$),
   // Accents
   "not": define-cmd(1, alias: "cancel"),
   grave: define-cmd(1, alias: "grave"),
@@ -127,10 +166,10 @@
   overleftarrow: define-cmd(1, alias: "arrow.l"),
   overline: cmd1,
   underline: cmd1,
-  overbrace: define-cmd(1, alias: "mitexoverbrace"),
-  underbrace: define-cmd(1, alias: "mitexunderbrace"),
-  overbracket: define-cmd(1, alias: "mitexoverbracket"),
-  underbracket: define-cmd(1, alias: "mitexunderbracket"),
+  overbrace: limits-handle("mitexoverbrace", math.overbrace),
+  underbrace: limits-handle("mitexunderbrace", math.underbrace),
+  overbracket: limits-handle("mitexoverbracket", math.overbracket),
+  underbracket: limits-handle("mitexunderbracket", math.underbracket),
   // Greeks
   alpha: sym,
   beta: sym,
@@ -528,35 +567,63 @@
   ngeqslant: define-sym("gt.eq.not"),
   precneqq: define-sym("prec.nequiv"),
   gneq: define-sym("⪈"),
-  xleftarrow: cmd1,
-  xrightarrow: cmd1,
-  xLeftarrow: cmd1,
-  xRightarrow: cmd1,
-  xleftrightarrow: cmd1,
-  xLeftrightarrow: cmd1,
-  xhookleftarrow: cmd1,
-  xhookrightarrow: cmd1,
-  xtwoheadleftarrow: cmd1,
-  xtwoheadrightarrow: cmd1,
-  xleftharpoonup: cmd1,
-  xrightharpoonup: cmd1,
-  xleftharpoondown: cmd1,
-  xrightharpoondown: cmd1,
-  xleftrightharpoons: cmd1,
-  xrightleftharpoons: cmd1,
-  xtofrom: cmd1,
-  xmapsto: cmd1,
-  xlongequal: cmd1,
-  pmod: cmd1,
+  xleftarrow: arrow-handle($<--$),
+  xrightarrow: arrow-handle($-->$),
+  xLeftarrow: arrow-handle($<==$),
+  xRightarrow: arrow-handle($==>$),
+  xleftrightarrow: arrow-handle($<->$),
+  xLeftrightarrow: arrow-handle($<=>$),
+  xhookleftarrow: arrow-handle($-->$),
+  xhookrightarrow: arrow-handle(math.arrow.l.hook),
+  xtwoheadleftarrow: arrow-handle(math.arrow.l.twohead),
+  xtwoheadrightarrow: arrow-handle(math.arrow.r.twohead),
+  xleftharpoonup: arrow-handle(math.harpoon.lt),
+  xrightharpoonup: arrow-handle(math.harpoon.rt),
+  xleftharpoondown: arrow-handle(math.harpoon.lb),
+  xrightharpoondown: arrow-handle(math.harpoon.rb),
+  xleftrightharpoons: arrow-handle(math.harpoons.ltrb),
+  xrightleftharpoons: arrow-handle(math.harpoons.rtlb),
+  xtofrom: arrow-handle(math.arrows.rl),
+  xmapsto: arrow-handle($|->$),
+  xlongequal: arrow-handle(math.eq),
+  pmod: define-cmd(1, handle: it => $quad (mod thick it)$),
   // Matrices
-  matrix: matrix-env,
-  pmatrix: matrix-env,
-  bmatrix: matrix-env,
-  Bmatrix: matrix-env,
-  vmatrix: matrix-env,
-  Vmatrix: matrix-env,
-  smallmatrix: matrix-env,
-  array: define-matrix-env(1, alias: "mitexarray"),
+  matrix: matrix-handle(delim: none),
+  pmatrix: matrix-handle(delim: "("),
+  bmatrix: matrix-handle(delim: "["),
+  Bmatrix: matrix-handle(delim: "{"),
+  vmatrix: matrix-handle(delim: "|"),
+  Vmatrix: matrix-handle(delim: "||"),
+  smallmatrix: matrix-handle(handle: (..args) => math.inline(math.mat.with(delim: none, ..args))),
+  array: define-matrix-env(1, alias: "mitexarray", handle: (arg0: ("l",), ..args) => {
+    if args.pos().len() == 0 {
+      return
+    }
+    if type(arg0) != str {
+      if arg0.has("children") {
+        arg0 = arg0.children.filter(it => it != [ ])
+          .map(it => it.text)
+          .filter(it => it == "l" or it == "c" or it == "r")
+      } else {
+        arg0 = (arg0.text,)
+      }
+    }
+    let matrix = args.pos().map(row => if type(row) == array { row } else { (row,) } )
+    let n = matrix.len()
+    let m = calc.max(..matrix.map(row => row.len()))
+    matrix = matrix.map(row => row + (m - row.len()) * (none,))
+    let array-at(arr, pos) = {
+      arr.at(calc.min(pos, arr.len() - 1))
+    }
+    let align-map = ("l": left, "c": center, "r": right)
+    set align(align-map.at(array-at(arg0, 0)))
+    pad(y: 0.2em, grid(
+      columns: m,
+      column-gutter: 0.5em,
+      row-gutter: 0.5em,
+      ..matrix.flatten().map(it => $it$)
+    ))
+  }),
   subarray: define-matrix-env(1, alias: "mitexarray"),
   // Environments
   aligned: normal-env,
@@ -578,23 +645,35 @@
     args: ( kind: "none" ),
     ctx_feature: ( kind: "is-cases" ),
     alias: "rcases",
+    handle: math.cases.with(reverse: true),
   ),
   // Specials
-  label: define-cmd(1, alias: "mitexlabel"),
-  operatorname: cmd1,
-  operatornamewithlimits: cmd1,
-  "operatorname*": define-cmd(1, alias: "operatornamewithlimits"),
-  vspace: cmd1,
-  hspace: cmd1,
-  text: cmd1,
-  textnormal: cmd1,
-  textbf: cmd1,
-  textrm: cmd1,
-  textit: cmd1,
-  textsf: cmd1,
-  texttt: cmd1,
+  label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
+  operatorname: define-cmd(1, handle: it => math.op(math.upright(it))),
+  operatornamewithlimits: define-cmd(1, alias: "operatornamewithlimits", handle: operatornamewithlimits),
+  "operatorname*": define-cmd(1, alias: "operatornamewithlimits", handle: operatornamewithlimits),
+  vspace: define-cmd(1, handle: it => v(eval(get-tex-str(it)))),
+  hspace: define-cmd(1, handle: it => h(eval(get-tex-str(it)))),
+  text: define-cmd(1, handle: it => it),
+  textnormal: define-cmd(1, handle: it => it),
+  textbf: text-handle(math.bold),
+  textrm: text-handle(math.upright),
+  textit: text-handle(math.italic),
+  textsf: text-handle(math.sans),
+  texttt: text-handle(math.mono),
   over: define-infix-cmd("frac"),
-  sqrt: define-glob-cmd("{,b}t", "mitexsqrt"),
+  sqrt: define-glob-cmd("{,b}t", "mitexsqrt", handle: (..args) => {
+    if args.pos().len() == 1 {
+      $sqrt(#args.pos().at(0))$
+    } else if args.pos().len() == 2 {
+      $root(
+        #args.pos().at(0).children.filter(it => it != [\[] and it != [\]]).sum(),
+        #args.pos().at(1)
+      )$
+    } else {
+      panic("unexpected args in sqrt")
+    }
+  }),
 )
 
 #let latex-std = (name: "latex-std", spec: (commands: spec));
