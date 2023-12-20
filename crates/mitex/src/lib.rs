@@ -243,7 +243,7 @@ impl MathConverter {
                 // get cmd_shape and arg_shape from spec
                 let cmd_shape = spec
                     .get_cmd(name)
-                    .expect(format!("unknown command: \\{}", name).as_str());
+                    .ok_or_else(|| format!("unknown command: \\{}", name))?;
                 // typst alias name
                 let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
                 // write to output
@@ -266,7 +266,7 @@ impl MathConverter {
                 // get cmd_shape and arg_shape from spec
                 let cmd_shape = spec
                     .get_cmd(name)
-                    .expect(format!("unknown command: \\{}", name).as_str());
+                    .ok_or_else(|| format!("unknown command: \\{}", name))?;
                 let arg_shape = &cmd_shape.args;
                 // typst alias name
                 let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
@@ -347,7 +347,7 @@ impl MathConverter {
 
                 let env_shape = spec
                     .get_env(name)
-                    .expect(format!("unknown environment: \\{}", name).as_str());
+                    .ok_or_else(|| format!("unknown environment: \\{}", name))?;
                 let typst_name = env_shape.alias.as_deref().unwrap_or(name);
 
                 let env_kind = match env_shape.ctx_feature {
