@@ -1,0 +1,15 @@
+[package]
+name = "mitex-spec"
+description = "MiTeX Command Specification and its management."
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+walrus = { version = "0.20.3", features = ["parallel"] }
+anyhow = "1"
+rayon = "1.2.0"

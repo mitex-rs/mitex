@@ -14,8 +14,9 @@ resolver = "2"
 members = ["crates/*"]
 
 [profile.release]
-lto = true        # Enable link-time optimization
-strip = true      # Strip symbols from binary*
-opt-level = 3     # Optimize for speed
-codegen-units = 1 # Reduce number of codegen units to increase optimizations
-panic = 'abort'   # Abort on panic
+lto = true          # Enable link-time optimization
+strip = "debuginfo" # Strip debug info
+debug = true        # Enable debug info about function name
+opt-level = 3       # Optimize for speed
+codegen-units = 1   # Reduce number of codegen units to increase optimizations
+panic = 'abort'     # Abort on panic

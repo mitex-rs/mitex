@@ -1,7 +1,13 @@
 extern crate mitex;
+
 use wasm_minimal_protocol::*;
 
 initiate_protocol!();
+
+#[wasm_func]
+pub fn debug_global_command_spec() -> Vec<u8> {
+    mitex::GLOBAL_COMMAND.as_ref().to_owned()
+}
 
 #[wasm_func]
 pub fn convert_math(input: &[u8]) -> Result<Vec<u8>, String> {

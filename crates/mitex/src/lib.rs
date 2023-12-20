@@ -7,12 +7,14 @@ use core::fmt;
 use std::cell::RefCell;
 use std::fmt::Write;
 use std::rc::Rc;
+use std::sync::Arc;
 
 pub use mitex_parser::command_preludes;
 use mitex_parser::parse;
 pub use mitex_parser::spec::*;
 use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
+use once_cell::sync::Lazy;
 use rowan::ast::AstNode;
 use rowan::SyntaxToken;
 
@@ -399,9 +401,11 @@ impl fmt::Display for TypstMathRepr {
     }
 }
 
-pub fn convert_math(input: &str) -> Result<String, String> {
+pub fn convert_math(_input: &str) -> Result<String, String> {
     // let input = std::str::from_utf8(input).map_err(|e| e.to_string())?;
-    let node = parse(input, DEFAULT_SPEC.clone());
+    let res = GLOBAL_COMMAND.clone();
+    let res = std::str::from_utf8(res.as_ref()).unwrap();
+    let node = parse(res, DEFAULT_SPEC.clone());
     // println!("{:#?}", node);
     // println!("{:#?}", node.text());
     let mut output = String::new();
@@ -416,7 +420,17 @@ pub fn convert_math(input: &str) -> Result<String, String> {
     Ok(output)
 }
 
-fn default_spec() -> CommandSpec {
+/// # Safety
+/// This function maybe modified by the mitex-spec program
+#[no_mangle]
+#[inline(never)]
+pub unsafe fn mitex_global_command_spec() -> Arc<[u8]> {
+    include_bytes!("test.txt").as_slice().into()
+}
+
+pub static GLOBAL_COMMAND: Lazy<Arc<[u8]>> = Lazy::new(|| unsafe { mitex_global_command_spec() });
+
+pub fn default_spec() -> CommandSpec {
     use mitex_parser::command_preludes::*;
     let mut builder = SpecBuilder::default();
     // Spaces: \! \, \> \: \; \ \quad \qquad
