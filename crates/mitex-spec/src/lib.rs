@@ -11,11 +11,17 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize as rDeser, Serialize as rSer};
+
 pub mod preludes;
+mod stream;
 
 /// An item of command specification.
 /// It is either a command or an environment.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum CommandSpecItem {
     Cmd(CmdShape),
     Env(EnvShape),
@@ -24,6 +30,8 @@ pub enum CommandSpecItem {
 /// Command specification contains a set of commands
 /// and environments.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CommandSpecRepr {
     /// A map from command name to command specification
     pub commands: HashMap<String, CommandSpecItem>,
@@ -31,7 +39,39 @@ pub struct CommandSpecRepr {
 
 /// Command specification that is cheap to clone
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CommandSpec(Arc<CommandSpecRepr>);
+
+#[cfg(feature = "rkyv")]
+impl CommandSpec {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        // Or you can customize your serialization for better performance
+        // and compatibility with #![no_std] environments
+        use rkyv::ser::{serializers::AllocSerializer, Serializer};
+
+        let mut serializer = AllocSerializer::<0>::default();
+        serializer.serialize_value(self.0.as_ref()).unwrap();
+        let bytes = serializer.into_serializer().into_inner();
+
+        bytes.into_vec()
+    }
+
+    #[cfg(feature = "rkyv-validation")]
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let s = stream::BytesModuleStream::from_slice(bytes);
+
+        Self(Arc::new(s.checkout_owned()))
+    }
+
+    /// # Safety
+    /// The data source must be trusted and valid.
+    pub unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
+        let s = stream::BytesModuleStream::from_slice(bytes);
+
+        Self(Arc::new(s.checkout_owned_unchecked()))
+    }
+}
 
 impl CommandSpec {
     /// Create a new command specification
@@ -68,6 +108,8 @@ impl CommandSpec {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CmdShape {
     /// Describing how could we matches the arguments of a command item
     pub args: ArgShape,
@@ -77,6 +119,8 @@ pub struct CmdShape {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct EnvShape {
     /// Describing how could we matches the arguments of an environment item
     pub args: ArgPattern,
@@ -121,6 +165,8 @@ pub mod argument_kind {
 /// - Parenthesis/p: ()
 /// - Term/t: any rest of terms, typically {} or single char
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ArgPattern {
     /// None of arguments is passed, i.e. it is processed as a
     /// variable in typst.
@@ -161,6 +207,8 @@ pub enum ArgPattern {
 /// - `Direction::Left` with `ArgPattern::FixedLenTerm(1)`
 /// - `Direction::Infix` with `ArgPattern::Greedy`
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ArgShape {
     /// A command that assosicates with right side of items.
     /// E.g. \hat
@@ -175,6 +223,8 @@ pub enum ArgShape {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ContextFeature {
     /// No special feature
     None,
