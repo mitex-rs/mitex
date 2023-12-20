@@ -1,4 +1,8 @@
+use divan::{AllocProfiler, Bencher};
 use mitex_parser::{parse, CommandSpec};
+
+#[global_allocator]
+static ALLOC: AllocProfiler = AllocProfiler::system();
 
 fn main() {
     // Run registered benchmarks.
@@ -32,40 +36,44 @@ static ALPHA_X_20000: once_cell::sync::Lazy<String> =
 static ALPHA_X_40000: once_cell::sync::Lazy<String> =
     once_cell::sync::Lazy::new(|| "\\alpha x".repeat(40000));
 
-#[divan::bench]
-fn alpha_x_20000() {
-    parse(&ALPHA_X_20000, DEFAULT_SPEC.clone());
+fn bench(bencher: Bencher, input: &str, spec: CommandSpec) {
+    bencher.bench(|| parse(input, spec.clone()));
 }
 
 #[divan::bench]
-fn alpha_x_40000() {
-    parse(&ALPHA_X_40000, DEFAULT_SPEC.clone());
+fn alpha_x_20000(bencher: Bencher) {
+    bench(bencher, &ALPHA_X_20000, DEFAULT_SPEC.clone());
 }
 
 #[divan::bench]
-fn alpha_x_20000_heavy() {
-    parse(&ALPHA_X_20000, HEAVY_SPEC.clone());
+fn alpha_x_40000(bencher: Bencher) {
+    bench(bencher, &ALPHA_X_40000, DEFAULT_SPEC.clone());
 }
 
 #[divan::bench]
-fn alpha_x_40000_heavy() {
-    parse(&ALPHA_X_40000, HEAVY_SPEC.clone());
+fn alpha_x_20000_heavy(bencher: Bencher) {
+    bench(bencher, &ALPHA_X_20000, HEAVY_SPEC.clone());
+}
+
+#[divan::bench]
+fn alpha_x_40000_heavy(bencher: Bencher) {
+    bench(bencher, &ALPHA_X_40000, HEAVY_SPEC.clone());
 }
 
 static SLICE_WORD: once_cell::sync::Lazy<String> =
     once_cell::sync::Lazy::new(|| "\\frac ab ".repeat(20000));
 
 #[divan::bench]
-fn slice_word() {
-    parse(&SLICE_WORD, DEFAULT_SPEC.clone());
+fn slice_word(bencher: Bencher) {
+    bench(bencher, &SLICE_WORD, DEFAULT_SPEC.clone());
 }
 
 static SQRT_PATTERN: once_cell::sync::Lazy<String> =
     once_cell::sync::Lazy::new(|| "\\sqrt[1]{2} \\sqrt{2} \\sqrt{2} \\sqrt{2}".repeat(2500));
 
 #[divan::bench]
-fn sqrt_pattern() {
-    parse(&SQRT_PATTERN, DEFAULT_SPEC.clone());
+fn sqrt_pattern(bencher: Bencher) {
+    bench(bencher, &SQRT_PATTERN, DEFAULT_SPEC.clone());
 }
 
 /*
