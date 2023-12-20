@@ -400,9 +400,8 @@ impl fmt::Display for TypstMathRepr {
     }
 }
 
-pub fn convert_math(input: &str) -> Result<String, String> {
-    // let input = std::str::from_utf8(input).map_err(|e| e.to_string())?;
-    let node = parse(input, DEFAULT_SPEC.clone());
+pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
+    let node = parse(input, spec.unwrap_or_else(|| DEFAULT_SPEC.clone()));
     // println!("{:#?}", node);
     // println!("{:#?}", node.text());
     let mut output = String::new();
@@ -547,9 +546,18 @@ fn default_spec() -> CommandSpec {
     builder.add_command("overline", TEX_CMD1);
     builder.add_command("underline", TEX_CMD1);
     builder.add_command("overbrace", define_command_with_alias(1, "mitexoverbrace"));
-    builder.add_command("underbrace", define_command_with_alias(1, "mitexunderbrace"));
-    builder.add_command("overbracket", define_command_with_alias(1, "mitexoverbracket"));
-    builder.add_command("underbracket", define_command_with_alias(1, "mitexunderbracket"));
+    builder.add_command(
+        "underbrace",
+        define_command_with_alias(1, "mitexunderbrace"),
+    );
+    builder.add_command(
+        "overbracket",
+        define_command_with_alias(1, "mitexoverbracket"),
+    );
+    builder.add_command(
+        "underbracket",
+        define_command_with_alias(1, "mitexunderbracket"),
+    );
     // Greeks
     builder.add_command("alpha", TEX_SYMBOL);
     builder.add_command("beta", TEX_SYMBOL);
@@ -1036,8 +1044,11 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use insta::assert_debug_snapshot;
+
+    fn convert_math(input: &str) -> Result<String, String> {
+        crate::convert_math(input, None)
+    }
 
     #[test]
     fn test_convert_word() {

@@ -1,7 +1,7 @@
 #import "@preview/xarrow:0.2.0": xarrow
 #let mitex-wasm = plugin("./mitex.wasm")
 
-#let mitex-convert(it) = {
+#let mitex-convert(it, spec: bytes(())) = {
   str(mitex-wasm.convert_math(bytes({
     if type(it) == str {
       it
@@ -10,7 +10,7 @@
     } else {
       panic("Unsupported type: " + str(type(it)))
     }
-  })))
+  }), spec))
 }
 
 #let mitex-color-map = (
