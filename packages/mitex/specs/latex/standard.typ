@@ -7,18 +7,42 @@
   // mitexBig: it => scale(x: 180%, y: 180%, it),
   // mitexbigg: it => scale(x: 240%, y: 240%, it),
   // mitexBigg: it => scale(x: 300%, y: 300%, it),
-  // aligned: it => block(math.op(it)),
+
+#let mitex-color-map = (
+  "red": rgb(255, 0, 0),
+  "green": rgb(0, 255, 0),
+  "blue": rgb(0, 0, 255),
+  "cyan": rgb(0, 255, 255),
+  "magenta": rgb(255, 0, 255),
+  "yellow": rgb(255, 255, 0),
+  "black": rgb(0, 0, 0),
+  "white": rgb(255, 255, 255),
+  "gray": rgb(128, 128, 128),
+  "lightgray": rgb(192, 192, 192),
+  "darkgray": rgb(64, 64, 64),
+  "brown": rgb(165, 42, 42),
+  "orange": rgb(255, 165, 0),
+  "pink": rgb(255, 182, 193),
+  "purple": rgb(128, 0, 128),
+  "teal": rgb(0, 128, 128),
+  "olive": rgb(128, 128, 0),
+)
+#let get-tex-str(tex) = tex.children.filter(it => it != [ ]).map(it => it.text).sum()
+#let get-tex-color(texcolor) = {
+    mitex-color-map.at(lower(get-tex-str(texcolor)), default: none)
+}
+#let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
 #let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: arrow-sym, it))$)
-#let _greedy-handle(cmd) = (..args) => $cmd(#args.pos().sum())$
-#let greedy-handle(alias) = define-greedy-cmd(alias, handle: _greedy-handle)
+#let _greedy-handle(fn) = (..args) => $fn(#args.pos().sum())$
+#let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
 #let matrix-handle(delim: none, handle: none) = matrix-env
 #let text-handle(wrap) = define-cmd(1, handle: it => $wrap(it)$ + text-end-space(it),)
 #let ignore-me = it => {}
 
-#let spec = (
+#let (spec, scope) = process-spec((
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
   negthinspace: of-sym(h(-(3/18) * 1em)),
@@ -56,17 +80,17 @@
   lfloor: define-sym("⌊ "),
   rfloor: define-sym("⌋"),
   // Sizes and styles
-  displaystyle: greedy-handle("mitexdisplay"),
-  textstyle: greedy-handle("mitexinline"),
-  scriptstyle: greedy-handle("mitexscript"),
-  scriptscriptstyle: greedy-handle("mitexsscript"),
-  bf: greedy-handle("mitexbold"),
-  rm: greedy-handle("mitexupright"),
-  it: greedy-handle("mitexitalic"),
-  sf: greedy-handle("mitexsans"),
-  frak: greedy-handle("mitexfrak"),
-  tt: greedy-handle("mitexmono"),
-  cal: greedy-handle("mitexcal"),
+  displaystyle: greedy-handle("mitexdisplay", math.display),
+  textstyle: greedy-handle("mitexinline", math.inline),
+  scriptstyle: greedy-handle("mitexscript", math.script),
+  scriptscriptstyle: greedy-handle("mitexsscript", math.sscript),
+  bf: greedy-handle("mitexbold", math.bold),
+  rm: greedy-handle("mitexupright", math.upright),
+  it: greedy-handle("mitexitalic", math.italic),
+  sf: greedy-handle("mitexsans", math.sans),
+  frak: greedy-handle("mitexfrak", math.frak),
+  tt: greedy-handle("mitexmono", math.mono),
+  cal: greedy-handle("mitexcal", math.cal),
   bold: define-cmd(1, alias: "bold"),
   mathbf: define-cmd(1, alias: "bold"),
   boldsymbol: define-cmd(1, alias: "bold"),
@@ -130,13 +154,8 @@
     }
   }),
   // Limits
-  limits: left1-op,
-  
-  nolimits: (
-    kind: "cmd",
-    args: ( kind: "left1" ),
-    alias: "scripts",
-  ),
+  limits: left1-op("limits"),
+  nolimits: left1-op("scripts"),
   // Commands
   frac: define-cmd(2, handle: (num, den) => $(num)/(den)$),
   // todo: cfrac, dfrac are same?
@@ -626,7 +645,7 @@
   }),
   subarray: define-matrix-env(1, alias: "mitexarray"),
   // Environments
-  aligned: normal-env,
+  aligned: normal-env(it => block(math.op(it))),
   align: define-env(none, alias: "aligned"),
   "align*": define-env(none, alias: "aligned"),
   equation: define-env(none, alias: "aligned"),
@@ -634,19 +653,8 @@
   split: define-env(none, alias: "aligned"),
   gather: define-env(none, alias: "aligned"),
   gathered: define-env(none, alias: "aligned"),
-  cases: (
-    kind: "env",
-    args: ( kind: "none" ),
-    ctx_feature: ( kind: "is-cases" ),
-    alias: "cases",
-  ),
-  rcases: (
-    kind: "env",
-    args: ( kind: "none" ),
-    ctx_feature: ( kind: "is-cases" ),
-    alias: "rcases",
-    handle: math.cases.with(reverse: true),
-  ),
+  cases: define-cases-env(alias: "cases"),
+  cases: define-cases-env(alias: "cases", handle: math.cases.with(reverse: true)),
   // Specials
   label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   operatorname: define-cmd(1, handle: it => math.op(math.upright(it))),
@@ -674,7 +682,6 @@
       panic("unexpected args in sqrt")
     }
   }),
-)
+))
 
-#let latex-std = (name: "latex-std", spec: (commands: spec));
-#define-package(latex-std)
+#let package = (name: "latex-std", spec: (commands: spec), scope: scope)
