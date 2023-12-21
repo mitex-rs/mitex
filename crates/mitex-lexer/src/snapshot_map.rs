@@ -1,14 +1,12 @@
-use crate::fx::FxHashMap;
-use crate::undo_log::{Rollback, Snapshots, UndoLogs, VecLog};
+use ena::undo_log::{Rollback, Snapshots, UndoLogs, VecLog};
 use std::borrow::{Borrow, BorrowMut};
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops;
 
-pub use crate::undo_log::Snapshot;
+pub use ena::undo_log::Snapshot;
 
-#[cfg(test)]
-mod tests;
+type FxHashMap<K, V> = std::collections::HashMap<K, V>;
 
 pub type SnapshotMapStorage<K, V> = SnapshotMap<K, V, FxHashMap<K, V>, ()>;
 pub type SnapshotMapRef<'a, K, V, L> = SnapshotMap<K, V, &'a mut FxHashMap<K, V>, &'a mut L>;
