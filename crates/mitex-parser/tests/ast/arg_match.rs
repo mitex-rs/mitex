@@ -32,19 +32,19 @@ fn split_char() {
 fn eat_regular_brace() {
     assert_debug_snapshot!(parse(r#"\mathrm(x)"#), @r###"
     root
-    |cmd(cmd-name("\\mathrm"))
-    |paren
-    ||lparen'("(")
-    ||text(word'("x"))
-    ||rparen'(")")
+    |cmd
+    ||cmd-name("\\mathrm")
+    ||args(lparen'("("))
+    |text(word'("x"))
+    |rparen'(")")
     "###);
     assert_debug_snapshot!(parse(r#"\mathrm[x]"#), @r###"
     root
-    |cmd(cmd-name("\\mathrm"))
-    |bracket
-    ||lbracket'("[")
-    ||text(word'("x"))
-    ||rbracket'("]")
+    |cmd
+    ||cmd-name("\\mathrm")
+    ||args(lbracket'("["))
+    |text(word'("x"))
+    |rbracket'("]")
     "###);
     assert_debug_snapshot!(parse(r#"\mathrm\lbrace x \rbrace"#), @r###"
     root

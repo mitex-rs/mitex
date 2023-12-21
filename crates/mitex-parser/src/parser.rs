@@ -428,6 +428,7 @@ impl<'a> Parser<'a> {
         w
     }
 
+    /// Internally used by `Self::command`
     fn start_command_at(&mut self, pos: Option<Checkpoint>) {
         if let Some(available_pos) = pos {
             self.builder.start_node_at(available_pos, ItemCmd.into());
@@ -643,9 +644,9 @@ impl<'a> Parser<'a> {
                         BraceKind::Paren => (ARGUMENT_KIND_PAREN, ItemParen),
                     };
 
-                    if !searcher.try_match(encoded) {
+                    let Some(modified_as_term) = searcher.match_as_term(encoded) else {
                         return;
-                    }
+                    };
 
                     if !WRAP_ARGS {
                         // If consumed to end, this is right
@@ -653,8 +654,13 @@ impl<'a> Parser<'a> {
                         current = Some(self.builder.checkpoint());
                     }
                     arg::<WRAP_ARGS, _>(self, |this| {
-                        this.item_group(sk);
+                        if modified_as_term {
+                            this.eat();
+                        } else {
+                            this.item_group(sk);
+                        }
                     });
+
                     if !WRAP_ARGS {
                         self.list_state.may_store_last(current);
                     }
