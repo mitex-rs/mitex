@@ -29,6 +29,36 @@ fn split_char() {
 }
 
 #[test]
+fn eat_regular_brace() {
+    assert_debug_snapshot!(parse(r#"\mathrm(x)"#), @r###"
+    root
+    |cmd(cmd-name("\\mathrm"))
+    |paren
+    ||lparen'("(")
+    ||text(word'("x"))
+    ||rparen'(")")
+    "###);
+    assert_debug_snapshot!(parse(r#"\mathrm[x]"#), @r###"
+    root
+    |cmd(cmd-name("\\mathrm"))
+    |bracket
+    ||lbracket'("[")
+    ||text(word'("x"))
+    ||rbracket'("]")
+    "###);
+    assert_debug_snapshot!(parse(r#"\mathrm\lbrace x \rbrace"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\mathrm")
+    ||args
+    |||cmd(cmd-name("\\lbrace"))
+    ||space'(" ")
+    |text(word'("x"),space'(" "))
+    |cmd(cmd-name("\\rbrace"))
+    "###);
+}
+
+#[test]
 fn sqrt_pattern() {
     assert_debug_snapshot!(parse(r#"\sqrt 12"#), @r###"
     root
