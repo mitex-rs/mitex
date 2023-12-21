@@ -40,6 +40,32 @@ c & d
     |||cmd-name("\\end")
     |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
     "###);
+    assert_debug_snapshot!(parse(
+            r#"\begin{pmatrix}\\\end{pmatrix}"#), @r###"
+    root
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    ||newline("\\\\")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    "###);
+    assert_debug_snapshot!(parse(
+            r#"\begin{pmatrix}x{\\}x\end{pmatrix}"#), @r###"
+    root
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    ||text(word'("x"))
+    ||curly(lbrace'("{"),newline("\\\\"),rbrace'("}"))
+    ||text(word'("x"))
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    "###);
 }
 
 #[test]

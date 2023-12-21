@@ -111,8 +111,8 @@ impl MathConverter {
                 "error unexpected: {:?}",
                 elem.as_node().unwrap().text()
             ))?,
-            ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText
-            | ItemBracket | ItemParen => {
+            ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText | ItemBracket
+            | ItemParen => {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
@@ -684,6 +684,20 @@ mod tests {
             "x colorbox(r e d ,y z )",
         )
         "###
+        );
+    }
+
+    #[test]
+    fn test_convert_matrix_bug() {
+        assert_debug_snapshot!(convert_math(
+                     r#"$\begin{pmatrix}x{\\}x\end{pmatrix}$"#
+            ).unwrap(),
+            @r###""pmatrix(x ; x )""###
+        );
+        assert_debug_snapshot!(convert_math(
+                     r#"$\begin{pmatrix}\\&\ddots\end{pmatrix}$"#
+            ).unwrap(),
+            @r###""pmatrix(; ,dots.down )""###
         );
     }
 
