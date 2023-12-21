@@ -45,7 +45,7 @@ impl ArgMatcher {
     pub fn match_as_term(&mut self, text: char) -> Option<bool> {
         match self {
             Self::None => None,
-            Self::Greedy => Some(true),
+            Self::Greedy => Some(text != ARGUMENT_KIND_TERM),
             Self::AtMostTerm { .. } => self
                 .try_match(ARGUMENT_KIND_TERM)
                 .then_some(text != ARGUMENT_KIND_TERM),

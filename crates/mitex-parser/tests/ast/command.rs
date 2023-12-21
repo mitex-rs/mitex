@@ -94,14 +94,13 @@ fn right_greedy() {
     |cmd
     ||cmd-name("\\displaystyle")
     ||space'(" ")
-    ||args(lbrace'("{"))
     ||args
-    |||cmd(cmd-name("\\sum"))
-    ||space'(" ")
-    ||args
-    |||text(word'("T"))
-    ||args
-    |||error'(rbrace'("}"))
+    |||curly
+    ||||lbrace'("{")
+    ||||cmd(cmd-name("\\sum"))
+    ||||space'(" ")
+    ||||text(word'("T"))
+    ||||rbrace'("}")
     "###);
     assert_debug_snapshot!(parse(r#"\displaystyle [\sum T]"#), @r###"
     root
