@@ -38,7 +38,7 @@
 #let _greedy-handle(fn) = (..args) => $fn(#args.pos().sum())$
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
-#let matrix-handle(delim: none, handle: none) = matrix-env
+#let matrix-handle(delim: none, handle: none) = define-matrix-env(none, alias: none, handle: math.mat.with(delim: delim))
 #let text-handle(wrap) = define-cmd(1, handle: it => $wrap(it)$ + text-end-space(it),)
 #let ignore-me = it => {}
 
@@ -163,6 +163,8 @@
   dfrac: define-cmd(2, handle: (num, den) => $display((num)/(den))$),
   tfrac: define-cmd(2, handle: (num, den) => $inline((num)/(den))$),
   binom: define-cmd(2),
+  dbinom: define-cmd(2, handle: (n, k) => $display(binom(#n, #k))$),
+  tbinom: define-cmd(2, handle: (n, k) => $inline(binom(#n, #k))$),
   stackrel: define-cmd(2, handle: (sup, base) => $limits(base)^(sup)$),
   overset: define-cmd(2, handle: (sup, base) => $limits(base)^(sup)$),
   underset: define-cmd(2, handle: (sub, base) => $limits(base)_(sub)$),

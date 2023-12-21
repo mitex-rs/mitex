@@ -111,10 +111,25 @@ impl MathConverter {
                 "error unexpected: {:?}",
                 elem.as_node().unwrap().text()
             ))?,
-            ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText | ItemCurly
+            ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText
             | ItemBracket | ItemParen => {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
+                }
+            }
+            ItemCurly => {
+                let mut zws = true;
+                for child in elem.as_node().unwrap().children_with_tokens() {
+                    match &child.kind() {
+                        TokenWhiteSpace | TokenLineBreak | TokenLBrace | TokenRBrace => {}
+                        _ => {
+                            zws = false;
+                        }
+                    }
+                    self.convert(f, child, spec)?;
+                }
+                if zws {
+                    f.write_str("zws ")?;
                 }
             }
             // handle lr
@@ -150,8 +165,6 @@ impl MathConverter {
             }
             ItemAttachComponent => {
                 let mut first = true;
-                // hack for {}_1^2
-                write!(f, "zws ")?;
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     if first {
                         let kind = child.as_token().map(|n| n.kind());
@@ -227,11 +240,11 @@ impl MathConverter {
             }
             ItemNewLine => {
                 if matches!(self.env, LaTeXEnv::Matrix) {
-                    f.write_char(';')?;
+                    f.write_str("; ")?;
                 } else if matches!(self.env, LaTeXEnv::Cases) {
-                    f.write_char(',')?;
+                    f.write_str(", ")?;
                 } else {
-                    f.write_char('\\')?;
+                    f.write_str("\\ ")?;
                 }
             }
             // for left/right
@@ -451,7 +464,7 @@ mod tests {
     fn test_convert_command() {
         assert_debug_snapshot!(convert_math(r#"$\int_1^2 x \mathrm{d} x$"#), @r###"
         Ok(
-            "zws zws integral _(1 )^(2 ) x  upright(d  )x ",
+            "integral _(1 )^(2 ) x  upright(d  )x ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\underline{T}$"#), @r###"
@@ -471,7 +484,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\frac 12_3$"#), @r###"
         Ok(
-            "zws frac( 1 ,2 )_(3 )",
+            "frac( 1 ,2 )_(3 )",
         )
         "###
         );
@@ -499,7 +512,7 @@ mod tests {
     fn test_convert_limits() {
         assert_debug_snapshot!(convert_math(r#"$\sum\limits_1^2$"#), @r###"
         Ok(
-            "zws zws limits(sum )_(1 )^(2 )",
+            "limits(sum )_(1 )^(2 )",
         )
         "###
         );
@@ -509,37 +522,37 @@ mod tests {
     fn test_convert_subsup() {
         assert_debug_snapshot!(convert_math(r#"$x_1^2$"#), @r###"
         Ok(
-            "zws zws x _(1 )^(2 )",
+            "x _(1 )^(2 )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$x^2_1$"#), @r###"
         Ok(
-            "zws zws x ^(2 )_(1 )",
+            "x ^(2 )_(1 )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$x''_1$"#), @r###"
         Ok(
-            "zws zws zws x ''_(1 )",
+            "x ''_(1 )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
         Ok(
-            "zws mitexoverbrace(a  +  b  +  c )^(text(\"This is an overbrace\"))",
+            "mitexoverbrace(a  +  b  +  c )^(text(\"This is an overbrace\"))",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$x_1''$"#), @r###"
         Ok(
-            "zws zws zws x _(1 )''",
+            "x _(1 )''",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"${}_1^2x_3^4$"#), @r###"
         Ok(
-            "zws zws _(1 )^(2 )zws zws x _(3 )^(4 )",
+            "zws _(1 )^(2 )x _(3 )^(4 )",
         )
         "###
         );
@@ -561,7 +574,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"${l \over 2'}$"#), @r###"
         Ok(
-            "frac(l  , zws 2 ')",
+            "frac(l  , 2 ')",
         )
         "###);
     }
@@ -684,7 +697,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "matrix(1  , 2  , 3 ;\na  , b  , c \n)",
+            "matrix(1  , 2  , 3 ; \na  , b  , c \n)",
         )
         "###
         );
@@ -696,7 +709,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "Vmatrix(1  , 2  , 3 ;\na  , b  , c \n)",
+            "Vmatrix(1  , 2  , 3 ; \na  , b  , c \n)",
         )
         "###
         );
@@ -708,7 +721,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r \n        ,1  , 2  , 3 ;\na  , b  , c \n)",
+            "mitexarray(arg0: l c r \n        ,1  , 2  , 3 ; \na  , b  , c \n)",
         )
         "###
         );
@@ -724,7 +737,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(1  & 2  & 3 \\\na  & b  & c \n)",
+            "aligned(1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -736,7 +749,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(1  & 2  & 3 \\\na  & b  & c \n)",
+            "aligned(1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -748,7 +761,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "cases(1  & 2  & 3 ,\na  & b  & c \n)",
+            "cases(1  & 2  & 3 , \na  & b  & c \n)",
         )
         "###
         );
