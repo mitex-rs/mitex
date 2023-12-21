@@ -620,6 +620,20 @@ impl<'a> Parser<'a> {
                 // Argument matches is stopped on these tokens
                 // However, newline is also a command (with name `\`), hence this is different from
                 // mark and (`&`)
+                //
+                // Condition explained.
+                // Condition Case1:
+                //   If it is an infix operator, i.e. WRAP_ARGS, never stops
+                //   e.g. a \over b \\ c should equal to \frac{a}{b \\ c}
+                // Condition Case2:
+                //   If it is a greedy command/operator, i.e. searcher.is_greedy(),
+                //   stops only if parser is inside of some environment
+                //   e.g. (stops) \begin{matrix} \displaystyle 1 \\ 3 \\ \end{matrix}
+                //   e.g. (don't stops) \displaystyle \frac{1}{2} \\ \frac{1}{2} 
+                //   e.g. (don't stops) \left. \displaystyle \frac{1}{2} \\ \frac{1}{2} \right.
+                // Condition othersise,
+                //   It is a regular command, it is treated as a command (with name `\`) first.
+                //   e.g.(don't stops) \begin{matrix}\frac{1} \\ {2}\end{matrix}
                 Token::NewLine if /* !INFIX */ WRAP_ARGS && (searcher.is_greedy() && self.inside_env()) => return,
                 // Argument matches is stopped on these tokens anyway
                 Token::And => return,
