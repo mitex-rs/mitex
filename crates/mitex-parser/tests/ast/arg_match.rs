@@ -201,6 +201,146 @@ fn special_marks() {
 }
 
 #[test]
+fn special_marks_in_env() {
+    assert_debug_snapshot!(parse(r#"
+    \displaystyle \frac{1}{2} \\ \frac{1}{2} 
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||space'(" ")
+    ||args
+    |||cmd
+    ||||cmd-name("\\frac")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("1"))
+    ||||||rbrace'("}")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("2"))
+    ||||||rbrace'("}")
+    ||||||space'(" ")
+    ||args(newline("\\\\"))
+    ||space'(" ")
+    ||args
+    |||cmd
+    ||||cmd-name("\\frac")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("1"))
+    ||||||rbrace'("}")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("2"))
+    ||||||rbrace'("}")
+    ||||||space'(" ")
+    ||||||br'("\n")
+    ||||||space'("    ")
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \left. \displaystyle \frac{1}{2} \\ \frac{1}{2} \right.
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |lr
+    ||clause-lr(cmd-name("\\left"),word'("."))
+    ||space'(" ")
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||space'(" ")
+    |||args
+    ||||cmd
+    |||||cmd-name("\\frac")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("1"))
+    |||||||rbrace'("}")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("2"))
+    |||||||rbrace'("}")
+    |||||||space'(" ")
+    |||args(newline("\\\\"))
+    |||space'(" ")
+    |||args
+    ||||cmd
+    |||||cmd-name("\\frac")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("1"))
+    |||||||rbrace'("}")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("2"))
+    |||||||rbrace'("}")
+    |||||||space'(" ")
+    ||clause-lr(cmd-name("\\right"),word'("."))
+    |br'("\n")
+    |space'("    ")
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \sqrt[\displaystyle \frac{1}{2} \\ \frac{1}{2} ]{}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |cmd
+    ||cmd-name("\\sqrt")
+    ||args
+    |||bracket
+    ||||lbracket'("[")
+    ||||cmd
+    |||||cmd-name("\\displaystyle")
+    |||||space'(" ")
+    |||||args
+    ||||||cmd
+    |||||||cmd-name("\\frac")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("1"))
+    |||||||||rbrace'("}")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("2"))
+    |||||||||rbrace'("}")
+    |||||||||space'(" ")
+    |||||args(newline("\\\\"))
+    |||||space'(" ")
+    |||||args
+    ||||||cmd
+    |||||||cmd-name("\\frac")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("1"))
+    |||||||||rbrace'("}")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("2"))
+    |||||||||rbrace'("}")
+    |||||||||space'(" ")
+    ||||rbracket'("]")
+    ||args
+    |||curly(lbrace'("{"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+}
+
+#[test]
 fn sqrt_pattern() {
     assert_debug_snapshot!(parse(r#"\sqrt 12"#), @r###"
     root

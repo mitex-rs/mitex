@@ -178,6 +178,13 @@ impl<'a> Parser<'a> {
         self.list_state.scope
     }
 
+    /// List State
+    /// Whether the current scope is env
+    #[inline]
+    fn inside_env(&self) -> bool {
+        self.list_state.scope == ParseScope::Environment
+    }
+
     /// Lexer Interface
     /// Peek the next token
     fn peek(&self) -> Option<Token> {
@@ -613,7 +620,7 @@ impl<'a> Parser<'a> {
                 // Argument matches is stopped on these tokens
                 // However, newline is also a command (with name `\`), hence this is different from
                 // mark and (`&`)
-                Token::NewLine if /* !INFIX */ WRAP_ARGS && searcher.is_greedy() => return,
+                Token::NewLine if /* !INFIX */ WRAP_ARGS && (searcher.is_greedy() && self.inside_env()) => return,
                 // Argument matches is stopped on these tokens anyway
                 Token::And => return,
                 // WRAP_ARGS also determines whether it could be regards as an attachment.
