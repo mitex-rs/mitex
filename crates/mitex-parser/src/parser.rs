@@ -584,7 +584,7 @@ impl<'a> Parser<'a> {
     /// - Term/t: any rest of terms, typically {} or single char
     #[inline]
     fn match_arguments_<const WRAP_ARGS: bool>(&mut self, mut searcher: ArgMatcher) {
-        // const NOT_INFIX = WRAP_ARGS
+        // const INFIX = !WRAP_ARGS
 
         fn arg<'a, const WRAP_ARGS: bool, T>(
             this: &mut Parser<'a>,
@@ -610,8 +610,12 @@ impl<'a> Parser<'a> {
             match kind {
                 // trivials
                 Token::LineBreak | Token::Whitespace | Token::LineComment => self.eat(),
+                // Argument matches is stopped on these tokens
+                // However, newline is also a command (with name `\`), hence this is different from
+                // mark and (`&`)
+                Token::NewLine if /* !INFIX */ WRAP_ARGS && searcher.is_greedy() => return,
                 // Argument matches is stopped on these tokens anyway
-                Token::And | Token::NewLine => return,
+                Token::And => return,
                 // WRAP_ARGS also determines whether it could be regards as an attachment.
                 Token::Caret | Token::Underline if WRAP_ARGS => {
                     return;

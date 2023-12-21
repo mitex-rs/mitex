@@ -153,6 +153,51 @@ fn special_marks() {
     |||cmd-name("\\end")
     |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
     "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}\frac{1} \\ {2}\end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||cmd
+    |||cmd-name("\\frac")
+    |||args
+    ||||curly
+    |||||lbrace'("{")
+    |||||text(word'("1"))
+    |||||rbrace'("}")
+    |||||space'(" ")
+    |||args(newline("\\\\"))
+    |||space'(" ")
+    ||curly
+    |||lbrace'("{")
+    |||text(word'("2"))
+    |||rbrace'("}")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    1 \over 2 \\ 3 
+    "#), @r###"
+    root
+    |cmd
+    ||args
+    |||br'("\n")
+    |||space'("    ")
+    |||text(word'("1"),space'(" "))
+    ||cmd-name("\\over")
+    ||args
+    |||space'(" ")
+    |||text(word'("2"),space'(" "))
+    |||newline("\\\\")
+    |||space'(" ")
+    |||text(word'("3"),space'(" "),br'("\n"),space'("    "))
+    "###);
 }
 
 #[test]
