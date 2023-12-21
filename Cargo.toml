@@ -13,6 +13,11 @@ rust-version = "1.74"
 resolver = "2"
 members = ["crates/*"]
 
+[workspace.dependencies]
+
+serde = "1.0.188"
+serde_json = "1.0.106"
+
 [profile.release]
 lto = true        # Enable link-time optimization
 strip = true      # Strip symbols from binary*

@@ -11,8 +11,17 @@ Also block equations:
 #mitex("\alpha x" * 8000)
 
 /*
-
 last^1
+17000
+Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
+  Time (mean ± σ):     638.8 ms ±  10.4 ms    [User: 143.8 ms, System: 32.8 ms]
+  Range (min … max):   616.5 ms … 652.5 ms    10 runs
+8000
+Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
+  Time (mean ± σ):     503.2 ms ±  15.1 ms    [User: 109.4 ms, System: 28.1 ms]
+  Range (min … max):   485.8 ms … 535.5 ms    10 runs
+
+last^2
 17000
 Benchmark 1: typst compile --root . typst-package\examples\bench.typ
   Time (mean ± σ):     647.5 ms ±  16.3 ms    [User: 109.4 ms, System: 23.4 ms]
@@ -21,16 +30,6 @@ Benchmark 1: typst compile --root . typst-package\examples\bench.typ
 Benchmark 1: typst compile --root . typst-package\examples\bench.typ
   Time (mean ± σ):     537.5 ms ±  23.3 ms    [User: 76.6 ms, System: 17.2 ms]
   Range (min … max):   509.1 ms … 581.7 ms    10 runs
-
-last^2
-17000
-Benchmark 1: typst compile --root . typst-package\examples\bench.typ
-  Time (mean ± σ):     758.4 ms ±  26.8 ms    [User: 185.3 ms, System: 31.8 ms]
-  Range (min … max):   722.5 ms … 802.6 ms    10 runs
-8000
-Benchmark 1: typst compile --root . typst-package\examples\bench.typ
-  Time (mean ± σ):     605.6 ms ±  18.1 ms    [User: 135.9 ms, System: 46.6 ms]
-  Range (min … max):   583.7 ms … 635.8 ms    10 runs
 
 init
 17000
