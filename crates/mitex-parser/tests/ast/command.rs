@@ -107,13 +107,13 @@ fn right_greedy() {
     |cmd
     ||cmd-name("\\displaystyle")
     ||space'(" ")
+    ||args(lbracket'("["))
     ||args
-    |||bracket
-    ||||lbracket'("[")
-    ||||cmd(cmd-name("\\sum"))
-    ||||space'(" ")
-    ||||text(word'("T"))
-    ||||rbracket'("]")
+    |||cmd(cmd-name("\\sum"))
+    ||space'(" ")
+    ||args
+    |||text(word'("T"))
+    ||args(rbracket'("]"))
     "###);
     assert_debug_snapshot!(parse(r#"T \displaystyle"#), @r###"
     root

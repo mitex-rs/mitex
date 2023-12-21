@@ -40,6 +40,20 @@ impl ArgMatcher {
     }
 
     /// Check if the matcher is ending match with that char
+    ///
+    /// Return true if modified as term
+    pub fn match_as_term(&mut self, text: char) -> Option<bool> {
+        match self {
+            Self::None => None,
+            Self::Greedy => Some(text != ARGUMENT_KIND_TERM),
+            Self::AtMostTerm { .. } => self
+                .try_match(ARGUMENT_KIND_TERM)
+                .then_some(text != ARGUMENT_KIND_TERM),
+            Self::Glob { .. } => self.try_match(text).then_some(false),
+        }
+    }
+
+    /// Check if the matcher is ending match with that char
     pub fn try_match(&mut self, text: char) -> bool {
         match self {
             Self::None => false,
