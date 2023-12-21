@@ -59,6 +59,312 @@ fn eat_regular_brace() {
 }
 
 #[test]
+fn special_marks() {
+    // & and newline'
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}
+        \displaystyle 1 & 2 \\
+        3 & 4 \\
+    \end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||space'(" ")
+    |||args
+    ||||text(word'("1"),space'(" "))
+    ||and'("&")
+    ||space'(" ")
+    ||text(word'("2"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("        ")
+    ||text(word'("3"),space'(" "))
+    ||and'("&")
+    ||space'(" ")
+    ||text(word'("4"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("    ")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}
+        \displaystyle 1 \\
+        3 \\
+    \end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||space'(" ")
+    |||args
+    ||||text(word'("1"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("        ")
+    ||text(word'("3"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("    ")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}\frac{1} & {2}\end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||cmd
+    |||cmd-name("\\frac")
+    |||args
+    ||||curly
+    |||||lbrace'("{")
+    |||||text(word'("1"))
+    |||||rbrace'("}")
+    |||||space'(" ")
+    ||and'("&")
+    ||space'(" ")
+    ||curly
+    |||lbrace'("{")
+    |||text(word'("2"))
+    |||rbrace'("}")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}\frac{1} \\ {2}\end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||cmd
+    |||cmd-name("\\frac")
+    |||args
+    ||||curly
+    |||||lbrace'("{")
+    |||||text(word'("1"))
+    |||||rbrace'("}")
+    |||||space'(" ")
+    |||args(newline("\\\\"))
+    |||space'(" ")
+    ||curly
+    |||lbrace'("{")
+    |||text(word'("2"))
+    |||rbrace'("}")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    1 \over 2 \\ 3 
+    "#), @r###"
+    root
+    |cmd
+    ||args
+    |||br'("\n")
+    |||space'("    ")
+    |||text(word'("1"),space'(" "))
+    ||cmd-name("\\over")
+    ||args
+    |||space'(" ")
+    |||text(word'("2"),space'(" "))
+    |||newline("\\\\")
+    |||space'(" ")
+    |||text(word'("3"),space'(" "),br'("\n"),space'("    "))
+    "###);
+}
+
+#[test]
+fn special_marks_in_env() {
+    assert_debug_snapshot!(parse(r#"
+    \displaystyle \frac{1}{2} \\ \frac{1}{2} 
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||space'(" ")
+    ||args
+    |||cmd
+    ||||cmd-name("\\frac")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("1"))
+    ||||||rbrace'("}")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("2"))
+    ||||||rbrace'("}")
+    ||||||space'(" ")
+    ||args(newline("\\\\"))
+    ||space'(" ")
+    ||args
+    |||cmd
+    ||||cmd-name("\\frac")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("1"))
+    ||||||rbrace'("}")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("2"))
+    ||||||rbrace'("}")
+    ||||||space'(" ")
+    ||||||br'("\n")
+    ||||||space'("    ")
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \left. \displaystyle \frac{1}{2} \\ \frac{1}{2} \right.
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |lr
+    ||clause-lr(cmd-name("\\left"),word'("."))
+    ||space'(" ")
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||space'(" ")
+    |||args
+    ||||cmd
+    |||||cmd-name("\\frac")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("1"))
+    |||||||rbrace'("}")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("2"))
+    |||||||rbrace'("}")
+    |||||||space'(" ")
+    |||args(newline("\\\\"))
+    |||space'(" ")
+    |||args
+    ||||cmd
+    |||||cmd-name("\\frac")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("1"))
+    |||||||rbrace'("}")
+    |||||args
+    ||||||curly
+    |||||||lbrace'("{")
+    |||||||text(word'("2"))
+    |||||||rbrace'("}")
+    |||||||space'(" ")
+    ||clause-lr(cmd-name("\\right"),word'("."))
+    |br'("\n")
+    |space'("    ")
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \sqrt[\displaystyle \frac{1}{2} \\ \frac{1}{2} ]{}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |cmd
+    ||cmd-name("\\sqrt")
+    ||args
+    |||bracket
+    ||||lbracket'("[")
+    ||||cmd
+    |||||cmd-name("\\displaystyle")
+    |||||space'(" ")
+    |||||args
+    ||||||cmd
+    |||||||cmd-name("\\frac")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("1"))
+    |||||||||rbrace'("}")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("2"))
+    |||||||||rbrace'("}")
+    |||||||||space'(" ")
+    |||||args(newline("\\\\"))
+    |||||space'(" ")
+    |||||args
+    ||||||cmd
+    |||||||cmd-name("\\frac")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("1"))
+    |||||||||rbrace'("}")
+    |||||||args
+    ||||||||curly
+    |||||||||lbrace'("{")
+    |||||||||text(word'("2"))
+    |||||||||rbrace'("}")
+    |||||||||space'(" ")
+    ||||rbracket'("]")
+    ||args
+    |||curly(lbrace'("{"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}a \over b \\ c\end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||cmd
+    |||args
+    ||||text(word'("a"),space'(" "))
+    |||cmd-name("\\over")
+    |||args
+    ||||space'(" ")
+    ||||text(word'("b"),space'(" "))
+    ||newline("\\\\")
+    ||space'(" ")
+    ||text(word'("c"))
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+}
+
+#[test]
 fn sqrt_pattern() {
     assert_debug_snapshot!(parse(r#"\sqrt 12"#), @r###"
     root
