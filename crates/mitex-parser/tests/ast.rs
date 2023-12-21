@@ -20,6 +20,9 @@ mod ast {
     #[cfg(test)]
     mod attachment;
 
+    #[cfg(test)]
+    mod left_right;
+
     /// Convenient function to launch/debug a test case
     #[test]
     fn bug_playground() {}

@@ -2,14 +2,14 @@ pub mod parser {
     use mitex_parser::syntax::SyntaxNode;
     use mitex_spec::CommandSpec;
 
-    pub type AstSnapshot = super::ast_snapshot::AstSnapshot;
+    use super::SnapNode;
 
     pub fn parse(input: &str) -> SyntaxNode {
         mitex_parser::parse(input, DEFAULT_SPEC.clone())
     }
 
-    pub fn parse_snap(input: &str) -> AstSnapshot {
-        super::ast_snapshot::AstSnapshot(parse(input))
+    pub fn parse_snap(input: &str) -> SnapNode {
+        super::ast_snapshot::SnapNode(parse(input))
     }
 
     static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
@@ -19,6 +19,7 @@ pub mod parser {
     });
 }
 
+pub use ast_snapshot::{SnapNode, SnapToken};
 pub use parser::*;
 
 pub mod ast_snapshot {
@@ -28,12 +29,28 @@ pub mod ast_snapshot {
     use mitex_parser::syntax::{SyntaxKind, SyntaxNode, SyntaxToken};
     use rowan::NodeOrToken;
 
-    pub struct AstSnapshot(pub SyntaxNode);
+    pub struct SnapNode(pub SyntaxNode);
 
-    impl fmt::Debug for AstSnapshot {
+    impl fmt::Debug for SnapNode {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let mut p = AstPrinter { level: 0 };
             p.show_node(self.0.clone(), f)
+        }
+    }
+
+    pub struct SnapToken(pub SyntaxToken);
+
+    impl fmt::Debug for SnapToken {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let mut p = AstPrinter { level: 0 };
+            p.show_token(self.0.clone(), f)
+        }
+    }
+
+    impl fmt::Display for SnapToken {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let mut p = AstPrinter { level: 0 };
+            p.show_token(self.0.clone(), f)
         }
     }
 
@@ -67,7 +84,7 @@ pub mod ast_snapshot {
                 SyntaxKind::TokenCommandSym => "sym'",
                 SyntaxKind::ClauseCommandName => "cmd-name",
                 SyntaxKind::ClauseArgument => "args",
-                SyntaxKind::ClauseLR => "lr",
+                SyntaxKind::ClauseLR => "clause-lr",
                 SyntaxKind::ItemNewLine => "newline",
                 SyntaxKind::ItemText => "text",
                 SyntaxKind::ItemCurly => "curly",
@@ -75,7 +92,7 @@ pub mod ast_snapshot {
                 SyntaxKind::ItemParen => "paren",
                 SyntaxKind::ItemCmd => "cmd",
                 SyntaxKind::ItemEnv => "env",
-                SyntaxKind::ItemLR => "kr",
+                SyntaxKind::ItemLR => "lr",
                 SyntaxKind::ItemBegin => "begin",
                 SyntaxKind::ItemEnd => "end",
                 SyntaxKind::ItemBlockComment => "block-comment",

@@ -1,6 +1,20 @@
 use super::prelude::*;
 
 #[test]
+fn easy() {
+    assert_debug_snapshot!(parse(r#"\begin{equation}\end{equation}"#), @r###"
+    root
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    "###);
+}
+
+#[test]
 fn matrix() {
     assert_debug_snapshot!(parse(
             r#"\begin{matrix}
