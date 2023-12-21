@@ -49,6 +49,23 @@ mod ast {
     }
 
     #[test]
+    fn test_utf8_char() {
+        // note that there is utf8 minus sign in the middle
+        assert_debug_snapshot!(parse(r#"$u^−$"#), @r###"
+        root
+        |formula
+        ||dollar'("$")
+        ||attach-comp
+        |||args
+        ||||text(word'("u"))
+        |||caret'("^")
+        |||word'("−")
+        ||dollar'("$")
+        "###
+        );
+    }
+
+    #[test]
     fn test_beat_pandoc() {
         assert_debug_snapshot!(parse(r#"\frac 1 2 _3"#), @r###"
         root

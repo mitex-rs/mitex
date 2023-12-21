@@ -221,7 +221,7 @@ impl<'a> Parser<'a> {
         let first_char = self.lexer.peek_char()?;
         self.builder
             .token(TokenWord.into(), &first_char.to_string());
-        self.lexer.consume_word(1);
+        self.lexer.consume_word(first_char.len_utf8());
 
         Some(())
     }
@@ -648,7 +648,7 @@ impl<'a> Parser<'a> {
                             }
                             return;
                         }
-                        split_cnt += 1;
+                        split_cnt += c.len_utf8();
 
                         arg::<WRAP_ARGS, _>(self, |this| {
                             this.builder.token(TokenWord.into(), &c.to_string())

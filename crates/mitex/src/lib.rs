@@ -610,6 +610,13 @@ mod tests {
     }
 
     #[test]
+    fn test_unreachable() {
+        // println!("{:#?}", convert_math(r#"$u^-$"#));
+        assert_debug_snapshot!(convert_math(r#"$u^−$"#).unwrap(), @r###""zws u ^(− )""###
+        );
+    }
+
+    #[test]
     fn test_convert_sqrt() {
         assert_debug_snapshot!(convert_math(r#"$\sqrt 1$"#), @r###"
         Ok(
