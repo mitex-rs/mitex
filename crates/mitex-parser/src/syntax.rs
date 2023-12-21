@@ -30,7 +30,6 @@ pub enum SyntaxKind {
 
     // Clauses
     ClauseCommandName,
-    ClauseArgKey,
     ClauseArgument,
     ClauseLR,
 
