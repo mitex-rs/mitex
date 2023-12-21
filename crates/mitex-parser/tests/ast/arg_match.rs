@@ -338,6 +338,30 @@ fn special_marks_in_env() {
     ||args
     |||curly(lbrace'("{"),rbrace'("}"),br'("\n"),space'("    "))
     "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}a \over b \\ c\end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||cmd
+    |||args
+    ||||text(word'("a"),space'(" "))
+    |||cmd-name("\\over")
+    |||args
+    ||||space'(" ")
+    ||||text(word'("b"),space'(" "))
+    ||newline("\\\\")
+    ||space'(" ")
+    ||text(word'("c"))
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
 }
 
 #[test]
