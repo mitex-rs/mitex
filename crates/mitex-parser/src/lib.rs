@@ -53,6 +53,10 @@ mod tests {
     static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> =
         once_cell::sync::Lazy::new(default_spec);
 
+    /// Convenient function to launch/debug a test case
+    #[test]
+    fn bug_playground() {}
+
     #[test]
     fn test_easy() {
         assert_debug_snapshot!(parse(r#"\frac{ a }{ b }"#), @r###"
@@ -330,31 +334,27 @@ mod tests {
     }
 
     #[test]
-    fn test_cmd_infix_bug() {
-        assert_debug_snapshot!(parse(r#"a \over b'_1"#), @r###"
-        ScopeRoot@0..12
-          ItemCmd@0..12
-            ClauseArgument@0..2
-              ItemText@0..2
-                TokenWord@0..1 "a"
-                TokenWhiteSpace@1..2 " "
-            ClauseCommandName@2..7 "\\over"
-            ClauseArgument@7..12
-              TokenWhiteSpace@7..8 " "
-              ItemAttachComponent@8..12
-                ClauseArgument@8..10
-                  ItemAttachComponent@8..10
-                    ClauseArgument@8..9
-                      ItemText@8..9
-                        TokenWord@8..9 "b"
-                    TokenApostrophe@9..10 "'"
-                TokenUnderline@10..11 "_"
-                TokenWord@11..12 "1"
-        "###);
-    }
-
-    #[test]
     fn test_cmd_infix() {
+        assert_debug_snapshot!(parse(r#"a \over b'_1"#), @r###"
+      ScopeRoot@0..12
+        ItemCmd@0..12
+          ClauseArgument@0..2
+            ItemText@0..2
+              TokenWord@0..1 "a"
+              TokenWhiteSpace@1..2 " "
+          ClauseCommandName@2..7 "\\over"
+          ClauseArgument@7..12
+            TokenWhiteSpace@7..8 " "
+            ItemAttachComponent@8..12
+              ClauseArgument@8..10
+                ItemAttachComponent@8..10
+                  ClauseArgument@8..9
+                    ItemText@8..9
+                      TokenWord@8..9 "b"
+                  TokenApostrophe@9..10 "'"
+              TokenUnderline@10..11 "_"
+              TokenWord@11..12 "1"
+      "###);
         assert_debug_snapshot!(parse(r#"a \over b"#), @r###"
         ScopeRoot@0..9
           ItemCmd@0..9
