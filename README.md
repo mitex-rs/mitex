@@ -45,7 +45,7 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 `)
 ```
 
-![example](typst-package/examples/example.png)
+![example](packages/mitex/examples/example.png)
 
 ## Differences between MiTeX and other solutions
 
