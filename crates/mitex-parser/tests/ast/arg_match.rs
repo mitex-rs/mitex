@@ -79,22 +79,19 @@ fn special_marks() {
     |||space'(" ")
     |||args
     ||||text(word'("1"),space'(" "))
-    |||args(and'("&"))
-    |||space'(" ")
-    |||args
-    ||||text(word'("2"),space'(" "))
-    |||args(newline("\\\\"))
-    |||br'("\n")
-    |||space'("        ")
-    |||args
-    ||||text(word'("3"),space'(" "))
-    |||args(and'("&"))
-    |||space'(" ")
-    |||args
-    ||||text(word'("4"),space'(" "))
-    |||args(newline("\\\\"))
-    |||br'("\n")
-    |||space'("    ")
+    ||and'("&")
+    ||space'(" ")
+    ||text(word'("2"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("        ")
+    ||text(word'("3"),space'(" "))
+    ||and'("&")
+    ||space'(" ")
+    ||text(word'("4"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("    ")
     ||end
     |||cmd-name("\\end")
     |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
@@ -117,14 +114,41 @@ fn special_marks() {
     |||space'(" ")
     |||args
     ||||text(word'("1"),space'(" "))
-    |||args(newline("\\\\"))
-    |||br'("\n")
-    |||space'("        ")
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("        ")
+    ||text(word'("3"),space'(" "))
+    ||newline("\\\\")
+    ||br'("\n")
+    ||space'("    ")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}\frac{1} & {2}\end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||cmd
+    |||cmd-name("\\frac")
     |||args
-    ||||text(word'("3"),space'(" "))
-    |||args(newline("\\\\"))
-    |||br'("\n")
-    |||space'("    ")
+    ||||curly
+    |||||lbrace'("{")
+    |||||text(word'("1"))
+    |||||rbrace'("}")
+    |||||space'(" ")
+    ||and'("&")
+    ||space'(" ")
+    ||curly
+    |||lbrace'("{")
+    |||text(word'("2"))
+    |||rbrace'("}")
     ||end
     |||cmd-name("\\end")
     |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))

@@ -584,6 +584,8 @@ impl<'a> Parser<'a> {
     /// - Term/t: any rest of terms, typically {} or single char
     #[inline]
     fn match_arguments_<const WRAP_ARGS: bool>(&mut self, mut searcher: ArgMatcher) {
+        // const NOT_INFIX = WRAP_ARGS
+
         fn arg<'a, const WRAP_ARGS: bool, T>(
             this: &mut Parser<'a>,
             f: impl FnOnce(&mut Parser<'a>) -> T,
@@ -606,7 +608,15 @@ impl<'a> Parser<'a> {
         };
         while let Some(kind) = self.peek() {
             match kind {
+                // trivials
                 Token::LineBreak | Token::Whitespace | Token::LineComment => self.eat(),
+                // Argument matches is stopped on these tokens anyway
+                Token::And | Token::NewLine => return,
+                // WRAP_ARGS also determines whether it could be regards as an attachment.
+                Token::Caret | Token::Underline if WRAP_ARGS => {
+                    return;
+                }
+                // prefer rob characters from words as arguments
                 Token::Word if !searcher.is_greedy() => {
                     // Split the word into single characters for term matching
                     let mut split_cnt = 0usize;
@@ -665,9 +675,6 @@ impl<'a> Parser<'a> {
                         self.list_state.may_store_last(current);
                     }
                 }
-                Token::Caret | Token::Underline if WRAP_ARGS => {
-                    return;
-                }
                 // rest of any item
                 kind => {
                     if self.stop_by_scope(kind) || !searcher.try_match(ARGUMENT_KIND_TERM) {
@@ -689,19 +696,19 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    fn match_arguments<const WRAP_ARGS: bool>(&mut self, searcher: ArgMatcher) {
+    fn match_arguments<const NOT_INFIX: bool>(&mut self, searcher: ArgMatcher) {
         self.list_state.may_store_last(None);
         let last = self.list_last();
-        let start = if WRAP_ARGS {
+        let start = if NOT_INFIX {
             self.list_state.may_store_start(None);
             self.list_start()
         } else {
             None
         };
 
-        self.match_arguments_::<WRAP_ARGS>(searcher);
+        self.match_arguments_::<NOT_INFIX>(searcher);
 
-        if WRAP_ARGS {
+        if NOT_INFIX {
             self.list_state.may_store_start(start);
         }
         self.list_state.may_store_last(last);
