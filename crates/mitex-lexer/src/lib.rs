@@ -1,6 +1,10 @@
 use logos::Logos;
+mod macro_engine;
+pub mod snapshot_map;
 
 use mitex_spec::CommandSpec;
+
+pub use macro_engine::MacroEngine;
 
 /// A peeked token
 type PeekTok<'a> = (Token, &'a str);

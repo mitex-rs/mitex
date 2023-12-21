@@ -159,6 +159,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ecow"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6ea5e3f9cda726431da9d1a8d5a29785d544b31e98e1ca7a210906244002e02"
+
+[[package]]
+name = "ena"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c533630cf40e9caa44bd91aadc88a75d75a4c3a12b4cfde353cbed41daa1e1f1"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -256,6 +271,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4cd1a83af159aa67994778be9070f0ae1bd732942279cabb14f86f986a21456"
 
 [[package]]
+name = "log"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
+
+[[package]]
 name = "logos"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -317,15 +338,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mitex-evaluator"
-version = "0.1.0"
-dependencies = [
- "logos",
- "mitex-lexer",
- "mitex-spec",
-]
-
-[[package]]
 name = "mitex-glob"
 version = "0.1.0"
 
@@ -333,8 +345,11 @@ version = "0.1.0"
 name = "mitex-lexer"
 version = "0.1.0"
 dependencies = [
+ "ecow",
+ "ena",
  "logos",
  "mitex-spec",
+ "once_cell",
 ]
 
 [[package]]
