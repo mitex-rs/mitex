@@ -59,6 +59,79 @@ fn eat_regular_brace() {
 }
 
 #[test]
+fn special_marks() {
+    // & and newline'
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}
+        \displaystyle 1 & 2 \\
+        3 & 4 \\
+    \end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||space'(" ")
+    |||args
+    ||||text(word'("1"),space'(" "))
+    |||args(and'("&"))
+    |||space'(" ")
+    |||args
+    ||||text(word'("2"),space'(" "))
+    |||args(newline("\\\\"))
+    |||br'("\n")
+    |||space'("        ")
+    |||args
+    ||||text(word'("3"),space'(" "))
+    |||args(and'("&"))
+    |||space'(" ")
+    |||args
+    ||||text(word'("4"),space'(" "))
+    |||args(newline("\\\\"))
+    |||br'("\n")
+    |||space'("    ")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+    assert_debug_snapshot!(parse(r#"
+    \begin{matrix}
+        \displaystyle 1 \\
+        3 \\
+    \end{matrix}
+    "#), @r###"
+    root
+    |br'("\n")
+    |space'("    ")
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||space'(" ")
+    |||args
+    ||||text(word'("1"),space'(" "))
+    |||args(newline("\\\\"))
+    |||br'("\n")
+    |||space'("        ")
+    |||args
+    ||||text(word'("3"),space'(" "))
+    |||args(newline("\\\\"))
+    |||br'("\n")
+    |||space'("    ")
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    "###);
+}
+
+#[test]
 fn sqrt_pattern() {
     assert_debug_snapshot!(parse(r#"\sqrt 12"#), @r###"
     root
