@@ -172,7 +172,6 @@ impl MathConverter {
             }
             ClauseCommandName => Err("command name outside of command".to_owned())?,
             ItemBegin | ItemEnd => Err("clauses outside of environment".to_owned())?,
-            ClauseArgKey => Err("clauses outside of group".to_owned())?,
             TokenWord => {
                 // break up words into individual characters and add a space
                 let text = elem.as_token().unwrap().text().to_string();
