@@ -322,10 +322,13 @@ name = "mitex"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "divan",
  "insta",
  "mitex-parser",
  "once_cell",
  "rowan",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
