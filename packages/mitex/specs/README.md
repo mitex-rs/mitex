@@ -5,13 +5,7 @@ This includes ways to define specs, which can be used to define everything in th
 Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [latex-std](./latex/standard.typ), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
 
 
-## Concepts
-
-Currently, MiTeX maintains following three parts of code:
-
-- A TeX parser library written in **Rust**, see [mitex-lexer](./crates/mitex-lexer) and [mitex-parser](./crates/mitex-parser).
-- A TeX to Typst converter library written in **Rust**, see [mitex](./crates/mitex).
-- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](./packages/mitex/specs).
+## Introduce
 
 For a translation process, for example, we have:
 
@@ -43,11 +37,16 @@ To achieve this, we need to define four components for LaTeX commands:
 - `handle`: The value in the `mitex-scope`, which is our self-defined symbol or processing function.
   - For example, the `frac` key corresponds to the value `(num, den) => $(num)/(den)$`.
 
-The parser only needs `cmd` and `args` to generate an AST, while the converter requires `cmd`, `args`, and `alias` to generate the corresponding Typst code. Since both the parser and converter are part of the WASM plugin written in Rust, we refer to the dictionary composed of `cmd`, `args`, and `alias` as spec and pre-compile it into the wasm.
+MiTeX would need them for converting your TeX commands into typst code.
 
 At the Typst level, we need `alias` and `handle`, which are then combined into the `mitex-scope` passed to the `eval` function as the `scope` parameter.
 
-Therefore, we need to define the spec here, and later we will also support custom spec.
+In short, currently a command spec is a typst dict, with its keys are name of the tex command, and its values are opaque spec item, which contains necessary information for MiTeX.
+
+In [specification file for standard latex](./latex/standard.typ), It constructs and exports a such command spec.
+
+Next, we provides a bunch of convenient functions for constructing opaque spec items.
+
 
 ## Reference
 
@@ -66,7 +65,7 @@ Define a normal symbol, as no-argument commands like `\alpha`.
   For example, there is no direct alias for \negthinspace symbol in typst,
   but we can add `h(-(3/18) * 1em)` ourselves
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-greedy-cmd`
@@ -84,7 +83,7 @@ Define a greedy command, like `\displaystyle`.
   It receives a content argument as all greedy matches to the content
   For example, we define `mitexdisplay` to `math.display`
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-infix-cmd`
@@ -102,7 +101,7 @@ Define an infix command, like `\over`.
   It receives two content arguments, as (prev, after) arguments.
   For example, we define `\over` to `frac: (num, den) => $(num)/(den)$`
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-glob-cmd`
@@ -127,7 +126,7 @@ Kind of item to match:
   It receives variable length arguments, for example `(2,)` or `([3], 2)` for sqrt.
   Therefore you need to use `(.. arg) = > {..}` to receive them.
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-cmd`
@@ -145,12 +144,12 @@ Define a command with a fixed number of arguments, like `\hat{x}` and `\frac{1}{
 - handle (function): The handler function, as the value of alias in mitex-scope.
   It receives fixed number of arguments, for example `frac(1, 2)` for `\frac{1}{2}`.
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-env`
 
-Define an environment with a fixed number of arguments, like `\begin{alignedat}{2}`.
+Define an environment with a fixed number of arguments, like `\begin{array}{lr}`.
 
 ```typst
 #let define-env(num, alias: none, handle: none) = { .. }
@@ -159,15 +158,15 @@ Define an environment with a fixed number of arguments, like `\begin{alignedat}{
 **Arguments:**
 - num (int): The number of arguments as environment options for the environment.
 - alias (str): Alias command for typst handler.
-  For example, alias `\begin{alignedat}{2}` to typst's `alignedat`,
+  For example, alias `\begin{array}{lr}` to typst's `mitexarray`,
   and alias `\begin{aligned}` to typst's `aligned`, as the key in mitex-scope.
 - handle (function): The handler function, as the value of alias in mitex-scope.
   It receives fixed number of named arguments as environment options,
-  for example `alignedat(arg0: ..)` or `alignedat(arg0: .., arg1: ..)`.
+  for example `array(arg0: ..)` or `array(arg0: .., arg1: ..)`.
   And it receives variable length arguments as environment body,
   Therefore you need to use `(.. arg) = > {..}` to receive them.
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-cases-env`
@@ -184,7 +183,7 @@ Define a cases environment.
 - handle (function): The handler function, as the value of alias in mitex-scope.
   For example, define `math.cases.with(reverse: true)` for `rcases` in mitex-scope.
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `define-matrix-env`
@@ -208,7 +207,7 @@ Define an matrix environment with a fixed number of arguments, like \begin{pmatr
   like `pmatrtix((1, 2,), (3, 4,))` in script mode.
   Therefore you need to use `(.. arg) = > {..}` to receive them.
 
-**Return:** A spec item and a scope item (none for no scope item)
+**Return:** A opaque spec item and a scope item (none for no scope item)
 
 
 ### `sym`
@@ -219,7 +218,7 @@ Define a symbol without alias and without handler function, like \alpha => alpha
 #let sym = ((kind: "sym"), none)
 ```
 
-**Return:** A spec item and no scope item (none for no scope item)
+**Return:** A opaque spec item and no scope item (none for no scope item)
 
 
 ### `of-sym`
@@ -304,11 +303,3 @@ Define a normal environment with handler
 
 **Return:** A normal-env spec and a scope item (none for no scope item)
 
-
-### `process-spec`
-
-Receives a dictionary of definitions composed of the above functions, and processes them to return a dictionary containing spec and scope.
-
-```typst
-#let process-spec(definitions) = { .. }
-```
