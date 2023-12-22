@@ -131,7 +131,7 @@ impl MathConverter {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
-                // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`  
+                // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`
                 f.write_str("zws ")?;
                 if enter_new_env {
                     self.exit_env(prev);
@@ -227,6 +227,9 @@ impl MathConverter {
             TokenCaret => {
                 f.write_str("\\^")?;
             }
+            TokenDitto => {
+                f.write_str("\\\"")?;
+            }
             TokenUnderline => {
                 f.write_str("\\_")?;
             }
@@ -242,20 +245,16 @@ impl MathConverter {
             TokenRBracket => {
                 f.write_str("\\]")?;
             }
-            TokenAnd => {
-                match self.env {
-                    LaTeXEnv::Matrix => f.write_str("zws ,")?,
-                    _ => f.write_str("&")?,
-                }
-            }
-            ItemNewLine => {
-                match self.env {
-                    LaTeXEnv::Matrix => f.write_str("zws ;")?,
-                    LaTeXEnv::Cases => f.write_str(",")?,
-                    LaTeXEnv::CurlyGroup => {}
-                    _ => f.write_str("\\ ")?,
-                }
-            }
+            TokenAnd => match self.env {
+                LaTeXEnv::Matrix => f.write_str("zws ,")?,
+                _ => f.write_str("&")?,
+            },
+            ItemNewLine => match self.env {
+                LaTeXEnv::Matrix => f.write_str("zws ;")?,
+                LaTeXEnv::Cases => f.write_str(",")?,
+                LaTeXEnv::CurlyGroup => {}
+                _ => f.write_str("\\ ")?,
+            },
             // for left/right
             TokenCommandSym => {
                 let name = elem.as_token().unwrap().text();
@@ -342,12 +341,12 @@ impl MathConverter {
                 if typst_name == "substack" {
                     prev = self.enter_env(LaTeXEnv::SubStack);
                 }
-                
+
                 if let ArgShape::Right(ArgPattern::None) = arg_shape {
                     f.write_char(' ')?
                 } else {
                     f.write_char('(')?;
-                    
+
                     let mut cnt = 0;
                     let args_len = args.len();
                     for arg in args {
@@ -358,10 +357,10 @@ impl MathConverter {
                             f.write_char(',')?;
                         }
                     }
-                    
+
                     f.write_char(')')?;
                 }
-                
+
                 // hack for \substack{abc \\ bcd}
                 if typst_name == "substack" {
                     self.exit_env(prev);
@@ -639,6 +638,8 @@ mod tests {
         )
         "###
         );
+        assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###
+        );
     }
 
     #[test]
@@ -725,7 +726,7 @@ mod tests {
         "###
         );
     }
-    
+
     #[test]
     fn test_convert_matrix() {
         assert_debug_snapshot!(convert_math(

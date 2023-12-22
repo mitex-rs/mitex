@@ -205,6 +205,9 @@ pub enum Token {
     #[token("'")]
     Apostrophe,
 
+    #[token("\"")]
+    Ditto,
+
     #[token("_", priority = 2)]
     Underline,
 
