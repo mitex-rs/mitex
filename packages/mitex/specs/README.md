@@ -23,7 +23,7 @@ For a translation process, for example, we have:
 #eval("$frac(1, 2)$", scope: (frac: (num, den) => $(num)/(den)$))
 ```
 
-You can use the `\mitex-convert()` function to get the Typst Code generated from LaTeX Code.
+You can use the `#mitex-convert()` function to get the Typst Code generated from LaTeX Code.
 
 To achieve this, we need to define four components for LaTeX commands:
 
