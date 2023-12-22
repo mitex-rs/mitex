@@ -54,8 +54,8 @@ mod properties {
         assert_snapshot!(cmd_args(r#"\displaystyle abcdefg"#), @r###"
         name: cmd-name("\\displaystyle")
         args
+        |space'(" ")
         |text(word'("abcdefg"))
-
         "###);
         assert_snapshot!(cmd_args(r#"\sum\limits"#), @r###"
         name: cmd-name("\\limits")

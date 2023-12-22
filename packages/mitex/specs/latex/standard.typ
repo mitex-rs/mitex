@@ -27,19 +27,21 @@
   "teal": rgb(0, 128, 128),
   "olive": rgb(128, 128, 0),
 )
-#let get-tex-str(tex) = tex.children.filter(it => it != [ ]).map(it => it.text).sum()
-#let get-tex-color(texcolor) = {
-    mitex-color-map.at(lower(get-tex-str(texcolor)), default: none)
+#let get-tex-str-from-arr(arr) = arr.filter(it => it != [ ] and it != [#math.zws]).map(it => it.text).sum()
+#let get-tex-str(tex) = get-tex-str-from-arr(tex.children)
+#let get-tex-color-from-arr(arr) = {
+    mitex-color-map.at(lower(get-tex-str-from-arr(arr)), default: none)
 }
+#let get-tex-color(texcolor) = get-tex-color-from-arr(texcolor.children)
 #let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
 #let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: arrow-sym, it))$)
-#let _greedy-handle(fn) = (..args) => $fn(#args.pos().sum())$
-#let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
+#let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: fn)
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
 #let matrix-handle(delim: none, handle: none) = define-matrix-env(none, alias: none, handle: math.mat.with(delim: delim))
 #let text-handle(wrap) = define-cmd(1, handle: it => $wrap(it)$ + text-end-space(it),)
+#let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 { fn(..args) } else { math.zws }
 #let ignore-me = it => {}
 
 #let (spec, scope) = process-spec((
@@ -129,12 +131,22 @@
   large: define-sym(""),
   tiny: define-sym(""),
   // Colors
-  color: define-greedy-cmd("mitexcolor", handle: (texcolor, ..args) => {
-    let color = get-tex-color(texcolor)
+  color: define-greedy-cmd("mitexcolor", handle: body => {
+    let texcolor = ()
+    let args = ()
+    for i in range(body.children.len()) {
+      if body.children.at(i) != [#math.zws] {
+        texcolor.push(body.children.at(i))
+      } else {
+        args = body.children.slice(i)
+        break
+      }
+    }
+    let color = get-tex-color-from-arr(texcolor)
     if color != none {
-      text(fill: color, args.pos().sum())
+      text(fill: color, args.sum())
     } else {
-      args.pos().sum()
+      args.sum()
     }
   }),
   textcolor: define-cmd(2, alias: "colortext", handle: (texcolor, body) => {
@@ -622,7 +634,7 @@
     }
     if type(arg0) != str {
       if arg0.has("children") {
-        arg0 = arg0.children.filter(it => it != [ ])
+        arg0 = arg0.children.filter(it => it != [ ] and it != [#math.zws])
           .map(it => it.text)
           .filter(it => it == "l" or it == "c" or it == "r")
       } else {
@@ -647,7 +659,7 @@
   }),
   subarray: define-matrix-env(1, alias: "mitexarray"),
   // Environments
-  aligned: normal-env((..args) => if args.pos().len() > 0 { block(math.op(..args)) } else { math.zws }),
+  aligned: normal-env(call-or-ignore(it => block(math.op(it)))),
   align: define-env(none, alias: "aligned"),
   "align*": define-env(none, alias: "aligned"),
   equation: define-env(none, alias: "aligned"),

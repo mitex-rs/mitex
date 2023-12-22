@@ -76,8 +76,8 @@ fn special_marks() {
     |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
     ||cmd
     |||cmd-name("\\displaystyle")
-    |||space'(" ")
     |||args
+    ||||space'(" ")
     ||||text(word'("1"),space'(" "))
     ||and'("&")
     ||space'(" ")
@@ -111,8 +111,8 @@ fn special_marks() {
     |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
     ||cmd
     |||cmd-name("\\displaystyle")
-    |||space'(" ")
     |||args
+    ||||space'(" ")
     ||||text(word'("1"),space'(" "))
     ||newline("\\\\")
     ||br'("\n")
@@ -210,8 +210,8 @@ fn special_marks_in_env() {
     |space'("    ")
     |cmd
     ||cmd-name("\\displaystyle")
-    ||space'(" ")
     ||args
+    |||space'(" ")
     |||cmd
     ||||cmd-name("\\frac")
     ||||args
@@ -225,9 +225,8 @@ fn special_marks_in_env() {
     ||||||text(word'("2"))
     ||||||rbrace'("}")
     ||||||space'(" ")
-    ||args(newline("\\\\"))
-    ||space'(" ")
-    ||args
+    |||newline("\\\\")
+    |||space'(" ")
     |||cmd
     ||||cmd-name("\\frac")
     ||||args
@@ -255,8 +254,8 @@ fn special_marks_in_env() {
     ||space'(" ")
     ||cmd
     |||cmd-name("\\displaystyle")
-    |||space'(" ")
     |||args
+    ||||space'(" ")
     ||||cmd
     |||||cmd-name("\\frac")
     |||||args
@@ -270,9 +269,8 @@ fn special_marks_in_env() {
     |||||||text(word'("2"))
     |||||||rbrace'("}")
     |||||||space'(" ")
-    |||args(newline("\\\\"))
-    |||space'(" ")
-    |||args
+    ||||newline("\\\\")
+    ||||space'(" ")
     ||||cmd
     |||||cmd-name("\\frac")
     |||||args
@@ -303,8 +301,8 @@ fn special_marks_in_env() {
     ||||lbracket'("[")
     ||||cmd
     |||||cmd-name("\\displaystyle")
-    |||||space'(" ")
     |||||args
+    ||||||space'(" ")
     ||||||cmd
     |||||||cmd-name("\\frac")
     |||||||args
@@ -318,9 +316,8 @@ fn special_marks_in_env() {
     |||||||||text(word'("2"))
     |||||||||rbrace'("}")
     |||||||||space'(" ")
-    |||||args(newline("\\\\"))
-    |||||space'(" ")
-    |||||args
+    ||||||newline("\\\\")
+    ||||||space'(" ")
     ||||||cmd
     |||||||cmd-name("\\frac")
     |||||||args

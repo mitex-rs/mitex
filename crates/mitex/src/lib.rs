@@ -121,20 +121,11 @@ impl MathConverter {
             ItemCurly => {
                 // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
                 let prev = self.enter_env(LaTeXEnv::CurlyGroup);
-                let mut zws = true;
                 for child in elem.as_node().unwrap().children_with_tokens() {
-                    match &child.kind() {
-                        TokenWhiteSpace | TokenLineBreak | TokenLBrace | TokenRBrace => {}
-                        _ => {
-                            zws = false;
-                        }
-                    }
                     self.convert(f, child, spec)?;
                 }
-                if zws {
-                    // deal with case like `{}_1^2x_3^4`
-                    f.write_str("zws ")?;
-                }
+                // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`  
+                f.write_str("zws ")?;
                 self.exit_env(prev);
             }
             // handle lr
@@ -467,12 +458,12 @@ mod tests {
     fn test_convert_command() {
         assert_debug_snapshot!(convert_math(r#"$\int_1^2 x \mathrm{d} x$"#), @r###"
         Ok(
-            "integral _(1 )^(2 ) x  upright(d  )x ",
+            "integral _(1 )^(2 ) x  upright(d  zws )x ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\underline{T}$"#), @r###"
         Ok(
-            "underline(T )",
+            "underline(T zws )",
         )
         "###);
     }
@@ -481,7 +472,7 @@ mod tests {
     fn test_convert_frac() {
         assert_debug_snapshot!(convert_math(r#"$\frac{a}{b}$"#), @r###"
         Ok(
-            "frac(a ,b )",
+            "frac(a zws ,b zws )",
         )
         "###
         );
@@ -499,13 +490,13 @@ mod tests {
     fn test_convert_displaystyle() {
         assert_debug_snapshot!(convert_math(r#"$\displaystyle xyz\frac{1}{2}$"#), @r###"
         Ok(
-            "mitexdisplay( x y z ,frac(1 ,2 ))",
+            "mitexdisplay( x y z frac(1 zws ,2 zws ))",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$1 + {\displaystyle 23} + 4$"#), @r###"
         Ok(
-            "1  +  mitexdisplay( 2 3 ) +  4 ",
+            "1  +  mitexdisplay( 2 3 ) zws +  4 ",
         )
         "###
         );
@@ -543,7 +534,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
         Ok(
-            "mitexoverbrace(a  +  b  +  c )^(text(\"This is an overbrace\"))",
+            "mitexoverbrace(a  +  b  +  c zws )^(text(\"This is an overbrace\")zws )",
         )
         "###
         );
@@ -571,13 +562,13 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$1 + {2 \over 3}$"#), @r###"
         Ok(
-            "1  +  frac(2  , 3 )",
+            "1  +  frac(2  , 3 )zws ",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"${l \over 2'}$"#), @r###"
         Ok(
-            "frac(l  , 2 ')",
+            "frac(l  , 2 ')zws ",
         )
         "###);
     }
@@ -670,28 +661,28 @@ mod tests {
     fn test_convert_color() {
         assert_debug_snapshot!(convert_math(r#"$x\color{red}yz\frac{1}{2}$"#), @r###"
         Ok(
-            "x mitexcolor(r e d ,y z ,frac(1 ,2 ))",
+            "x mitexcolor(r e d zws y z frac(1 zws ,2 zws ))",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\textcolor{red}yz$"#), @r###"
         Ok(
-            "x colortext(r e d ,y )z ",
+            "x colortext(r e d zws ,y )z ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\textcolor{red}{yz}$"#), @r###"
         Ok(
-            "x colortext(r e d ,y z )",
+            "x colortext(r e d zws ,y z zws )",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\colorbox{red}yz$"#), @r###"
         Ok(
-            "x colorbox(r e d ,y )z ",
+            "x colorbox(r e d zws ,y )z ",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$x\colorbox{red}{yz}$"#), @r###"
         Ok(
-            "x colorbox(r e d ,y z )",
+            "x colorbox(r e d zws ,y z zws )",
         )
         "###
         );
@@ -702,7 +693,7 @@ mod tests {
         assert_debug_snapshot!(convert_math(
                      r#"$\begin{pmatrix}x{\\}x\end{pmatrix}$"#
             ).unwrap(),
-            @r###""pmatrix(x x )""###
+            @r###""pmatrix(x zws x )""###
         );
         assert_debug_snapshot!(convert_math(
                      r#"$\begin{pmatrix} \\ & \ddots \end{pmatrix}$"#
@@ -741,7 +732,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r \n        ,1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "mitexarray(arg0: l c r \n        zws ,1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );

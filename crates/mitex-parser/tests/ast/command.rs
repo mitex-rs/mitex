@@ -51,126 +51,113 @@ fn left_association() {
 }
 
 #[test]
-fn right_greedy_bug() {
+fn right_greedy() {
+    // Description: produces an empty argument if the righ side is empty
+    assert_debug_snapshot!(parse(r#"\displaystyle"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||args()
+    "###);
+    // Description: correctly works left association
+    // left1 commands
     assert_debug_snapshot!(parse(r#"\displaystyle\sum\limits"#), @r###"
     root
     |cmd
     ||cmd-name("\\displaystyle")
     ||args
-    |||cmd(cmd-name("\\sum"))
-    ||args
-    |||cmd(cmd-name("\\limits"))
-    "###);
-    assert_debug_snapshot!(parse(r#"\displaystyle x_1 \frac{1}{2}"#), @r###"
-    root
-    |attach-comp
-    ||args
     |||cmd
-    ||||cmd-name("\\displaystyle")
-    ||||space'(" ")
     ||||args
-    |||||text(word'("x"))
-    ||underline'("_")
-    ||word'("1")
-    |space'(" ")
-    |cmd
-    ||cmd-name("\\frac")
-    ||args
-    |||curly
-    ||||lbrace'("{")
-    ||||text(word'("1"))
-    ||||rbrace'("}")
-    ||args
-    |||curly
-    ||||lbrace'("{")
-    ||||text(word'("2"))
-    ||||rbrace'("}")
+    |||||cmd(cmd-name("\\sum"))
+    ||||cmd-name("\\limits")
     "###);
-    assert_debug_snapshot!(parse(r#"\displaystyle x^1 \frac{1}{2}"#), @r###"
-    root
-    |attach-comp
-    ||args
-    |||cmd
-    ||||cmd-name("\\displaystyle")
-    ||||space'(" ")
-    ||||args
-    |||||text(word'("x"))
-    ||caret'("^")
-    ||word'("1")
-    |space'(" ")
-    |cmd
-    ||cmd-name("\\frac")
-    ||args
-    |||curly
-    ||||lbrace'("{")
-    ||||text(word'("1"))
-    ||||rbrace'("}")
-    ||args
-    |||curly
-    ||||lbrace'("{")
-    ||||text(word'("2"))
-    ||||rbrace'("}")
-    "###);
-    assert_debug_snapshot!(parse(r#"\displaystyle 1 \over 2"#), @r###"
+    // subscript
+    assert_debug_snapshot!(parse(r#"\displaystyle x_1"#), @r###"
     root
     |cmd
     ||cmd-name("\\displaystyle")
-    ||space'(" ")
     ||args
-    |||text(word'("1"),space'(" "))
+    |||space'(" ")
+    |||attach-comp
+    ||||args
+    |||||text(word'("x"))
+    ||||underline'("_")
+    ||||word'("1")
+    "###);
+    // prime
+    assert_debug_snapshot!(parse(r#"\displaystyle x'"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||args
+    |||space'(" ")
+    |||attach-comp
+    ||||args
+    |||||text(word'("x"))
+    ||||apostrophe'("'")
+    "###);
+    // todo
+    // Description: doesn't panic on incorect left association
+    // left1 commands
+    assert_debug_snapshot!(parse(r#"\displaystyle\sum\limits"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\displaystyle")
     ||args
     |||cmd
-    ||||cmd-name("\\over")
     ||||args
-    |||||space'(" ")
-    |||||text(word'("2"))
+    |||||cmd(cmd-name("\\sum"))
+    ||||cmd-name("\\limits")
     "###);
-}
-
-#[test]
-fn right_greedy() {
-    assert_debug_snapshot!(parse(r#"\displaystyle"#), @r###"
+    // subscript
+    assert_debug_snapshot!(parse(r#"\displaystyle x_1"#), @r###"
     root
-    |cmd(cmd-name("\\displaystyle"))
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||args
+    |||space'(" ")
+    |||attach-comp
+    ||||args
+    |||||text(word'("x"))
+    ||||underline'("_")
+    ||||word'("1")
     "###);
+    // prime
+    assert_debug_snapshot!(parse(r#"\displaystyle x'"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||args
+    |||space'(" ")
+    |||attach-comp
+    ||||args
+    |||||text(word'("x"))
+    ||||apostrophe'("'")
+    "###);
+    // Description: all right side content is collected to a single argument
     assert_debug_snapshot!(parse(r#"\displaystyle a b c"#), @r###"
     root
     |cmd
     ||cmd-name("\\displaystyle")
-    ||space'(" ")
     ||args
-    |||text(word'("a"),space'(" "),word'("b"),space'(" "),word'("c"))
-    "###);
-    assert_debug_snapshot!(parse(r#"a + {\displaystyle a b} c"#), @r###"
-    root
-    |text(word'("a"),space'(" "),word'("+"),space'(" "))
-    |curly
-    ||lbrace'("{")
-    ||cmd
-    |||cmd-name("\\displaystyle")
     |||space'(" ")
-    |||args
-    ||||text(word'("a"),space'(" "),word'("b"))
-    ||rbrace'("}")
-    ||space'(" ")
-    |text(word'("c"))
+    |||text(word'("a"),space'(" "),word'("b"),space'(" "),word'("c"))
     "###);
     assert_debug_snapshot!(parse(r#"\displaystyle \sum T"#), @r###"
     root
     |cmd
     ||cmd-name("\\displaystyle")
-    ||space'(" ")
     ||args
+    |||space'(" ")
     |||cmd(cmd-name("\\sum"))
-    ||space'(" ")
-    ||args
+    |||space'(" ")
     |||text(word'("T"))
     "###);
-    assert_debug_snapshot!(parse(r#"\displaystyle {\sum T}"#), @r###"
+    // Curly braces doesn't start a new argument
+    assert_debug_snapshot!(parse(r#"\displaystyle{\sum T}"#), @r###"
     root
     |cmd
     ||cmd-name("\\displaystyle")
-    ||space'(" ")
     ||args
     |||curly
     ||||lbrace'("{")
@@ -179,23 +166,40 @@ fn right_greedy() {
     ||||text(word'("T"))
     ||||rbrace'("}")
     "###);
-    assert_debug_snapshot!(parse(r#"\displaystyle [\sum T]"#), @r###"
+    // Description: doesn't identify brackets as group
+    assert_debug_snapshot!(parse(r#"\displaystyle[\sum T]"#), @r###"
     root
     |cmd
     ||cmd-name("\\displaystyle")
-    ||space'(" ")
-    ||args(lbracket'("["))
     ||args
+    |||lbracket'("[")
     |||cmd(cmd-name("\\sum"))
-    ||space'(" ")
-    ||args
+    |||space'(" ")
     |||text(word'("T"))
-    ||args(rbracket'("]"))
+    |||rbracket'("]")
     "###);
+    // Description: scoped by curly braces
+    assert_debug_snapshot!(parse(r#"a + {\displaystyle a b} c"#), @r###"
+    root
+    |text(word'("a"),space'(" "),word'("+"),space'(" "))
+    |curly
+    ||lbrace'("{")
+    ||cmd
+    |||cmd-name("\\displaystyle")
+    |||args
+    ||||space'(" ")
+    ||||text(word'("a"),space'(" "),word'("b"))
+    ||rbrace'("}")
+    ||space'(" ")
+    |text(word'("c"))
+    "###);
+    // Description: doeesn't affect left side
     assert_debug_snapshot!(parse(r#"T \displaystyle"#), @r###"
     root
     |text(word'("T"),space'(" "))
-    |cmd(cmd-name("\\displaystyle"))
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||args()
     "###);
 }
 
