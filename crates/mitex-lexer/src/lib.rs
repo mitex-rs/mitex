@@ -211,7 +211,7 @@ pub enum Token {
     #[token("_", priority = 2)]
     Underline,
 
-    #[regex(r"[^\s\\%\{\},\$\[\]\(\)\~/=_'^]+", priority = 1)]
+    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/=_'"^]+"#, priority = 1)]
     Word,
 
     #[regex(r"\$\$?")]

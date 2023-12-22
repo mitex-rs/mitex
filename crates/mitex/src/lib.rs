@@ -824,8 +824,8 @@ a & b & c
     #[test]
     fn test_convert_ditto() {
         assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###);
-        assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \" b \" c ""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""text(\"a\"b\"c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \\\"b \\\"c ""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""text(\"a\\\"b\\\"c\")""###);
         assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""text(\"a \\\" b \\\" c\")""###);     
     }
     
