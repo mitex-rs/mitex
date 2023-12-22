@@ -169,14 +169,20 @@ impl MathConverter {
                 }
             }
             ItemAttachComponent => {
+                let mut based = false;
                 let mut first = true;
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     if first {
                         let kind = child.as_token().map(|n| n.kind());
                         if matches!(kind, Some(TokenUnderline | TokenCaret)) {
+                            if !based {
+                                f.write_str("zws")?;
+                            }
                             write!(f, "{}(", child.as_token().unwrap().text())?;
                             first = false;
                             continue;
+                        } else if !matches!(kind, Some(TokenWhiteSpace)) {
+                            based = true;
                         }
                     }
                     self.convert(f, child, spec)?;
@@ -567,6 +573,18 @@ mod tests {
         assert_debug_snapshot!(convert_math(r#"${}_1^2x_3^4$"#), @r###"
         Ok(
             "zws _(1 )^(2 )x _(3 )^(4 )",
+        )
+        "###
+        );
+        assert_debug_snapshot!(convert_math(r#"$_1^2$"#), @r###"
+        Ok(
+            "zws_(1 )zws^(2 )",
+        )
+        "###
+        );
+        assert_debug_snapshot!(convert_math(r#"$\frac{_1^2}{3}$"#), @r###"
+        Ok(
+            "frac(zws_(1 )zws^(2 )zws ,3 zws )",
         )
         "###
         );

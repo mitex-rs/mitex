@@ -3,6 +3,11 @@ use super::prelude::*;
 #[test]
 fn base() {
     // println!("{:#?}", parse(r#"{}_{1}^1"#));
+    assert_debug_snapshot!(parse(r#"_1^2"#), @r###"
+    root
+    |attach-comp(underline'("_"),word'("1"))
+    |attach-comp(caret'("^"),word'("2"))
+    "###);
     assert_debug_snapshot!(parse(r#"{}_{1}^2"#), @r###"
     root
     |attach-comp
