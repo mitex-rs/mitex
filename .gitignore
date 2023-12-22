@@ -2,3 +2,4 @@
 /local
 
 *.pdf
+*.wasm
