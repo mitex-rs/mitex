@@ -260,6 +260,13 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
 
     for c in ascii_str {
         match c {
+            // Find the command name in the spec
+            // If a starred command is not found, recover to a normal command
+            // This is the same behavior as TeX
+            //
+            // We can build a regex set to improve performance
+            // but overall this is not a bottleneck so we don't do it now
+            // And RegexSet heavily increases the binary size
             b'*' => {
                 let spec = &lexer.extras;
                 let mut s = lexer.span();
