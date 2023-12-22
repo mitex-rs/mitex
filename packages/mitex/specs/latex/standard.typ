@@ -647,7 +647,7 @@
   }),
   subarray: define-matrix-env(1, alias: "mitexarray"),
   // Environments
-  aligned: normal-env(it => block(math.op(it))),
+  aligned: normal-env((..args) => if args.pos().len() > 0 { block(math.op(..args)) } else { math.zws }),
   align: define-env(none, alias: "aligned"),
   "align*": define-env(none, alias: "aligned"),
   equation: define-env(none, alias: "aligned"),

@@ -51,6 +51,83 @@ fn left_association() {
 }
 
 #[test]
+fn right_greedy_bug() {
+    assert_debug_snapshot!(parse(r#"\displaystyle\sum\limits"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||args
+    |||cmd(cmd-name("\\sum"))
+    ||args
+    |||cmd(cmd-name("\\limits"))
+    "###);
+    assert_debug_snapshot!(parse(r#"\displaystyle x_1 \frac{1}{2}"#), @r###"
+    root
+    |attach-comp
+    ||args
+    |||cmd
+    ||||cmd-name("\\displaystyle")
+    ||||space'(" ")
+    ||||args
+    |||||text(word'("x"))
+    ||underline'("_")
+    ||word'("1")
+    |space'(" ")
+    |cmd
+    ||cmd-name("\\frac")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("1"))
+    ||||rbrace'("}")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("2"))
+    ||||rbrace'("}")
+    "###);
+    assert_debug_snapshot!(parse(r#"\displaystyle x^1 \frac{1}{2}"#), @r###"
+    root
+    |attach-comp
+    ||args
+    |||cmd
+    ||||cmd-name("\\displaystyle")
+    ||||space'(" ")
+    ||||args
+    |||||text(word'("x"))
+    ||caret'("^")
+    ||word'("1")
+    |space'(" ")
+    |cmd
+    ||cmd-name("\\frac")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("1"))
+    ||||rbrace'("}")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("2"))
+    ||||rbrace'("}")
+    "###);
+    assert_debug_snapshot!(parse(r#"\displaystyle 1 \over 2"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\displaystyle")
+    ||space'(" ")
+    ||args
+    |||text(word'("1"),space'(" "))
+    ||args
+    |||cmd
+    ||||cmd-name("\\over")
+    ||||args
+    |||||space'(" ")
+    |||||text(word'("2"))
+    "###);
+}
+
+#[test]
 fn right_greedy() {
     assert_debug_snapshot!(parse(r#"\displaystyle"#), @r###"
     root

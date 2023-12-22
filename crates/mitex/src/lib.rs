@@ -35,6 +35,7 @@ use rowan::SyntaxToken;
 enum LaTeXEnv {
     #[default]
     None,
+    CurlyGroup,
     Matrix,
     Cases,
 }
@@ -118,6 +119,8 @@ impl MathConverter {
                 }
             }
             ItemCurly => {
+                // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
+                let prev = self.enter_env(LaTeXEnv::CurlyGroup);
                 let mut zws = true;
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     match &child.kind() {
@@ -129,8 +132,10 @@ impl MathConverter {
                     self.convert(f, child, spec)?;
                 }
                 if zws {
+                    // deal with case like `{}_1^2x_3^4`
                     f.write_str("zws ")?;
                 }
+                self.exit_env(prev);
             }
             // handle lr
             ClauseLR => {
@@ -232,19 +237,17 @@ impl MathConverter {
                 f.write_str("\\]")?;
             }
             TokenAnd => {
-                if matches!(self.env, LaTeXEnv::Matrix) {
-                    f.write_str(",")?;
-                } else {
-                    f.write_str("&")?;
+                match self.env {
+                    LaTeXEnv::Matrix => f.write_str("zws ,")?,
+                    _ => f.write_str("&")?,
                 }
             }
             ItemNewLine => {
-                if matches!(self.env, LaTeXEnv::Matrix) {
-                    f.write_str("; ")?;
-                } else if matches!(self.env, LaTeXEnv::Cases) {
-                    f.write_str(", ")?;
-                } else {
-                    f.write_str("\\ ")?;
+                match self.env {
+                    LaTeXEnv::Matrix => f.write_str("zws ;")?,
+                    LaTeXEnv::Cases => f.write_str(",")?,
+                    LaTeXEnv::CurlyGroup => {}
+                    _ => f.write_str("\\ ")?,
                 }
             }
             // for left/right
@@ -612,7 +615,7 @@ mod tests {
     #[test]
     fn test_unreachable() {
         // println!("{:#?}", convert_math(r#"$u^-$"#));
-        assert_debug_snapshot!(convert_math(r#"$u^−$"#).unwrap(), @r###""zws u ^(− )""###
+        assert_debug_snapshot!(convert_math(r#"$u^−$"#).unwrap(), @r###""u ^(− )""###
         );
     }
 
@@ -693,23 +696,19 @@ mod tests {
         "###
         );
     }
-
+    
     #[test]
-    fn test_convert_matrix_bug() {
+    fn test_convert_matrix() {
         assert_debug_snapshot!(convert_math(
                      r#"$\begin{pmatrix}x{\\}x\end{pmatrix}$"#
             ).unwrap(),
-            @r###""pmatrix(x ; x )""###
+            @r###""pmatrix(x x )""###
         );
         assert_debug_snapshot!(convert_math(
-                     r#"$\begin{pmatrix}\\&\ddots\end{pmatrix}$"#
+                     r#"$\begin{pmatrix} \\ & \ddots \end{pmatrix}$"#
             ).unwrap(),
-            @r###""pmatrix(; ,dots.down )""###
+            @r###""pmatrix(zws ; zws , dots.down  )""###
         );
-    }
-
-    #[test]
-    fn test_convert_matrix() {
         assert_debug_snapshot!(convert_math(
                 r#"$\begin{matrix}
         1 & 2 & 3\\
@@ -718,7 +717,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "matrix(1  , 2  , 3 ; \na  , b  , c \n)",
+            "matrix(1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -730,7 +729,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "Vmatrix(1  , 2  , 3 ; \na  , b  , c \n)",
+            "Vmatrix(1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -742,7 +741,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r \n        ,1  , 2  , 3 ; \na  , b  , c \n)",
+            "mitexarray(arg0: l c r \n        ,1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -782,7 +781,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "cases(1  & 2  & 3 , \na  & b  & c \n)",
+            "cases(1  & 2  & 3 ,\na  & b  & c \n)",
         )
         "###
         );
