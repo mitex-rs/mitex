@@ -227,11 +227,14 @@ impl MathConverter {
             TokenCaret => {
                 f.write_str("\\^")?;
             }
+            TokenUnderline => {
+                f.write_str("\\_")?;
+            }
             TokenDitto => {
                 f.write_str("\\\"")?;
             }
-            TokenUnderline => {
-                f.write_str("\\_")?;
+            TokenSemicolon => {
+                f.write_str("\\;")?;
             }
             TokenLParen => {
                 f.write_str("\\(")?;

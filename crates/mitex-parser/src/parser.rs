@@ -378,7 +378,8 @@ impl<'a> Parser<'a> {
             | Token::Tilde
             | Token::Divide
             | Token::Equal
-            | Token::Ditto => self.eat(),
+            | Token::Ditto
+            | Token::Semicolon => self.eat(),
             Token::Word => {
                 if not_prefer_single_char {
                     self.text()

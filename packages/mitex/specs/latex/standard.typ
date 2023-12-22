@@ -699,8 +699,8 @@
   }),
   subarray: define-matrix-env(1, alias: "mitexarray"),
   // Environments
-  aligned: normal-env(call-or-ignore(it => block(math.op(it)))),
-  alignedat: define-env(1, alias: "aligned", handle: (arg0: none, it) => block(math.op(it))),
+  aligned: normal-env(call-or-ignore(it => pad(y: 0.2em, block(math.op(it))))),
+  alignedat: define-env(1, alias: "alignedat", handle: (arg0: none, it) => pad(y: 0.2em, block(math.op(it)))),
   align: define-env(none, alias: "aligned"),
   "align*": define-env(none, alias: "aligned"),
   equation: define-env(none, alias: "aligned"),
@@ -709,7 +709,7 @@
   gather: define-env(none, alias: "aligned"),
   gathered: define-env(none, alias: "aligned"),
   cases: define-cases-env(alias: "cases"),
-  cases: define-cases-env(alias: "cases", handle: math.cases.with(reverse: true)),
+  rcases: define-cases-env(alias: "rcases", handle: math.cases.with(reverse: true)),
   // Specials
   label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   tag: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
