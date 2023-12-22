@@ -104,30 +104,28 @@ pub struct EnvMacro<'a> {
 
 #[derive(Debug)]
 pub enum Macro<'a> {
+    /// Command macro
     Cmd(Arc<CmdMacro<'a>>),
+    /// Environment macro
     Env(Arc<EnvMacro<'a>>),
 }
 
 #[derive(Debug)]
-pub enum MacroifyToken<'a> {
-    Token(PeekTok<'a>),
-    Cmd {
-        reading: Arc<CmdMacro<'a>>,
-        has_read_arg_protect: u8,
-        has_read: u32,
-    },
-    EnvBegin {
-        reading: Arc<EnvMacro<'a>>,
-        has_read_arg_protect: u8,
-        has_read: u32,
-    },
-    EnvEnd {
-        reading: Arc<EnvMacro<'a>>,
-        has_read_arg_protect: u8,
-        has_read: u32,
-    },
+pub struct MacroState<T> {
+    pub reading: Arc<T>,
+    /// The real num of arguments read by engine
+    pub arg_protect: u8,
+    /// The cursor of tokens in macro definition
+    pub has_read_tokens: u32,
+}
+
+#[derive(Debug)]
+pub enum MacroNode<'a> {
+    Cmd(MacroState<CmdMacro<'a>>),
+    EnvBegin(MacroState<EnvMacro<'a>>),
+    EnvEnd(MacroState<EnvMacro<'a>>),
     ArgSlot(Range<usize>),
-    ReadingTok(Range<usize>),
+    HalfReadingTok(Range<usize>),
 }
 
 /// MacroEngine has exact same interface as Lexer, but it expands macros.
@@ -144,7 +142,9 @@ pub struct MacroEngine<'a> {
     /// Environment stack
     env_stack: Vec<EnvMacro<'a>>,
     /// Macro stack
-    pub reading_macro: Vec<MacroifyToken<'a>>,
+    pub reading_macro: Vec<MacroNode<'a>>,
+    /// Toekns used by macro stack
+    pub scanned_tokens: Vec<PeekTok<'a>>,
 }
 
 impl<'a> MacroEngine<'a> {
@@ -156,6 +156,7 @@ impl<'a> MacroEngine<'a> {
             globals: MacroMap::default(),
             env_stack: Vec::new(),
             reading_macro: Vec::new(),
+            scanned_tokens: Vec::new(),
         }
     }
 
