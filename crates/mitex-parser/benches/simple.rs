@@ -76,6 +76,14 @@ fn sqrt_pattern(bencher: Bencher) {
     bench(bencher, &SQRT_PATTERN, DEFAULT_SPEC.clone());
 }
 
+static STARRED_COMMAND: once_cell::sync::Lazy<String> =
+    once_cell::sync::Lazy::new(|| "\\operatorname*{a}".repeat(5000));
+
+#[divan::bench]
+fn starred_command(bencher: Bencher) {
+    bench(bencher, &STARRED_COMMAND, DEFAULT_SPEC.clone());
+}
+
 /*
 last^1
 simple                  fastest       │ slowest       │ median        │ mean          │ samples │ iters
@@ -119,7 +127,7 @@ simple                  fastest       │ slowest       │ median        │ me
 │                       grow:         │               │               │               │         │
 │                         19          │ 19            │ 19            │ 19            │         │
 │                         3.151 MB    │ 3.151 MB      │ 3.151 MB      │ 3.151 MB      │         │
-├─ slice_word           2.365 ms      │ 3.4 ms        │ 2.526 ms      │ 2.595 ms      │ 100     │ 100
+├─ slice_word           2.696 ms      │ 4.247 ms      │ 3.024 ms      │ 3.09 ms       │ 100     │ 100
 │                       alloc:        │               │               │               │         │
 │                         12          │ 12            │ 12            │ 12            │         │
 │                         960.9 KB    │ 960.9 KB      │ 960.9 KB      │ 960.9 KB      │         │
@@ -129,14 +137,24 @@ simple                  fastest       │ slowest       │ median        │ me
 │                       grow:         │               │               │               │         │
 │                         18          │ 18            │ 18            │ 18            │         │
 │                         1.578 MB    │ 1.578 MB      │ 1.578 MB      │ 1.578 MB      │         │
-╰─ sqrt_pattern         1.906 ms      │ 3.467 ms      │ 2.07 ms       │ 2.165 ms      │ 100     │ 100
+├─ sqrt_pattern         2.07 ms       │ 4.043 ms      │ 2.28 ms       │ 2.384 ms      │ 100     │ 100
+│                       alloc:        │               │               │               │         │
+│                         7523        │ 7523          │ 7523          │ 7523          │         │
+│                         1.021 MB    │ 1.021 MB      │ 1.021 MB      │ 1.021 MB      │         │
+│                       dealloc:      │               │               │               │         │
+│                         8           │ 8             │ 8             │ 8             │         │
+│                         793 KB      │ 793 KB        │ 793 KB        │ 793 KB        │         │
+│                       grow:         │               │               │               │         │
+│                         17          │ 17            │ 17            │ 17            │         │
+│                         792 KB      │ 792 KB        │ 792 KB        │ 792 KB        │         │
+╰─ starred_command      1.035 ms      │ 4.854 ms      │ 1.304 ms      │ 1.54 ms       │ 100     │ 100
                         alloc:        │               │               │               │         │
-                          7523        │ 7523          │ 7523          │ 7523          │         │
-                          1.021 MB    │ 1.021 MB      │ 1.021 MB      │ 1.021 MB      │         │
+                          18          │ 18            │ 18            │ 18            │         │
+                          241.2 KB    │ 241.2 KB      │ 241.2 KB      │ 241.2 KB      │         │
                         dealloc:      │               │               │               │         │
-                          8           │ 8             │ 8             │ 8             │         │
-                          793 KB      │ 793 KB        │ 793 KB        │ 793 KB        │         │
+                          7           │ 7             │ 7             │ 7             │         │
+                          399.7 KB    │ 399.7 KB      │ 399.7 KB      │ 399.7 KB      │         │
                         grow:         │               │               │               │         │
-                          17          │ 17            │ 17            │ 17            │         │
-                          792 KB      │ 792 KB        │ 792 KB        │ 792 KB        │         │
+                          16          │ 16            │ 16            │ 16            │         │
+                          398.8 KB    │ 398.8 KB      │ 398.8 KB      │ 398.8 KB      │         │
  */

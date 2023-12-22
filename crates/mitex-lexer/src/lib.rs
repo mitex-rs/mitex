@@ -1,4 +1,4 @@
-use logos::Logos;
+use logos::{Logos, Source};
 mod macro_engine;
 pub mod snapshot_map;
 
@@ -260,8 +260,25 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
 
     for c in ascii_str {
         match c {
+            // Find the command name in the spec
+            // If a starred command is not found, recover to a normal command
+            // This is the same behavior as TeX
+            //
+            // We can build a regex set to improve performance
+            // but overall this is not a bottleneck so we don't do it now
+            // And RegexSet heavily increases the binary size
             b'*' => {
-                lexer.bump(LEN_ASCII);
+                let spec = &lexer.extras;
+                let mut s = lexer.span();
+                // for char `\`
+                s.start += 1;
+                // for char  `*`
+                s.end += 1;
+                let name = lexer.source().slice(s);
+                if name.and_then(|s| spec.get(s)).is_some() {
+                    lexer.bump(LEN_ASCII);
+                }
+
                 break;
             }
             c if c.is_ascii_alphabetic() => lexer.bump(LEN_ASCII),
