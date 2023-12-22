@@ -728,18 +728,13 @@ impl<'a> Parser<'a> {
     fn match_arguments<const GREEDY: bool>(&mut self, searcher: ArgMatcher) {
         self.list_state.may_store_last(None);
         let last = self.list_last();
-        let start = if !GREEDY {
-            self.list_state.may_store_start(None);
-            self.list_start()
-        } else {
-            None
-        };
+        let start = self.list_start();
+        self.list_state
+            .may_store_start(GREEDY.then(|| self.builder.checkpoint()));
 
         self.match_arguments_::<GREEDY>(searcher);
 
-        if !GREEDY {
-            self.list_state.may_store_start(start);
-        }
+        self.list_state.may_store_start(start);
         self.list_state.may_store_last(last);
     }
 
