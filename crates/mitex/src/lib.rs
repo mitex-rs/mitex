@@ -35,6 +35,7 @@ use rowan::SyntaxToken;
 enum LaTeXEnv {
     #[default]
     None,
+    SubStack,
     CurlyGroup,
     Matrix,
     Cases,
@@ -120,13 +121,21 @@ impl MathConverter {
             }
             ItemCurly => {
                 // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
-                let prev = self.enter_env(LaTeXEnv::CurlyGroup);
+                let mut prev = LaTeXEnv::None;
+                let mut enter_new_env = false;
+                // hack for \substack{abc \\ bcd}
+                if !matches!(self.env, LaTeXEnv::SubStack) {
+                    prev = self.enter_env(LaTeXEnv::CurlyGroup);
+                    enter_new_env = true;
+                }
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
                 // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`  
                 f.write_str("zws ")?;
-                self.exit_env(prev);
+                if enter_new_env {
+                    self.exit_env(prev);
+                }
             }
             // handle lr
             ClauseLR => {
@@ -322,11 +331,17 @@ impl MathConverter {
 
                 write!(f, "{}", typst_name)?;
 
+                // hack for \substack{abc \\ bcd}
+                let mut prev = LaTeXEnv::None;
+                if typst_name == "substack" {
+                    prev = self.enter_env(LaTeXEnv::SubStack);
+                }
+                
                 if let ArgShape::Right(ArgPattern::None) = arg_shape {
                     f.write_char(' ')?
                 } else {
                     f.write_char('(')?;
-
+                    
                     let mut cnt = 0;
                     let args_len = args.len();
                     for arg in args {
@@ -337,8 +352,13 @@ impl MathConverter {
                             f.write_char(',')?;
                         }
                     }
-
+                    
                     f.write_char(')')?;
+                }
+                
+                // hack for \substack{abc \\ bcd}
+                if typst_name == "substack" {
+                    self.exit_env(prev);
                 }
             }
             ItemEnv => {

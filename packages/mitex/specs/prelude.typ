@@ -33,7 +33,7 @@
     },
     ctx_feature: ( kind: "none" ),
     alias: alias,
-  ), if handle != none { (alias: s, handle: handle) } else { none })
+  ), if handle != none { (alias: alias, handle: handle) } else { none })
 }
 
 #let define-cases-env(alias: none, handle: none) = {
