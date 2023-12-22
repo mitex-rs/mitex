@@ -454,7 +454,7 @@ impl<'a> Parser<'a> {
         // Prepare the argument matcher for succeeding parsers
         let cmd_name = self.lexer.peek_text().unwrap().strip_prefix('\\').unwrap();
         let arg_shape = self.spec.get_cmd(cmd_name).map(|cmd| &cmd.args);
-        let (right_pat, is_infix) = match arg_shape {
+        let right_pat = match arg_shape {
             None | Some(ArgShape::Right(ArgPattern::None | ArgPattern::FixedLenTerm(0))) => {
                 self.builder.start_node(ItemCmd.into());
                 self.eat();
@@ -470,30 +470,31 @@ impl<'a> Parser<'a> {
             }
             Some(ArgShape::Right(pattern)) => {
                 self.builder.start_node(ItemCmd.into());
-                (pattern, false)
+                pattern
             }
             Some(ArgShape::InfixGreedy) => {
                 // Wrap all previous items in the scope of list
                 let pos = self.list_state.take_start();
                 self.start_command_at(pos);
-                (&ArgPattern::Greedy, true)
+                &ArgPattern::Greedy
             }
         };
         let searcher = self.arg_matchers.start_match(right_pat);
+        let is_greedy = searcher.is_greedy();
 
         self.eat();
 
-        if is_infix {
+        if is_greedy {
             self.builder.start_node(ClauseArgument.into());
-            self.match_arguments::<false>(searcher);
+            self.match_arguments::<true>(searcher);
             self.builder.finish_node();
         } else {
-            self.match_arguments::<true>(searcher);
+            self.match_arguments::<false>(searcher);
         }
 
         self.builder.finish_node();
 
-        is_infix
+        is_greedy
     }
 
     /// Item parsers
@@ -519,7 +520,7 @@ impl<'a> Parser<'a> {
             let searcher = right_pat.map(|right_pat| self.arg_matchers.start_match(right_pat));
 
             if let Some(searcher) = searcher {
-                self.match_arguments::<true>(searcher);
+                self.match_arguments::<false>(searcher);
             }
 
             self.builder.finish_node();
@@ -590,14 +591,21 @@ impl<'a> Parser<'a> {
     /// - Parenthesis/p: ()
     /// - Term/t: any rest of terms, typically {} or single char
     #[inline]
-    fn match_arguments_<const WRAP_ARGS: bool>(&mut self, mut searcher: ArgMatcher) {
-        // const INFIX = !WRAP_ARGS
+    fn match_arguments_<const GREEDY: bool>(&mut self, mut searcher: ArgMatcher) {
+        assert!((GREEDY == searcher.is_greedy()), "GREEDY mismatched");
 
-        fn arg<'a, const WRAP_ARGS: bool, T>(
+        // const WRAP_ARGS = !GREEDY
+        macro_rules! k_wrap_args {
+            () => {
+                !GREEDY
+            };
+        }
+
+        fn arg<'a, const GREEDY: bool, T>(
             this: &mut Parser<'a>,
             f: impl FnOnce(&mut Parser<'a>) -> T,
         ) -> T {
-            if WRAP_ARGS {
+            if k_wrap_args!() {
                 this.builder.start_node(ClauseArgument.into());
                 let res = f(this);
                 this.builder.finish_node();
@@ -608,7 +616,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let mut current = if !WRAP_ARGS {
+        let mut current = if !k_wrap_args!() {
             Some(self.builder.checkpoint())
         } else {
             None
@@ -622,7 +630,7 @@ impl<'a> Parser<'a> {
                 // mark and (`&`)
                 //
                 // Condition explained.
-                // If it is a greedy command/operator, i.e. searcher.is_greedy(),
+                // If it is a greedy command/operator, i.e. GREEDY,
                 //   stops only if parser is inside of some environment
                 //   e.g. (stops) \begin{matrix} \displaystyle 1 \\ 3 \\ \end{matrix}
                 //   e.g. (don't stops) \displaystyle \frac{1}{2} \\ \frac{1}{2}
@@ -630,15 +638,15 @@ impl<'a> Parser<'a> {
                 // Othersise, it is a regular command,
                 //   treated as a command (with name `\`) first.
                 //   e.g.(don't stops) \begin{matrix}\frac{1} \\ {2}\end{matrix}
-                Token::NewLine if searcher.is_greedy() && self.inside_env() => return,
+                Token::NewLine if GREEDY && self.inside_env() => return,
                 // Argument matches is stopped on these tokens anyway
                 Token::And => return,
-                // WRAP_ARGS also determines whether it could be regards as an attachment.
-                Token::Caret | Token::Underline if WRAP_ARGS => {
+                // k_wrap_args!() also determines whether it could be regards as an attachment.
+                Token::Caret | Token::Underline if k_wrap_args!() => {
                     return;
                 }
                 // prefer rob characters from words as arguments
-                Token::Word if !searcher.is_greedy() => {
+                Token::Word if !GREEDY => {
                     // Split the word into single characters for term matching
                     let mut split_cnt = 0usize;
                     for c in self.lexer.peek_text().unwrap().chars() {
@@ -650,12 +658,12 @@ impl<'a> Parser<'a> {
                         }
                         split_cnt += c.len_utf8();
 
-                        arg::<WRAP_ARGS, _>(self, |this| {
+                        arg::<GREEDY, _>(self, |this| {
                             this.builder.token(TokenWord.into(), &c.to_string())
                         });
                     }
 
-                    if !WRAP_ARGS {
+                    if !k_wrap_args!() {
                         // If consumed to end, this is right
                         // Otherwise, whether it is right does not matter
                         current = Some(self.builder.checkpoint());
@@ -664,7 +672,7 @@ impl<'a> Parser<'a> {
                     if split_cnt > 0 {
                         self.lexer.consume_word(split_cnt);
                     }
-                    if !WRAP_ARGS {
+                    if !k_wrap_args!() {
                         self.list_state.may_store_last(current);
                     }
                 }
@@ -679,12 +687,12 @@ impl<'a> Parser<'a> {
                         return;
                     };
 
-                    if !WRAP_ARGS {
+                    if !k_wrap_args!() {
                         // If consumed to end, this is right
                         // Otherwise, whether it is right does not matter
                         current = Some(self.builder.checkpoint());
                     }
-                    arg::<WRAP_ARGS, _>(self, |this| {
+                    arg::<GREEDY, _>(self, |this| {
                         if modified_as_term {
                             this.eat();
                         } else {
@@ -692,7 +700,7 @@ impl<'a> Parser<'a> {
                         }
                     });
 
-                    if !WRAP_ARGS {
+                    if !k_wrap_args!() {
                         self.list_state.may_store_last(current);
                     }
                 }
@@ -702,13 +710,13 @@ impl<'a> Parser<'a> {
                         return;
                     }
 
-                    if !WRAP_ARGS {
+                    if !k_wrap_args!() {
                         // If consumed to end, this is right
                         // Otherwise, whether it is right does not matter
                         current = Some(self.builder.checkpoint());
                     }
-                    let has_rev_argument = arg::<WRAP_ARGS, _>(self, |this| this.content(true));
-                    if !WRAP_ARGS && !has_rev_argument {
+                    let has_rev_argument = arg::<GREEDY, _>(self, |this| this.content(true));
+                    if !k_wrap_args!() && !has_rev_argument {
                         self.list_state.may_store_last(current);
                     }
                 }
@@ -717,19 +725,19 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    fn match_arguments<const NOT_INFIX: bool>(&mut self, searcher: ArgMatcher) {
+    fn match_arguments<const GREEDY: bool>(&mut self, searcher: ArgMatcher) {
         self.list_state.may_store_last(None);
         let last = self.list_last();
-        let start = if NOT_INFIX {
+        let start = if !GREEDY {
             self.list_state.may_store_start(None);
             self.list_start()
         } else {
             None
         };
 
-        self.match_arguments_::<NOT_INFIX>(searcher);
+        self.match_arguments_::<GREEDY>(searcher);
 
-        if NOT_INFIX {
+        if !GREEDY {
             self.list_state.may_store_start(start);
         }
         self.list_state.may_store_last(last);
