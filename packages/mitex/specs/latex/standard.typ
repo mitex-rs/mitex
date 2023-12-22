@@ -30,7 +30,7 @@
 #let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
-#let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: arrow-sym, it))$)
+#let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: #arrow-sym, it))$)
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: fn)
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
 #let matrix-handle(delim: none, handle: none) = define-matrix-env(none, alias: none, handle: math.mat.with(delim: delim))
@@ -639,14 +639,14 @@
   ngeqslant: define-sym("gt.eq.not"),
   precneqq: define-sym("prec.nequiv"),
   gneq: define-sym("⪈"),
-  xleftarrow: arrow-handle($<--$),
-  xrightarrow: arrow-handle($-->$),
-  xLeftarrow: arrow-handle($<==$),
-  xRightarrow: arrow-handle($==>$),
-  xleftrightarrow: arrow-handle($<->$),
-  xLeftrightarrow: arrow-handle($<=>$),
-  xhookleftarrow: arrow-handle($-->$),
-  xhookrightarrow: arrow-handle(math.arrow.l.hook),
+  xleftarrow: arrow-handle(math.arrow.l.long),
+  xrightarrow: arrow-handle(math.arrow.r.long),
+  xLeftarrow: arrow-handle(math.arrow.l.double.long),
+  xRightarrow: arrow-handle(math.arrow.r.double.long),
+  xleftrightarrow: arrow-handle(math.arrow.l.r),
+  xLeftrightarrow: arrow-handle(math.arrow.l.r.double),
+  xhookleftarrow: arrow-handle(math.arrow.l.hook),
+  xhookrightarrow: arrow-handle(math.arrow.r.hook),
   xtwoheadleftarrow: arrow-handle(math.arrow.l.twohead),
   xtwoheadrightarrow: arrow-handle(math.arrow.r.twohead),
   xleftharpoonup: arrow-handle(math.harpoon.lt),
@@ -656,7 +656,7 @@
   xleftrightharpoons: arrow-handle(math.harpoons.ltrb),
   xrightleftharpoons: arrow-handle(math.harpoons.rtlb),
   xtofrom: arrow-handle(math.arrows.rl),
-  xmapsto: arrow-handle($|->$),
+  xmapsto: arrow-handle(math.arrow.r.bar),
   xlongequal: arrow-handle(math.eq),
   pmod: define-cmd(1, handle: it => $quad (mod thick it)$),
   pod: define-cmd(1, handle: it => $quad (it)$),
