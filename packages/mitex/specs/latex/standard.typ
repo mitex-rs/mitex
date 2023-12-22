@@ -2,6 +2,7 @@
 
 #import "../prelude.typ": *
 
+// 0. Some useful internal variables or functions
 #let mitex-color-map = (
   "red": rgb(255, 0, 0),
   "green": rgb(0, 255, 0),
@@ -29,6 +30,7 @@
 #let get-tex-color(texcolor) = get-tex-color-from-arr(texcolor.children)
 #let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
+// 1. functions created to make it easier to define a spec
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
 #let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: #arrow-sym, it))$)
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: fn)
@@ -39,6 +41,8 @@
 #let ignore-me = it => {}
 #let ignore-sym = define-sym("")
 
+// 2. Standard package definitions, generate specs and scopes,
+//    for parser/convert and typst respectively
 #let (spec, scope) = process-spec((
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
@@ -809,4 +813,5 @@
   LoadClassWithOptions: ignore-sym,
 ))
 
+// export: include package name, spec and scope 
 #let package = (name: "latex-std", spec: (commands: spec), scope: scope)

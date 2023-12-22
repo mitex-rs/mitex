@@ -20,6 +20,16 @@ Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the
 - [ ] "usepackage" support, which means that you can change set of commands by telling MiTeX to use a list of packages.
 - [ ] Text mode support, enabling the rendering entire LaTeX documents in Typst!
 
+## Installation
+
+Note: MiTeX is waiting for publishing as a [package](https://typst.app/docs/packages/). Before that, you can use it by cloning the repo and importing it from inside of the directory locally, also see the [comments](https://github.com/OrangeX4/mitex/issues/17).
+
+With published package, you can import it by one line:
+
+```typst
+#import "@preview/mitex:0.1.0": *
+```
+
 ## Usage
 
 - Use `mitex-convert` to convert LaTeX code into Typst code in string.
@@ -47,6 +57,7 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 
 ![example](packages/mitex/examples/example.png)
 
+
 ## Differences between MiTeX and other solutions
 
 MiTeX has different objectives compared to [texmath](https://github.com/jgm/texmath) (a.k.a. [pandoc](https://pandoc.org/)):
@@ -60,6 +71,40 @@ Another example is that MiTeX transforms `(\frac{1}{2})` into `\(frac(1, 2)\)` i
 
 **Certainly, the greatest advantage is that you can directly write LaTeX content in Typst without the need for manual conversion!**
 
-## Submit Issues
+
+## Submitting Issues
 
 If you find missing commands or bugs of MiTeX, please feel free to submit an issue [here](https://github.com/OrangeX4/mitex/issues).
+
+
+## Contributing to MiTeX
+
+Currently, MiTeX maintains following three parts of code:
+
+- A TeX parser library written in **Rust**, see [mitex-lexer](./crates/mitex-lexer) and [mitex-parser](./crates/mitex-parser).
+- A TeX to Typst converter library written in **Rust**, see [mitex](./crates/mitex).
+- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](./packages/mitex/specs).
+
+For a translation process, for example, we have:
+
+```
+\frac{1}{2}
+
+===[parser]===> AST ===[converter]===>
+
+#eval("$frac(1, 2)$", scope: (frac: (num, den) => $(num)/(den)$))
+```
+
+You can use the `#mitex-convert()` function to get the Typst Code generated from LaTeX Code.
+
+
+### Add missing TeX commands
+
+Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](./packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
+
+In the future, we will provide the ability to customize TeX commands, which will make it easier for you to use the commands you create for yourself.
+
+
+### Develop the parser and the converter
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
