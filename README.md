@@ -71,11 +71,11 @@ Another example is that MiTeX transforms `(\frac{1}{2})` into `\(frac(1, 2)\)` i
 
 **Certainly, the greatest advantage is that you can directly write LaTeX content in Typst without the need for manual conversion!**
 
-## Submit Issues
+## Submitting Issues
 
 If you find missing commands or bugs of MiTeX, please feel free to submit an issue [here](https://github.com/OrangeX4/mitex/issues).
 
-## Contribute to MiTeX
+## Contributing to MiTeX
 
 Currently, MiTeX maintains following three parts of code:
 
