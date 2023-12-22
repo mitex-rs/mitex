@@ -76,6 +76,14 @@ fn sqrt_pattern(bencher: Bencher) {
     bench(bencher, &SQRT_PATTERN, DEFAULT_SPEC.clone());
 }
 
+static STARRED_COMMAND: once_cell::sync::Lazy<String> =
+    once_cell::sync::Lazy::new(|| "\\operatorname*{a}".repeat(5000));
+
+#[divan::bench]
+fn starred_command(bencher: Bencher) {
+    bench(bencher, &STARRED_COMMAND, DEFAULT_SPEC.clone());
+}
+
 /*
 last^1
 simple                  fastest       │ slowest       │ median        │ mean          │ samples │ iters
