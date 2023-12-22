@@ -1,6 +1,30 @@
 use super::prelude::*;
 
 #[test]
+fn test_starrd_command() {
+    // Description: If the starred command is defined, it is treated as a starred
+    assert_debug_snapshot!(parse(r#"\operatorname*{a}"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\operatorname*")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("a"))
+    ||||rbrace'("}")
+    "###
+    );
+    // Description: If the starred command is not defined, it is treated as a normal
+    // command
+    assert_debug_snapshot!(parse(r#"\varphi*1"#), @r###"
+    root
+    |cmd(cmd-name("\\varphi"))
+    |text(word'("*1"))
+    "###
+    );
+}
+
+#[test]
 fn left_association() {
     assert_debug_snapshot!(parse(r#"\sum"#), @r###"
     root
