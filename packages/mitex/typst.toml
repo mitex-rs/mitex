@@ -3,7 +3,7 @@ name = "mitex"
 version = "0.1.0"
 entrypoint = "lib.typ"
 authors = ["Myriad-Dreamin", "OrangeX4"]
-license = "MIT"
+license = "Apache-2.0"
 description = "LaTeX support for Typst, powered by wasm."
 
 homepage = "https://github.com/OrangeX4/typst-mitex"
