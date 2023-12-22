@@ -3,6 +3,7 @@ use wasm_minimal_protocol::*;
 
 initiate_protocol!();
 
+#[cfg(feature = "spec-api")]
 #[wasm_func]
 pub fn compile_spec(input: &[u8]) -> Result<Vec<u8>, String> {
     let res: mitex_spec::JsonCommandSpec =
