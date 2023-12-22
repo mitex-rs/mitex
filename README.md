@@ -26,9 +26,8 @@ Note: MiTeX is waiting for publishing as a [package](https://typst.app/docs/pack
 
 With published package, you can import it by one line:
 
-```
-#import "/path/to/mitex/packages/mitex/lib.typ": *
-// #import "@preview/mitex:0.1.0": *
+```typst
+#import "@preview/mitex:0.1.0": *
 ```
 
 ## Usage
@@ -58,6 +57,7 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 
 ![example](packages/mitex/examples/example.png)
 
+
 ## Differences between MiTeX and other solutions
 
 MiTeX has different objectives compared to [texmath](https://github.com/jgm/texmath) (a.k.a. [pandoc](https://pandoc.org/)):
@@ -71,9 +71,11 @@ Another example is that MiTeX transforms `(\frac{1}{2})` into `\(frac(1, 2)\)` i
 
 **Certainly, the greatest advantage is that you can directly write LaTeX content in Typst without the need for manual conversion!**
 
+
 ## Submitting Issues
 
 If you find missing commands or bugs of MiTeX, please feel free to submit an issue [here](https://github.com/OrangeX4/mitex/issues).
+
 
 ## Contributing to MiTeX
 
@@ -83,9 +85,25 @@ Currently, MiTeX maintains following three parts of code:
 - A TeX to Typst converter library written in **Rust**, see [mitex](./crates/mitex).
 - A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](./packages/mitex/specs).
 
+For a translation process, for example, we have:
+
+```
+\frac{1}{2}
+
+===[parser]===> AST ===[converter]===>
+
+#eval("$frac(1, 2)$", scope: (frac: (num, den) => $(num)/(den)$))
+```
+
+You can use the `\mitex-convert()` function to get the Typst Code generated from LaTeX Code.
+
+
 ### Add missing TeX commands
 
 Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](./packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
+
+In the future, we will provide the ability to customize TeX commands, which will make it easier for you to use the commands you create for yourself.
+
 
 ### Develop the parser and the converter
 
