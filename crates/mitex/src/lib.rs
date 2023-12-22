@@ -324,6 +324,10 @@ impl MathConverter {
                                         if matches!(text.kind(), TokenLBrace | TokenRBrace) {
                                             return;
                                         }
+                                        if matches!(text.kind(), TokenDitto) {
+                                            f.write_str("\\\"").unwrap();
+                                            return;
+                                        }
                                         f.write_str(text.text()).unwrap();
                                     }
                                 });
@@ -817,6 +821,14 @@ a & b & c
         );
     }
 
+    #[test]
+    fn test_convert_ditto() {
+        assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###);
+        assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \" b \" c ""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""text(\"a\"b\"c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""text(\"a \\\" b \\\" c\")""###);     
+    }
+    
     #[test]
     fn test_convert_text() {
         assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""text(\"abc\")""###);
