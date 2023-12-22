@@ -264,6 +264,21 @@ fn right_greedy() {
 
 #[test]
 fn infix() {
+    assert_debug_snapshot!(parse(r#"\over_1"#), @r###"
+    root
+    |cmd
+    ||args()
+    ||cmd-name("\\over")
+    ||args
+    |||attach-comp(underline'("_"),word'("1"))
+    "###);
+    assert_debug_snapshot!(parse(r#"\over'"#), @r###"
+    root
+    |cmd
+    ||args()
+    ||cmd-name("\\over")
+    ||args(apostrophe'("'"))
+    "###);
     assert_debug_snapshot!(parse(r#"a \over b'_1"#), @r###"
     root
     |cmd
