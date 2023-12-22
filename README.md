@@ -10,18 +10,6 @@ In addition, MiTeX is not only **SMALL** but also **FAST**! MiTeX has a size of 
 
 Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the most complex development work: developing the parser for generating AST.
 
-## Implemented Features
-
-- [x] LaTeX equations support.
-- [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
-- [x] Support for various environments, such as aligned, matrix, cases.
-
-## Features to Implement
-
-- [ ] User-defined commands (specification), such as `\newcommand{\mysym}{\alpha}` or bind `\newcommand{\myop}[1]{\operatorname{#1}}` to a typst's native function `let myop(it) = op(upright(it))`.
-- [ ] "usepackage" support, which means that you can change set of commands by telling MiTeX to use a list of packages.
-- [ ] Text mode support, enabling the rendering entire LaTeX documents in Typst!
-
 ## Installation
 
 Note: MiTeX is waiting for publishing as a [package](https://typst.app/docs/packages/). Before that, you can use it by cloning the repo and importing it from inside of the directory locally, also see the [comments](https://github.com/OrangeX4/mitex/issues/17).
@@ -58,6 +46,18 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 ```
 
 ![example](packages/mitex/examples/example.png)
+
+## Implemented Features
+
+- [x] LaTeX equations support.
+- [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
+- [x] Support for various environments, such as aligned, matrix, cases.
+
+## Features to Implement
+
+- [ ] User-defined commands (specification), such as `\newcommand{\mysym}{\alpha}` or bind `\newcommand{\myop}[1]{\operatorname{#1}}` to a typst's native function `let myop(it) = op(upright(it))`.
+- [ ] "usepackage" support, which means that you can change set of commands by telling MiTeX to use a list of packages.
+- [ ] Text mode support, enabling the rendering entire LaTeX documents in Typst!
 
 ## Differences between MiTeX and other solutions
 
