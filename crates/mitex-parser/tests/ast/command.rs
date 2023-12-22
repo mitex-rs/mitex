@@ -37,6 +37,14 @@ fn left_association() {
     |||cmd(cmd-name("\\sum"))
     ||cmd-name("\\limits")
     "###);
+    assert_debug_snapshot!(parse(r#"\sum \limits"#), @r###"
+    root
+    |cmd
+    ||args
+    |||cmd(cmd-name("\\sum"))
+    |||space'(" ")
+    ||cmd-name("\\limits")
+    "###);
     assert_debug_snapshot!(parse(r#"\sum\limits\limits"#), @r###"
     root
     |cmd

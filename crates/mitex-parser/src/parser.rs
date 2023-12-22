@@ -295,11 +295,11 @@ impl<'a> Parser<'a> {
         self.list_state.store_start(current);
 
         while self.peek().map_or(false, |kind| !self.stop_by_scope(kind)) {
-            let received_rev_arg = self.content(true);
+            let attachable = self.content(true);
 
-            // If the item is receiving a reverse argument, then we should
+            // If the item is not attachable, then we should
             // not update the `list_last` state
-            if !received_rev_arg {
+            if attachable {
                 self.list_state.store_last(current);
             }
             current = self.builder.checkpoint();
@@ -338,24 +338,27 @@ impl<'a> Parser<'a> {
     /// If `not_prefer_single_char` is false, then the parser will try to parse
     /// the item as a single character if possible
     ///
-    /// Returns whether the item is receiving a reverse argument
+    /// Returns whether the item is attachable
     fn content(&mut self, not_prefer_single_char: bool) -> bool {
         let Some(c) = self.peek() else {
-            return false;
+            return true;
         };
         match c {
             Token::And
             | Token::NewLine
             | Token::LineBreak
             | Token::Whitespace
-            | Token::LineComment => self.eat(),
+            | Token::LineComment => {
+                self.eat();
+                return false;
+            }
             Token::Apostrophe => {
                 self.attach_component(false);
-                return true;
+                return false;
             }
             Token::Underline | Token::Caret => {
                 self.attach_component(true);
-                return true;
+                return false;
             }
             Token::Left(BraceKind::Curly) => self.item_group(ItemCurly),
             Token::Right(BraceKind::Curly) => {
@@ -384,7 +387,10 @@ impl<'a> Parser<'a> {
                 }
             }
             Token::Comma => self.text(),
-            Token::Dollar => self.item_group(ItemFormula),
+            Token::Dollar => {
+                self.item_group(ItemFormula);
+                return false;
+            }
             Token::CommandName(name) => match name {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
@@ -396,7 +402,7 @@ impl<'a> Parser<'a> {
             },
         }
 
-        false
+        true
     }
 
     /// Item parsers
@@ -459,14 +465,14 @@ impl<'a> Parser<'a> {
                 self.builder.start_node(ItemCmd.into());
                 self.eat();
                 self.builder.finish_node();
-                return false;
+                return true;
             }
             Some(ArgShape::Left1) => {
                 // Wrap previous item
                 self.start_command_at(self.list_last().or(self.list_start()));
                 self.eat();
                 self.builder.finish_node();
-                return true;
+                return false;
             }
             Some(ArgShape::Right(pattern)) => {
                 self.builder.start_node(ItemCmd.into());
@@ -494,7 +500,7 @@ impl<'a> Parser<'a> {
 
         self.builder.finish_node();
 
-        is_greedy
+        !is_greedy
     }
 
     /// Item parsers
@@ -715,8 +721,8 @@ impl<'a> Parser<'a> {
                         // Otherwise, whether it is right does not matter
                         current = Some(self.builder.checkpoint());
                     }
-                    let has_rev_argument = arg::<GREEDY, _>(self, |this| this.content(true));
-                    if !k_wrap_args!() && !has_rev_argument {
+                    let attachable = arg::<GREEDY, _>(self, |this| this.content(true));
+                    if !k_wrap_args!() && attachable {
                         self.list_state.may_store_last(current);
                     }
                 }
