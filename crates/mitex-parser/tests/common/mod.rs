@@ -81,6 +81,7 @@ pub mod ast_snapshot {
                 SyntaxKind::TokenUnderline => "underline'",
                 SyntaxKind::TokenCaret => "caret'",
                 SyntaxKind::TokenApostrophe => "apostrophe'",
+                SyntaxKind::TokenDitto => "ditto'",
                 SyntaxKind::TokenCommandSym => "sym'",
                 SyntaxKind::ClauseCommandName => "cmd-name",
                 SyntaxKind::ClauseArgument => "args",

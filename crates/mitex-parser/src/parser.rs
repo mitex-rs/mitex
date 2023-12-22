@@ -370,9 +370,12 @@ impl<'a> Parser<'a> {
                 self.item_group(ItemBracket)
             }
             Token::Left(BraceKind::Paren) if not_prefer_single_char => self.item_group(ItemParen),
-            Token::Left(..) | Token::Right(..) => {
-                self.eat();
-            }
+            Token::Left(..)
+            | Token::Right(..)
+            | Token::Tilde
+            | Token::Divide
+            | Token::Equal
+            | Token::Ditto => self.eat(),
             Token::Word => {
                 if not_prefer_single_char {
                     self.text()
@@ -381,9 +384,6 @@ impl<'a> Parser<'a> {
                 }
             }
             Token::Comma => self.text(),
-            Token::Tilde => self.eat(),
-            Token::Divide => self.eat(),
-            Token::Equal => self.eat(),
             Token::Dollar => self.item_group(ItemFormula),
             Token::CommandName(name) => match name {
                 CommandName::Generic => return self.command(),

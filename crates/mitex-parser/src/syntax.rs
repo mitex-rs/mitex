@@ -26,6 +26,7 @@ pub enum SyntaxKind {
     TokenUnderline,
     TokenCaret,
     TokenApostrophe,
+    TokenDitto,
     TokenCommandSym,
 
     // Clauses
@@ -70,6 +71,7 @@ impl From<Token> for SyntaxKind {
             Token::Equal => SyntaxKind::TokenEqual,
             Token::Underline => SyntaxKind::TokenUnderline,
             Token::Apostrophe => SyntaxKind::TokenApostrophe,
+            Token::Ditto => SyntaxKind::TokenDitto,
             Token::Caret => SyntaxKind::TokenCaret,
             Token::Word => SyntaxKind::TokenWord,
             Token::Dollar => SyntaxKind::TokenDollar,
