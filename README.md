@@ -81,11 +81,11 @@ Currently, MiTeX maintains following three parts of code:
 
 - A TeX parser library written in **Rust**, see [mitex-lexer](./crates/mitex-lexer) and [mitex-parser](./crates/mitex-parser).
 - A TeX to Typst converter library written in **Rust**, see [mitex](./crates/mitex).
-- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](./packages/mitex/specs/README.md).
+- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](./packages/mitex/specs).
 
 ### Add missing TeX commands
 
-Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](./packages/mitex/specs/README.md), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
+Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](./packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
 
 ### Develop the parser and the converter
 
