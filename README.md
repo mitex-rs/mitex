@@ -1,10 +1,10 @@
-# [MiTeX](https://github.com/OrangeX4/typst-mitex)
+# [MiTeX](https://github.com/OrangeX4/mitex)
 
 **[LaTeX](https://www.latex-project.org/) support for [Typst](https://typst.app/), powered by [Rust](https://www.rust-lang.org/) and [WASM](https://webassembly.org/).**
 
-[MiTeX](https://github.com/OrangeX4/typst-mitex) processes LaTeX code into an abstract syntax tree (AST). Then it transforms the AST into Typst code and evaluates code into Typst content by `eval` function.
+[MiTeX](https://github.com/OrangeX4/mitex) processes LaTeX code into an abstract syntax tree (AST). Then it transforms the AST into Typst code and evaluates code into Typst content by `eval` function.
 
-MiTeX is not only **SMALL** but also **FAST**! MiTeX has a size of just about 150 KB, comparing that [texmath](https://github.com/jgm/texmath) has a size of 17 MB. Its rendering speed is nearly indistinguishable from typst native equations, and from [benchmark](./crates/mitex-parser/benches/simple.rs), the speed of parsing input into an AST has reached about 61.04 MB/s.
+MiTeX is not only **SMALL** but also **FAST**! MiTeX has a size of just about 360 KB, comparing that [texmath](https://github.com/jgm/texmath) has a size of 17 MB. Its rendering speed is nearly indistinguishable from typst native equations, and from [benchmark](./crates/mitex-parser/benches/simple.rs), the speed of parsing input into an AST has reached about 61.04 MB/s.
 
 Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the most complex development work: developing the parser for generating AST.
 
@@ -58,6 +58,7 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 ![example](packages/mitex/examples/example.png)
 
 
+
 ## Differences between MiTeX and other solutions
 
 MiTeX has different objectives compared to [texmath](https://github.com/jgm/texmath) (a.k.a. [pandoc](https://pandoc.org/)):
@@ -81,9 +82,9 @@ If you find missing commands or bugs of MiTeX, please feel free to submit an iss
 
 Currently, MiTeX maintains following three parts of code:
 
-- A TeX parser library written in **Rust**, see [mitex-lexer](./crates/mitex-lexer) and [mitex-parser](./crates/mitex-parser).
-- A TeX to Typst converter library written in **Rust**, see [mitex](./crates/mitex).
-- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](./packages/mitex/specs).
+- A TeX parser library written in **Rust**, see [mitex-lexer](https://github.com/OrangeX4/mitex/tree/main/crates/mitex-lexer) and [mitex-parser](https://github.com/OrangeX4/mitex/tree/main/crates/mitex-parser).
+- A TeX to Typst converter library written in **Rust**, see [mitex](https://github.com/OrangeX4/mitex/tree/main/crates/mitex).
+- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](https://github.com/OrangeX4/mitex/tree/main/packages/mitex/specs).
 
 For a translation process, for example, we have:
 
@@ -100,11 +101,11 @@ You can use the `#mitex-convert()` function to get the Typst Code generated from
 
 ### Add missing TeX commands
 
-Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](./packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
+Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](https://github.com/OrangeX4/mitex/tree/main/packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
 
 In the future, we will provide the ability to customize TeX commands, which will make it easier for you to use the commands you create for yourself.
 
 
 ### Develop the parser and the converter
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/OrangeX4/mitex/blob/main/CONTRIBUTING.md).
