@@ -139,17 +139,17 @@ fn default_bump(ctx: &mut StreamContext<'_>) {
     const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
 
     for _ in 0..PEEK_CACHE_SIZE {
-        let kind = ctx.inner.next().map(|token| {
-            let kind = token.unwrap();
+        let tok = ctx.inner.next().map(|token| {
+            let token = token.unwrap();
             let text = ctx.inner.slice();
-            if kind == Token::CommandName(CommandName::Generic) {
+            if token == Token::CommandName(CommandName::Generic) {
                 let name = classify(&text[1..]);
                 (Token::CommandName(name), text)
             } else {
-                (kind, text)
+                (token, text)
             }
         });
-        if let Some(kind) = kind {
+        if let Some(kind) = tok {
             ctx.peek_cache.push(kind);
         } else {
             break;

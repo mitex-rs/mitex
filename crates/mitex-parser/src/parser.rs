@@ -7,7 +7,7 @@ use crate::syntax::{
     SyntaxNode,
 };
 use crate::{ArgPattern, ArgShape, CommandSpec};
-use mitex_lexer::{BraceKind, CommandName, Lexer, Token};
+use mitex_lexer::{BraceKind, BumpTokenStream, CommandName, Lexer, MacroEngine, Token};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -128,9 +128,9 @@ use list_state::ListState;
 
 /// The mutable parser that parse the input text into a syntax tree
 #[derive(Debug)]
-struct Parser<'a> {
+struct Parser<'a, S: BumpTokenStream<'a> = ()> {
     /// Lexer level structure
-    lexer: Lexer<'a>,
+    lexer: Lexer<'a, S>,
     /// Helper for building syntax tree
     builder: GreenNodeBuilder<'static>,
 
@@ -147,7 +147,7 @@ struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// Create a new parser borrowing the input text and the immutable command
     /// specification.
-    pub fn new(text: &'a str, spec: CommandSpec) -> Self {
+    fn new(text: &'a str, spec: CommandSpec) -> Self {
         Self {
             lexer: Lexer::new(text, spec.clone()),
             builder: GreenNodeBuilder::new(),
@@ -157,6 +157,20 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// For internal testing
+    fn new_macro(text: &'a str, spec: CommandSpec) -> Parser<'a, MacroEngine<'a>> {
+        let lexer = Lexer::new_with_bumper(text, spec.clone(), MacroEngine::new(spec.clone()));
+        Parser::<'a, MacroEngine<'a>> {
+            lexer,
+            builder: GreenNodeBuilder::new(),
+            spec,
+            arg_matchers: ArgMatcherBuilder::default(),
+            list_state: Default::default(),
+        }
+    }
+}
+
+impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     /// List State
     /// The start position of the list
     #[inline]
@@ -608,9 +622,9 @@ impl<'a> Parser<'a> {
             };
         }
 
-        fn arg<'a, const GREEDY: bool, T>(
-            this: &mut Parser<'a>,
-            f: impl FnOnce(&mut Parser<'a>) -> T,
+        fn arg<'a, const GREEDY: bool, T, S: mitex_lexer::BumpTokenStream<'a>>(
+            this: &mut Parser<'a, S>,
+            f: impl FnOnce(&mut Parser<'a, S>) -> T,
         ) -> T {
             if k_wrap_args!() {
                 this.builder.start_node(ClauseArgument.into());
@@ -665,7 +679,7 @@ impl<'a> Parser<'a> {
                         }
                         split_cnt += c.len_utf8();
 
-                        arg::<GREEDY, _>(self, |this| {
+                        arg::<GREEDY, _, _>(self, |this| {
                             this.builder.token(TokenWord.into(), &c.to_string())
                         });
                     }
@@ -699,7 +713,7 @@ impl<'a> Parser<'a> {
                         // Otherwise, whether it is right does not matter
                         current = Some(self.builder.checkpoint());
                     }
-                    arg::<GREEDY, _>(self, |this| {
+                    arg::<GREEDY, _, _>(self, |this| {
                         if modified_as_term {
                             this.eat();
                         } else {
@@ -722,7 +736,7 @@ impl<'a> Parser<'a> {
                         // Otherwise, whether it is right does not matter
                         current = Some(self.builder.checkpoint());
                     }
-                    let attachable = arg::<GREEDY, _>(self, |this| this.content(true));
+                    let attachable = arg::<GREEDY, _, _>(self, |this| this.content(true));
                     if !k_wrap_args!() && attachable {
                         self.list_state.may_store_last(current);
                     }
@@ -799,4 +813,9 @@ impl<'a> Parser<'a> {
 /// The error nodes are attached to the tree
 pub fn parse(input: &str, spec: CommandSpec) -> SyntaxNode {
     SyntaxNode::new_root(Parser::new(input, spec).parse())
+}
+
+/// It is only for internal testing
+pub fn parse_with_macro(input: &str, spec: CommandSpec) -> SyntaxNode {
+    SyntaxNode::new_root(Parser::new_macro(input, spec).parse())
 }
