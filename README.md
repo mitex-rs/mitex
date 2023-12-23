@@ -10,16 +10,6 @@ In addition, MiTeX is not only **SMALL** but also **FAST**! MiTeX has a size of 
 
 Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the most complex development work: developing the parser for generating AST.
 
-## Installation
-
-Note: MiTeX is waiting for publishing as a [package](https://typst.app/docs/packages/). Before that, you can use it by cloning the repo and importing it from inside of the directory locally, also see the [comments](https://github.com/OrangeX4/mitex/issues/17) and the [PR to typst/package](https://github.com/typst/packages/pull/307).
-
-With published package, you can import it by one line:
-
-```typst
-#import "@preview/mitex:0.1.0": *
-```
-
 ## Usage
 
 - Use `mitex-convert` to convert LaTeX code into Typst code in string.
@@ -29,8 +19,7 @@ With published package, you can import it by one line:
 Following is a simple example of using MiTeX in Typst:
 
 ```typst
-#import "lib.typ": *
-// #import "@preview/mitex:0.1.0": *
+#import "@preview/mitex:0.1.0": *
 
 #assert.eq(mitex-convert("\alpha x"), "alpha  x ")
 
