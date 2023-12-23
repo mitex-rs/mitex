@@ -9,87 +9,92 @@ pub use macro_engine::MacroEngine;
 /// A peeked token
 type PeekTok<'a> = (Token, &'a str);
 
+/// A stream context for [`Lexer`]
+#[derive(Debug, Clone)]
+pub struct StreamContext<'a> {
+    /// Input source
+    /// The inner lexer
+    pub inner: logos::Lexer<'a, Token>,
+
+    /// Prepare for token peeking
+    /// The last peeked token
+    pub peeked: Option<PeekTok<'a>>,
+    /// A set of peeked tokens takes up to one page of memory
+    /// It also takes CPU locality into consideration
+    pub peek_cache: Vec<PeekTok<'a>>,
+}
+
+/// A trait for bumping the token stream
+/// Its bumping is less frequently called than token peeking
+pub trait BumpTokenStream<'a> {
+    /// Bump the token stream with at least one token if possible
+    ///
+    /// By default, it fills the peek cache with a page of tokens at the same
+    /// time
+    fn bump(&mut self, ctx: &mut StreamContext<'a>) {
+        default_bump(ctx)
+    }
+}
+
+impl BumpTokenStream<'_> for () {}
+
 /// Small memory-efficient lexer for TeX
 ///
 /// It gets improved performance on x86_64 but not wasm through
 #[derive(Debug, Clone)]
-pub struct Lexer<'a> {
-    /// The inner lexer
-    inner: logos::Lexer<'a, Token>,
-    /// The last peeked token
-    peeked: Option<PeekTok<'a>>,
-    /// A set of peeked tokens takes up to one page of memory
-    /// It also takes CPU locality into consideration
-    peek_cache: Vec<PeekTok<'a>>,
+pub struct Lexer<'a, S: BumpTokenStream<'a> = ()> {
+    ctx: StreamContext<'a>,
+    bumper: S,
 }
 
-impl<'a> Lexer<'a> {
+impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
     /// Create a new lexer
-    pub fn new(input: &'a str, spec: CommandSpec) -> Self {
+    pub fn new(input: &'a str, spec: CommandSpec) -> Self
+    where
+        S: Default,
+    {
+        Self::new_with_bumper(input, spec, S::default())
+    }
+
+    /// Create a new lexer with a bumper
+    pub fn new_with_bumper(input: &'a str, spec: CommandSpec, bumper: S) -> Self {
         let inner = Token::lexer_with_extras(input, spec);
         let mut n = Self {
-            inner,
-            peeked: None,
-            peek_cache: Vec::with_capacity(16),
+            ctx: StreamContext {
+                inner,
+                peeked: None,
+                peek_cache: Vec::with_capacity(16),
+            },
+            bumper,
         };
         n.next();
 
         n
     }
 
-    /// Private method to fill the peek cache with a page of tokens at the same
-    /// time
-    fn bump_batched(&mut self) {
-        /// The size of a page, in some architectures it is 16384B but that
-        /// doesn't matter
-        const PAGE_SIZE: usize = 4096;
-        /// The item size of the peek cache
-        const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
-
-        for _ in 0..PEEK_CACHE_SIZE {
-            let kind = self.inner.next().map(|token| {
-                let kind = token.unwrap();
-                let text = self.inner.slice();
-                if kind == Token::CommandName(CommandName::Generic) {
-                    let name = classify(&text[1..]);
-                    (Token::CommandName(name), text)
-                } else {
-                    (kind, text)
-                }
-            });
-            if let Some(kind) = kind {
-                self.peek_cache.push(kind);
-            } else {
-                break;
-            }
-        }
-        // Reverse the peek cache to make it a stack
-        self.peek_cache.reverse();
-    }
-
     /// Private method to advance the lexer
     #[inline]
     fn next(&mut self) {
-        if let Some(peeked) = self.peek_cache.pop() {
-            self.peeked = Some(peeked);
+        if let Some(peeked) = self.ctx.peek_cache.pop() {
+            self.ctx.peeked = Some(peeked);
             return;
         }
 
         // it is not likely to be inlined
-        self.bump_batched();
+        self.bumper.bump(&mut self.ctx);
 
         // Pop the first token again
-        self.peeked = self.peek_cache.pop();
+        self.ctx.peeked = self.ctx.peek_cache.pop();
     }
 
     /// Peek the next token
     pub fn peek(&self) -> Option<Token> {
-        self.peeked.map(|(kind, _)| kind)
+        self.ctx.peeked.map(|(kind, _)| kind)
     }
 
     /// Peek the next token's text
     pub fn peek_text(&self) -> Option<&'a str> {
-        self.peeked.map(|(_, text)| text)
+        self.ctx.peeked.map(|(_, text)| text)
     }
 
     /// Peek the next token's first char
@@ -99,7 +104,7 @@ impl<'a> Lexer<'a> {
 
     /// Update the text part of the peeked token
     pub fn consume_word(&mut self, cnt: usize) {
-        let Some(peek_mut) = &mut self.peeked else {
+        let Some(peek_mut) = &mut self.ctx.peeked else {
             return;
         };
         if peek_mut.1.len() <= cnt {
@@ -111,10 +116,40 @@ impl<'a> Lexer<'a> {
 
     /// Update the peeked token and return the old one
     pub fn eat(&mut self) -> Option<(Token, &'a str)> {
-        let (kind, text) = self.peeked.take()?;
+        let (kind, text) = self.ctx.peeked.take()?;
         self.next();
         Some((kind, text))
     }
+}
+
+/// fills the peek cache with a page of tokens at the same time
+fn default_bump(ctx: &mut StreamContext<'_>) {
+    /// The size of a page, in some architectures it is 16384B but that doesn't
+    /// matter
+    const PAGE_SIZE: usize = 4096;
+    /// The item size of the peek cache
+    const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
+
+    for _ in 0..PEEK_CACHE_SIZE {
+        let kind = ctx.inner.next().map(|token| {
+            let kind = token.unwrap();
+            let text = ctx.inner.slice();
+            if kind == Token::CommandName(CommandName::Generic) {
+                let name = classify(&text[1..]);
+                (Token::CommandName(name), text)
+            } else {
+                (kind, text)
+            }
+        });
+        if let Some(kind) = kind {
+            ctx.peek_cache.push(kind);
+        } else {
+            break;
+        }
+    }
+
+    // Reverse the peek cache to make it a stack
+    ctx.peek_cache.reverse();
 }
 
 /// Classify the command name so parser can use it repeatedly
