@@ -15,13 +15,12 @@ harness = false
 [dependencies]
 
 mitex-parser = { path = "../mitex-parser" }
-rowan = "0.15.13"
+rowan.workspace = true
 bitflags = "2.4.1"
-once_cell = "1"
+once_cell.workspace = true
 
 [dev-dependencies]
-insta = "1.34"
-once_cell = "1"
-divan = "0.1.7"
+insta.workspace = true
+divan.workspace = true
 serde.workspace = true
 serde_json.workspace = true

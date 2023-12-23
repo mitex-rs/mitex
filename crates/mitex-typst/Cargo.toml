@@ -12,12 +12,13 @@ repository.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-protocol" }
+
 mitex = { path = "../mitex" }
 mitex-spec = { path = "../mitex-spec" }
-serde = "1.0.188"
-serde_json = "1.0.106"
 
+serde.workspace = true
+serde_json.workspace = true
+wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-protocol" }
 
 [features]
 rkyv = ["mitex-spec/rkyv", "mitex-spec/rkyv-validation"]

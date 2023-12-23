@@ -1,8 +1,3 @@
-extern crate bitflags;
-extern crate core;
-extern crate mitex_parser;
-extern crate rowan;
-
 use core::fmt;
 use std::cell::RefCell;
 use std::fmt::Write;

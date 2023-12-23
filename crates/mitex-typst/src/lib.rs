@@ -1,4 +1,3 @@
-extern crate mitex;
 use wasm_minimal_protocol::*;
 
 initiate_protocol!();

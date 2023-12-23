@@ -16,11 +16,11 @@ harness = false
 
 [dependencies]
 
-logos = "0.13.0"
-rowan = "0.15.15"
-mitex-lexer = { path = "../mitex-lexer" }
 mitex-glob = { path = "../mitex-glob" }
+mitex-lexer = { path = "../mitex-lexer" }
 mitex-spec = { path = "../mitex-spec" }
+
+rowan.workspace = true
 
 [dev-dependencies]
 once_cell = "1"

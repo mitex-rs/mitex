@@ -10,10 +10,11 @@ repository.workspace = true
 
 [dependencies]
 
-logos = "0.13.0"
 mitex-spec = { path = "../mitex-spec" }
-ena = "0.14.2"
-ecow = "0.2.0"
+
+logos.workspace = true
+ena.workspace = true
+ecow.workspace = true
 fxhash.workspace = true
 
 [dev-dependencies]
