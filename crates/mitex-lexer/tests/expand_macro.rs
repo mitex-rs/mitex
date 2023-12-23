@@ -42,12 +42,105 @@ fn no_macros() {
     "###);
 }
 
+// collect all tokens until eat() returns None
+fn get_macro(input: &str, macro_name: &str) -> String {
+    let mut lexer = Lexer::new_with_bumper(
+        input,
+        DEFAULT_SPEC.clone(),
+        MacroEngine::new(DEFAULT_SPEC.clone()),
+    );
+    while lexer.eat().is_some() {
+        continue;
+    }
+
+    match lexer.get_macro(macro_name) {
+        Some(e) => {
+            assert_eq!(tokens(input), "");
+            format!("{:#?}", e)
+        }
+        None => {
+            format!("FailedRest:{}", tokens(input))
+        }
+    }
+}
+
+#[test]
+fn ignoring_unimplemented() {
+    assert_snapshot!(r#"\AtEndOfClass{code}"#, @r###"\AtEndOfClass{code}"###);
+}
+
+#[test]
+fn bug_playground() {}
+
 #[test]
 fn declare_macro() {
-    // assert_snapshot!(tokens(r#"
-    // \newcommand{\mytheta}{\theta}"#), @r###"
-    // Word("hello")
-    // Whitespace(" ")
-    // Word("world")
-    // "###);
+    assert_snapshot!(get_macro(r#"\newcommand{\mytheta}{\theta}"#, "mytheta"), @r###"
+    Cmd(
+        CmdMacro {
+            name: "mytheta",
+            num_args: 0,
+            opt: None,
+            def: [
+                (
+                    CommandName(
+                        Generic,
+                    ),
+                    "\\theta",
+                ),
+            ],
+        },
+    )
+    "###);
+    assert_snapshot!(get_macro(r#"\newcommand{\mytheta}[4]{\theta}"#, "mytheta"), @r###"
+    Cmd(
+        CmdMacro {
+            name: "mytheta",
+            num_args: 4,
+            opt: None,
+            def: [
+                (
+                    CommandName(
+                        Generic,
+                    ),
+                    "\\theta",
+                ),
+            ],
+        },
+    )
+    "###);
+    assert_snapshot!(get_macro(r#"\newcommand{\mytheta}[10]{\theta}"#, "mytheta"), @r###"
+    FailedRest:Left(Curly)("{")
+    CommandName(Generic)("\\theta")
+    Right(Curly)("}")
+    "###);
+    assert_snapshot!(get_macro(r#"\newcommand{\mytheta}[4][  \orz]{\theta}"#, "mytheta"), @r###"
+    Cmd(
+        CmdMacro {
+            name: "mytheta",
+            num_args: 4,
+            opt: Some(
+                [
+                    (
+                        Whitespace,
+                        "  ",
+                    ),
+                    (
+                        CommandName(
+                            Generic,
+                        ),
+                        "\\orz",
+                    ),
+                ],
+            ),
+            def: [
+                (
+                    CommandName(
+                        Generic,
+                    ),
+                    "\\theta",
+                ),
+            ],
+        },
+    )
+    "###);
 }
