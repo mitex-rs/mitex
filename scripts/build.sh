@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 cargo run --release --bin mitex-cli
 cargo build --release --target wasm32-unknown-unknown -p mitex-typst
 rm -f packages/mitex/mitex.wasm
