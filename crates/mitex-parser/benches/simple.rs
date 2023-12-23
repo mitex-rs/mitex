@@ -1,5 +1,5 @@
 use divan::{AllocProfiler, Bencher};
-use mitex_parser::{parse, parser::parse_with_macro, CommandSpec};
+use mitex_parser::{parse, parse_with_macro, CommandSpec};
 
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();

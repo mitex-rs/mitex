@@ -2,10 +2,7 @@ use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 
 use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
 use crate::spec::argument_kind::*;
-use crate::syntax::{
-    SyntaxKind::{self, *},
-    SyntaxNode,
-};
+use crate::syntax::SyntaxKind::{self, *};
 use crate::{ArgPattern, ArgShape, CommandSpec};
 use mitex_lexer::{BraceKind, BumpTokenStream, CommandName, Lexer, MacroEngine, Token};
 
@@ -128,7 +125,7 @@ use list_state::ListState;
 
 /// The mutable parser that parse the input text into a syntax tree
 #[derive(Debug)]
-struct Parser<'a, S: BumpTokenStream<'a> = ()> {
+pub struct Parser<'a, S: BumpTokenStream<'a> = ()> {
     /// Lexer level structure
     lexer: Lexer<'a, S>,
     /// Helper for building syntax tree
@@ -147,7 +144,7 @@ struct Parser<'a, S: BumpTokenStream<'a> = ()> {
 impl<'a> Parser<'a> {
     /// Create a new parser borrowing the input text and the immutable command
     /// specification.
-    fn new(text: &'a str, spec: CommandSpec) -> Self {
+    pub fn new(text: &'a str, spec: CommandSpec) -> Self {
         Self {
             lexer: Lexer::new(text, spec.clone()),
             builder: GreenNodeBuilder::new(),
@@ -158,7 +155,7 @@ impl<'a> Parser<'a> {
     }
 
     /// For internal testing
-    fn new_macro(text: &'a str, spec: CommandSpec) -> Parser<'a, MacroEngine<'a>> {
+    pub fn new_macro(text: &'a str, spec: CommandSpec) -> Parser<'a, MacroEngine<'a>> {
         let lexer = Lexer::new_with_bumper(text, spec.clone(), MacroEngine::new(spec.clone()));
         Parser::<'a, MacroEngine<'a>> {
             lexer,
@@ -804,17 +801,4 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
 
         self.builder.finish_node();
     }
-}
-
-/// Parse the input text with the given command specification
-/// and return the untyped syntax tree
-///
-/// The error nodes are attached to the tree
-pub fn parse(input: &str, spec: CommandSpec) -> SyntaxNode {
-    SyntaxNode::new_root(Parser::new(input, spec).parse())
-}
-
-/// It is only for internal testing
-pub fn parse_with_macro(input: &str, spec: CommandSpec) -> SyntaxNode {
-    SyntaxNode::new_root(Parser::new_macro(input, spec).parse())
 }

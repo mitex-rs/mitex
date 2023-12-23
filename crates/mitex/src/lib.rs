@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub use mitex_parser::command_preludes;
 use mitex_parser::parse;
-use mitex_parser::parser::parse_with_macro;
+use mitex_parser::parse_with_macro;
 pub use mitex_parser::spec::*;
 use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
