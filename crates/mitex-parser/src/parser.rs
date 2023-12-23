@@ -221,7 +221,7 @@ impl<'a> Parser<'a> {
         let first_char = self.lexer.peek_char()?;
         self.builder
             .token(TokenWord.into(), &first_char.to_string());
-        self.lexer.consume_word(first_char.len_utf8());
+        self.lexer.consume_utf8_bytes(first_char.len_utf8());
 
         Some(())
     }
@@ -659,7 +659,7 @@ impl<'a> Parser<'a> {
                     for c in self.lexer.peek_text().unwrap().chars() {
                         if !searcher.try_match(ARGUMENT_KIND_TERM) {
                             if split_cnt > 0 {
-                                self.lexer.consume_word(split_cnt);
+                                self.lexer.consume_utf8_bytes(split_cnt);
                             }
                             return;
                         }
@@ -677,7 +677,7 @@ impl<'a> Parser<'a> {
                     }
                     // Consume part of the word
                     if split_cnt > 0 {
-                        self.lexer.consume_word(split_cnt);
+                        self.lexer.consume_utf8_bytes(split_cnt);
                     }
                     if !k_wrap_args!() {
                         self.list_state.may_store_last(current);
