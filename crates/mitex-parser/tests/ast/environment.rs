@@ -101,3 +101,21 @@ c & d
     |||curly(lbrace'("{"),word'("array"),rbrace'("}"))
     "###);
 }
+
+#[test]
+fn space_around_and() {
+    assert_debug_snapshot!(parse(
+            r#"\begin{bmatrix}A&B\end{bmatrix}"#), @r###"
+    root
+    |env
+    ||begin
+    |||cmd-name("\\begin")
+    |||curly(lbrace'("{"),word'("bmatrix"),rbrace'("}"))
+    ||text(word'("A"))
+    ||and'("&")
+    ||text(word'("B"))
+    ||end
+    |||cmd-name("\\end")
+    |||curly(lbrace'("{"),word'("bmatrix"),rbrace'("}"))
+    "###);
+}
