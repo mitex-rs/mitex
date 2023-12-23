@@ -16,7 +16,8 @@ logos.workspace = true
 ena.workspace = true
 ecow.workspace = true
 fxhash.workspace = true
+once_cell.workspace = true
 
 [dev-dependencies]
-once_cell = "1"
-insta = "1.34"
+insta.workspace = true
+divan.workspace = true

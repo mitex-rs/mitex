@@ -79,7 +79,11 @@
 //!
 //! - class commands, e.g. \ProvidesClass, \LoadClass, \LoadClassWithOptions
 
-use std::{ops::Range, sync::Arc};
+use std::{
+    borrow::Cow,
+    ops::{Deref, Range},
+    sync::Arc,
+};
 
 use crate::{
     classify,
@@ -109,7 +113,7 @@ pub struct EnvMacro<'a> {
     pub end_def: Vec<PeekTok<'a>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DeclareMacro {
     /// Command macro for NewCommand
     /// Synopsis, one of:
@@ -273,7 +277,14 @@ fn define_declarative_macros(macros: &mut MacroMap) {
     }
 }
 
-#[derive(Debug)]
+static DEFAULT_MACROS: once_cell::sync::Lazy<MacroMap<'static>> =
+    once_cell::sync::Lazy::new(|| {
+        let mut macros = MacroMap::default();
+        define_declarative_macros(&mut macros);
+        macros
+    });
+
+#[derive(Debug, Clone)]
 pub enum Macro<'a> {
     /// Builtin macro for defining new macros
     Declare(DeclareMacro),
@@ -309,7 +320,7 @@ pub struct MacroEngine<'a> {
     /// Command specification
     pub spec: CommandSpec,
     /// Scoped unified table of macros
-    macros: MacroMap<'a>,
+    pub macros: Cow<'a, MacroMap<'a>>,
     /// Environment stack
     env_stack: Vec<EnvMacro<'a>>,
     /// Macro stack
@@ -327,12 +338,9 @@ impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
 impl<'a> MacroEngine<'a> {
     /// Create a new macro engine
     pub fn new(spec: CommandSpec) -> Self {
-        let mut macros = SnapshotMap::default();
-        define_declarative_macros(&mut macros);
-
         Self {
             spec,
-            macros,
+            macros: std::borrow::Cow::Borrowed(DEFAULT_MACROS.deref()),
             env_stack: Vec::new(),
             reading_macro: Vec::new(),
             scanned_tokens: Vec::new(),
@@ -395,14 +403,15 @@ impl<'a> MacroEngine<'a> {
     pub fn create_scope(&mut self) -> Checkpoint {
         let _ = self.env_stack;
 
-        (self.macros.snapshot(),)
+        // make self.macros a mutable
+        (self.macros.to_mut().snapshot(),)
     }
 
     /// Restore the scope (delete all macros defined in the child scope)
     pub fn restore(&mut self, (snapshot,): Checkpoint) {
         let _ = self.env_stack;
 
-        self.macros.rollback_to(snapshot);
+        self.macros.to_mut().rollback_to(snapshot);
     }
 
     /// Peek the next token and its text
