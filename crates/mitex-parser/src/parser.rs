@@ -358,7 +358,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             return true;
         };
         match c {
-            Token::And
+            Token::Ampersand
             | Token::NewLine
             | Token::LineBreak
             | Token::Whitespace
@@ -370,7 +370,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 self.attach_component(false);
                 return false;
             }
-            Token::Underline | Token::Caret => {
+            Token::Underscore | Token::Caret => {
                 self.attach_component(true);
                 return false;
             }
@@ -390,8 +390,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             Token::Left(..)
             | Token::Right(..)
             | Token::Tilde
-            | Token::Divide
-            | Token::Equal
+            | Token::Slash
             | Token::Ditto
             | Token::Semicolon => self.eat(),
             Token::Word => {
@@ -661,9 +660,9 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 //   e.g.(don't stops) \begin{matrix}\frac{1} \\ {2}\end{matrix}
                 Token::NewLine if GREEDY && self.inside_env() => return,
                 // Argument matches is stopped on these tokens anyway
-                Token::And => return,
+                Token::Ampersand => return,
                 // k_wrap_args!() also determines whether it could be regards as an attachment.
-                Token::Caret | Token::Underline if k_wrap_args!() => {
+                Token::Caret | Token::Underscore if k_wrap_args!() => {
                     return;
                 }
                 // prefer rob characters from words as arguments

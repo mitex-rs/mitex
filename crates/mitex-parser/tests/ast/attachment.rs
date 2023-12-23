@@ -5,7 +5,7 @@ fn base() {
     // println!("{:#?}", parse(r#"{}_{1}^1"#));
     assert_debug_snapshot!(parse(r#"_1^2"#), @r###"
     root
-    |attach-comp(underline'("_"),word'("1"))
+    |attach-comp(underscore'("_"),word'("1"))
     |attach-comp(caret'("^"),word'("2"))
     "###);
     assert_debug_snapshot!(parse(r#"{}_{1}^2"#), @r###"
@@ -15,7 +15,7 @@ fn base() {
     |||attach-comp
     ||||args
     |||||curly(lbrace'("{"),rbrace'("}"))
-    ||||underline'("_")
+    ||||underscore'("_")
     ||||curly
     |||||lbrace'("{")
     |||||text(word'("1"))
@@ -28,7 +28,7 @@ fn base() {
     |attach-comp
     ||args
     |||cmd(cmd-name("\\alpha"))
-    ||underline'("_")
+    ||underscore'("_")
     ||word'("1")
     "###);
     assert_debug_snapshot!(parse(r#"\alpha_[1]"#), @r###"
@@ -36,7 +36,7 @@ fn base() {
     |attach-comp
     ||args
     |||cmd(cmd-name("\\alpha"))
-    ||underline'("_")
+    ||underscore'("_")
     ||lbracket'("[")
     |text(word'("1"))
     |rbracket'("]")
@@ -46,14 +46,14 @@ fn base() {
     |attach-comp
     ||args
     |||cmd(cmd-name("\\alpha"))
-    ||underline'("_")
+    ||underscore'("_")
     ||lparen'("(")
     |text(word'("1"))
     |rparen'(")")
     "###);
     assert_debug_snapshot!(parse(r#"_1"#), @r###"
     root
-    |attach-comp(underline'("_"),word'("1"))
+    |attach-comp(underscore'("_"),word'("1"))
     "###);
     // Note: this is an invalid expression
     assert_debug_snapshot!(parse(r#"\over_1"#), @r###"
@@ -62,14 +62,14 @@ fn base() {
     ||args()
     ||cmd-name("\\over")
     ||args
-    |||attach-comp(underline'("_"),word'("1"))
+    |||attach-comp(underscore'("_"),word'("1"))
     "###);
     assert_debug_snapshot!(parse(r#"{}_1"#), @r###"
     root
     |attach-comp
     ||args
     |||curly(lbrace'("{"),rbrace'("}"))
-    ||underline'("_")
+    ||underscore'("_")
     ||word'("1")
     "###);
     assert_debug_snapshot!(parse(r#"{}_1_1"#), @r###"
@@ -79,9 +79,9 @@ fn base() {
     |||attach-comp
     ||||args
     |||||curly(lbrace'("{"),rbrace'("}"))
-    ||||underline'("_")
+    ||||underscore'("_")
     ||||word'("1")
-    ||underline'("_")
+    ||underscore'("_")
     ||word'("1")
     "###);
     assert_debug_snapshot!(parse(r#"\frac{1}{2}_{3}"#), @r###"
@@ -100,7 +100,7 @@ fn base() {
     ||||||lbrace'("{")
     ||||||text(word'("2"))
     ||||||rbrace'("}")
-    ||underline'("_")
+    ||underscore'("_")
     ||curly
     |||lbrace'("{")
     |||text(word'("3"))
@@ -143,7 +143,7 @@ fn base() {
     ||||||space'(" ")
     ||||||text(word'("y"))
     ||||||rbrace'("}")
-    ||underline'("_")
+    ||underscore'("_")
     ||curly
     |||lbrace'("{")
     |||cmd
@@ -166,7 +166,7 @@ fn base() {
     |||||||attach-comp
     ||||||||args
     |||||||||text(word'("x"))
-    ||||||||underline'("_")
+    ||||||||underscore'("_")
     ||||||||word'("1")
     ||||||apostrophe'("'")
     ||||apostrophe'("'")
@@ -184,7 +184,7 @@ fn base() {
     |||||||text(word'("x"))
     ||||||apostrophe'("'")
     ||||apostrophe'("'")
-    ||underline'("_")
+    ||underscore'("_")
     ||word'("1")
     "###);
     assert_debug_snapshot!(parse(r#"''"#), @r###"
@@ -210,7 +210,7 @@ fn test_attachment_may_weird() {
     ||||space'(" ")
     ||||args(word'("a"))
     ||||args(word'("b"))
-    ||underline'("_")
+    ||underscore'("_")
     ||word'("c")
     "###);
     assert_debug_snapshot!(parse(r#"\frac a_c b"#), @r###"
@@ -221,7 +221,7 @@ fn test_attachment_may_weird() {
     ||||cmd-name("\\frac")
     ||||space'(" ")
     ||||args(word'("a"))
-    ||underline'("_")
+    ||underscore'("_")
     ||word'("c")
     |space'(" ")
     |text(word'("b"))
@@ -237,7 +237,7 @@ fn test_attachment_may_weird() {
     ||||attach-comp
     |||||args
     ||||||text(word'("a"))
-    |||||underline'("_")
+    |||||underscore'("_")
     |||||word'("c")
     ||||rbrace'("}")
     ||||space'(" ")
