@@ -1,5 +1,5 @@
 use divan::{AllocProfiler, Bencher};
-use mitex_parser::{parse, parse_with_macro, CommandSpec};
+use mitex_parser::{parse, parse_without_macro, CommandSpec};
 
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();
@@ -40,8 +40,8 @@ fn bench(bencher: Bencher, input: &str, spec: CommandSpec) {
     bencher.bench(|| parse(input, spec.clone()));
 }
 
-fn bench_macro(bencher: Bencher, input: &str, spec: CommandSpec) {
-    bencher.bench(|| parse_with_macro(input, spec.clone()));
+fn bench_no_macro(bencher: Bencher, input: &str, spec: CommandSpec) {
+    bencher.bench(|| parse_without_macro(input, spec.clone()));
 }
 
 #[divan::bench]
@@ -55,8 +55,8 @@ fn alpha_x_40000(bencher: Bencher) {
 }
 
 #[divan::bench]
-fn alpha_x_40000_macro(bencher: Bencher) {
-    bench_macro(bencher, &ALPHA_X_40000, DEFAULT_SPEC.clone());
+fn alpha_x_40000_no_macro(bencher: Bencher) {
+    bench_no_macro(bencher, &ALPHA_X_40000, DEFAULT_SPEC.clone());
 }
 
 #[divan::bench]
@@ -94,8 +94,8 @@ fn plain_text(bencher: Bencher) {
 }
 
 #[divan::bench]
-fn plain_text_macro(bencher: Bencher) {
-    bench_macro(bencher, &PLAIN_TEXT, DEFAULT_SPEC.clone());
+fn plain_text_no_macro(bencher: Bencher) {
+    bench_no_macro(bencher, &PLAIN_TEXT, DEFAULT_SPEC.clone());
 }
 
 static STARRED_COMMAND: once_cell::sync::Lazy<String> =
@@ -107,8 +107,8 @@ fn starred_command(bencher: Bencher) {
 }
 
 #[divan::bench]
-fn starred_command_macro(bencher: Bencher) {
-    bench_macro(bencher, &STARRED_COMMAND, DEFAULT_SPEC.clone());
+fn starred_command_no_macro(bencher: Bencher) {
+    bench_no_macro(bencher, &STARRED_COMMAND, DEFAULT_SPEC.clone());
 }
 
 /*

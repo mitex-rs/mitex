@@ -30,9 +30,9 @@ fn bench<const WITH_MACRO: bool>(bencher: Bencher, path: &str) {
     let data = serde_json::from_str::<Vec<Fixture>>(&v).unwrap();
 
     let convert = if WITH_MACRO {
-        mitex::convert_math_macro
-    } else {
         mitex::convert_math
+    } else {
+        mitex::convert_math_no_macro
     };
 
     // warm up
