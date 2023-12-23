@@ -16,6 +16,7 @@ harness = false
 rkyv = { version = "0.7.42", optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+fxhash.workspace = true
 
 [features]
 

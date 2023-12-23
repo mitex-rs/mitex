@@ -90,7 +90,7 @@ use mitex_spec::CommandSpec;
 
 pub type Checkpoint = (snapshot_map::Snapshot,);
 
-type MacroMap<'a> = SnapshotMap<String, Macro<'a>>;
+type MacroMap<'a> = SnapshotMap<&'a str, Macro<'a>>;
 
 #[derive(Debug)]
 pub struct CmdMacro<'a> {
@@ -269,7 +269,7 @@ fn define_declarative_macros(macros: &mut MacroMap) {
     ]
     .into_iter()
     {
-        macros.insert(name.to_owned(), Macro::Declare(value));
+        macros.insert(name, Macro::Declare(value));
     }
 }
 

@@ -6,7 +6,7 @@ use std::ops;
 
 pub use ena::undo_log::Snapshot;
 
-type FxHashMap<K, V> = std::collections::HashMap<K, V>;
+type FxHashMap<K, V> = fxhash::FxHashMap<K, V>;
 
 pub type SnapshotMapStorage<K, V> = SnapshotMap<K, V, FxHashMap<K, V>, ()>;
 pub type SnapshotMapRef<'a, K, V, L> = SnapshotMap<K, V, &'a mut FxHashMap<K, V>, &'a mut L>;

@@ -85,7 +85,7 @@ pub mod command {
 
     #[derive(Default)]
     pub struct SpecBuilder {
-        commands: std::collections::HashMap<String, CommandSpecItem>,
+        commands: fxhash::FxHashMap<String, CommandSpecItem>,
     }
 
     impl SpecBuilder {

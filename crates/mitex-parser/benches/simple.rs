@@ -85,6 +85,19 @@ fn sqrt_pattern(bencher: Bencher) {
     bench(bencher, &SQRT_PATTERN, DEFAULT_SPEC.clone());
 }
 
+static PLAIN_TEXT: once_cell::sync::Lazy<String> =
+    once_cell::sync::Lazy::new(|| "hello world ".repeat(5000));
+
+#[divan::bench]
+fn plain_text(bencher: Bencher) {
+    bench(bencher, &PLAIN_TEXT, DEFAULT_SPEC.clone());
+}
+
+#[divan::bench]
+fn plain_text_macro(bencher: Bencher) {
+    bench_macro(bencher, &PLAIN_TEXT, DEFAULT_SPEC.clone());
+}
+
 static STARRED_COMMAND: once_cell::sync::Lazy<String> =
     once_cell::sync::Lazy::new(|| "\\operatorname*{a}".repeat(5000));
 
