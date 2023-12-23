@@ -780,7 +780,7 @@
   }),
   subarray: define-matrix-env(1, alias: "mitexarray"),
   // Environments
-  aligned: normal-env(call-or-ignore(it => pad(y: 0.2em, block(math.op(it))))),
+  aligned: normal-env(call-or-ignore(it => pad(y: 0.2em, block(math.op(math.display(it)))))),
   alignedat: define-env(1, alias: "alignedat", handle: (arg0: none, it) => pad(y: 0.2em, block(math.op(it)))),
   align: define-env(none, alias: "aligned"),
   "align*": define-env(none, alias: "aligned"),
