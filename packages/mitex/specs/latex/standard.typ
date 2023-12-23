@@ -80,7 +80,7 @@
   lvert: define-sym("|"),
   rvert: define-sym("|"),
   lVert: define-sym("||"),
-  rVert: define-sym("|"),
+  rVert: define-sym("||"),
   lparen: define-sym("paren.l"),
   rparen: define-sym("paren.r"),
   lceil: define-sym(" ⌈ "),
