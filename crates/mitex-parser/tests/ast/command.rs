@@ -184,7 +184,7 @@ fn right_greedy() {
     |||attach-comp
     ||||args
     |||||text(word'("x"))
-    ||||underline'("_")
+    ||||underscore'("_")
     ||||word'("1")
     "###);
     // prime
@@ -216,7 +216,7 @@ fn right_greedy() {
     |cmd
     ||cmd-name("\\displaystyle")
     ||args
-    |||attach-comp(underline'("_"),word'("1"))
+    |||attach-comp(underscore'("_"),word'("1"))
     "###);
     // prime
     assert_debug_snapshot!(parse(r#"\displaystyle'"#), @r###"
@@ -302,7 +302,7 @@ fn infix() {
     ||args()
     ||cmd-name("\\over")
     ||args
-    |||attach-comp(underline'("_"),word'("1"))
+    |||attach-comp(underscore'("_"),word'("1"))
     "###);
     assert_debug_snapshot!(parse(r#"\over'"#), @r###"
     root
@@ -325,7 +325,7 @@ fn infix() {
     ||||||args
     |||||||text(word'("b"))
     ||||||apostrophe'("'")
-    ||||underline'("_")
+    ||||underscore'("_")
     ||||word'("1")
     "###);
     assert_debug_snapshot!(parse(r#"a \over b"#), @r###"

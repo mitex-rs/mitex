@@ -207,6 +207,8 @@ fn bp(_: &mut logos::Lexer<Token>) -> BraceKind {
 
 /// The token types defined in logos
 ///
+/// For naming of marks, see <https://en.wikipedia.org/wiki/List_of_typographical_symbols_and_punctuation_marks>
+///
 /// It also specifies how logos would lex the token
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Logos)]
 #[logos(extras = CommandSpec)]
@@ -237,13 +239,10 @@ pub enum Token {
     Tilde,
 
     #[token("/")]
-    Divide,
-
-    #[token("=")]
-    Equal,
+    Slash,
 
     #[token("&")]
-    And,
+    Ampersand,
 
     #[token("^")]
     Caret,
@@ -258,9 +257,9 @@ pub enum Token {
     Semicolon,
 
     #[token("_", priority = 2)]
-    Underline,
+    Underscore,
 
-    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/=_'";^]+"#, priority = 1)]
+    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_'";^]+"#, priority = 1)]
     Word,
 
     #[regex(r"\$\$?")]

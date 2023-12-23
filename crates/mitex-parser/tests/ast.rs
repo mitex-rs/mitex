@@ -78,7 +78,7 @@ mod ast {
         ||||space'(" ")
         ||||args(word'("2"))
         ||||space'(" ")
-        ||underline'("_")
+        ||underscore'("_")
         ||word'("3")
         "###);
     }
@@ -92,7 +92,7 @@ mod ast {
         |||attach-comp
         ||||args
         |||||cmd(cmd-name("\\int"))
-        ||||underline'("_")
+        ||||underscore'("_")
         ||||word'("1")
         ||caret'("^")
         ||word'("2")
@@ -117,7 +117,7 @@ mod ast {
         |attach-comp
         ||args
         |||cmd(cmd-name("\\alpha"))
-        ||underline'("_")
+        ||underscore'("_")
         ||word'("1")
         "###);
     }

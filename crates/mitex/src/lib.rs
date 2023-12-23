@@ -170,7 +170,7 @@ impl MathConverter {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     if first {
                         let kind = child.as_token().map(|n| n.kind());
-                        if matches!(kind, Some(TokenUnderline | TokenCaret)) {
+                        if matches!(kind, Some(TokenUnderscore | TokenCaret)) {
                             if !based {
                                 f.write_str("zws")?;
                             }
@@ -206,10 +206,6 @@ impl MathConverter {
             TokenLineBreak | TokenWhiteSpace => {
                 write!(f, "{}", elem.as_token().unwrap().text())?;
             }
-            // equal identical
-            TokenEqual => {
-                write!(f, "{}", elem.as_token().unwrap().text())?;
-            }
             // escape
             TokenComma => {
                 f.write_str("\\,")?;
@@ -217,13 +213,13 @@ impl MathConverter {
             TokenTilde => {
                 f.write_str("space.nobreak ")?;
             }
-            TokenDivide => {
+            TokenSlash => {
                 f.write_str("\\/")?;
             }
             TokenCaret => {
                 f.write_str("\\^")?;
             }
-            TokenUnderline => {
+            TokenUnderscore => {
                 f.write_str("\\_")?;
             }
             TokenDitto => {
@@ -244,7 +240,7 @@ impl MathConverter {
             TokenRBracket => {
                 f.write_str("\\]")?;
             }
-            TokenAnd => match self.env {
+            TokenAmpersand => match self.env {
                 LaTeXEnv::Matrix => f.write_str("zws ,")?,
                 _ => f.write_str("&")?,
             },
