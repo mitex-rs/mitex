@@ -77,6 +77,7 @@ impl From<Token> for SyntaxKind {
             Token::Dollar => SyntaxKind::TokenDollar,
             Token::Ampersand => SyntaxKind::TokenAmpersand,
             Token::NewLine => SyntaxKind::ItemNewLine,
+            Token::Error => SyntaxKind::TokenError,
             Token::CommandName(_) => SyntaxKind::ClauseCommandName,
         }
     }

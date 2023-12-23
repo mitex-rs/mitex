@@ -86,9 +86,8 @@ use std::{
 };
 
 use crate::{
-    classify,
     snapshot_map::{self, SnapshotMap},
-    BumpTokenStream, CommandName, PeekTok, StreamContext, Token,
+    BraceKind, BumpTokenStream, CommandName, PeekTok, StreamContext, Token,
 };
 use mitex_spec::CommandSpec;
 
@@ -99,78 +98,55 @@ type MacroMap<'a> = SnapshotMap<&'a str, Macro<'a>>;
 #[derive(Debug)]
 pub struct CmdMacro<'a> {
     pub name: String,
-    pub num_args: usize,
-    pub opt: Vec<PeekTok<'a>>,
+    pub num_args: u8,
+    pub opt: Option<Vec<PeekTok<'a>>>,
     pub def: Vec<PeekTok<'a>>,
 }
 
 #[derive(Debug)]
 pub struct EnvMacro<'a> {
     pub name: String,
-    pub num_args: usize,
-    pub opt: Vec<PeekTok<'a>>,
+    pub num_args: u8,
+    pub opt: Option<Vec<PeekTok<'a>>>,
     pub begin_def: Vec<PeekTok<'a>>,
     pub end_def: Vec<PeekTok<'a>>,
 }
 
 #[derive(Debug, Clone)]
+pub enum DeclareCmdOrEnv {
+    /// Command macro for NewCommand/RenewCommand{*}
+    /// Synopsis, one of:
+    ///
+    /// \{re}newcommand{*}{\cmd}{defn}
+    /// \{re}newcommand{*}{\cmd}[nargs]{defn}
+    /// \{re}newcommand{*}{\cmd}[nargs][optargdefault]{defn}
+    NewCommand { renew: bool, star: bool },
+    /// Command macro for ProvideCommand{*}
+    /// Synopsis, one of:
+    ///
+    /// \providecommand{*}{\cmd}{defn}
+    /// \providecommand{*}{\cmd}[nargs]{defn}
+    /// \providecommand{*}{\cmd}[nargs][optargdefault]{defn}
+    ProvideCommand { star: bool },
+    /// Command macro for DeclareRobustCommand{*}
+    /// Synopsis, one of:
+    ///
+    /// \DeclareRobustCommand{*}{\cmd}{defn}
+    /// \DeclareRobustCommand{*}{\cmd}[nargs]{defn}
+    /// \DeclareRobustCommand{*}{\cmd}[nargs][optargdefault]{defn}
+    DeclareRobustCommand { star: bool },
+    /// Command macro for NewEnvironment/RenewEnvironment{*}
+    /// Synopsis, one of:
+    ///
+    /// \{re}newenvironment{*}{env}{begdef}{enddef}
+    /// \{re}newenvironment{*}{env}[nargs]{begdef}{enddef}
+    /// \{re}newenvironment{*}{env}[nargs][optargdefault]{begdef}{enddef}
+    NewEnvironment { renew: bool, star: bool },
+}
+
+#[derive(Debug, Clone)]
 pub enum DeclareMacro {
-    /// Command macro for NewCommand
-    /// Synopsis, one of:
-    ///
-    /// \newcommand{\cmd}{defn}
-    /// \newcommand{\cmd}[nargs]{defn}
-    /// \newcommand{\cmd}[nargs][optargdefault]{defn}
-    NewCommand,
-    /// Command macro for NewCommandStar
-    /// Synopsis, one of:
-    ///
-    /// \newcommand*{\cmd}{defn}
-    /// \newcommand*{\cmd}[nargs]{defn}
-    /// \newcommand*{\cmd}[nargs][optargdefault]{defn}
-    NewCommandStar,
-    /// Command macro for RenewCommand
-    /// Synopsis, one of:
-    ///
-    /// \renewcommand{\cmd}{defn}
-    /// \renewcommand{\cmd}[nargs]{defn}
-    /// \renewcommand{\cmd}[nargs][optargdefault]{defn}
-    RenewCommand,
-    /// Command macro for RenewCommandStar
-    /// Synopsis, one of:
-    ///
-    /// \renewcommand*{\cmd}{defn}
-    /// \renewcommand*{\cmd}[nargs]{defn}
-    /// \renewcommand*{\cmd}[nargs][optargdefault]{defn}
-    RenewCommandStar,
-    /// Command macro for ProvideCommand
-    /// Synopsis, one of:
-    ///
-    /// \providecommand{\cmd}{defn}
-    /// \providecommand{\cmd}[nargs]{defn}
-    /// \providecommand{\cmd}[nargs][optargdefault]{defn}
-    ProvideCommand,
-    /// Command macro for ProvideCommandStar
-    /// Synopsis, one of:
-    ///
-    /// \providecommand*{\cmd}{defn}
-    /// \providecommand*{\cmd}[nargs]{defn}
-    /// \providecommand*{\cmd}[nargs][optargdefault]{defn}
-    ProvideCommandStar,
-    /// Command macro for DeclareRobustCommand
-    /// Synopsis, one of:
-    ///
-    /// \DeclareRobustCommand{\cmd}{defn}
-    /// \DeclareRobustCommand{\cmd}[nargs]{defn}
-    /// \DeclareRobustCommand{\cmd}[nargs][optargdefault]{defn}
-    DeclareRobustCommand,
-    /// Command macro for DeclareRobustCommandStar
-    /// Synopsis, one of:
-    ///
-    /// \DeclareRobustCommand*{\cmd}{defn}
-    /// \DeclareRobustCommand*{\cmd}[nargs]{defn}
-    /// \DeclareRobustCommand*{\cmd}[nargs][optargdefault]{defn}
-    DeclareRobustCommandStar,
+    CmdOrEnv(DeclareCmdOrEnv),
     /// Command macro for DeclareTextCommand
     /// Synopsis, one of:
     ///
@@ -193,34 +169,6 @@ pub enum DeclareMacro {
     /// Synopsis,
     /// \ProvideTextCommandDefault{\cmd}{defn}
     ProvideTextCommandDefault,
-    /// Command macro for NewEnvironment
-    /// Synopsis, one of:
-    ///
-    /// \newenvironment{env}{begdef}{enddef}
-    /// \newenvironment{env}[nargs]{begdef}{enddef}
-    /// \newenvironment{env}[nargs][optargdefault]{begdef}{enddef}
-    NewEnvironment,
-    /// Command macro for NewEnvironmentStar
-    /// Synopsis, one of:
-    ///
-    /// \newenvironment*{env}{begdef}{enddef}
-    /// \newenvironment*{env}[nargs]{begdef}{enddef}
-    /// \newenvironment*{env}[nargs][optargdefault]{begdef}{enddef}
-    NewEnvironmentStar,
-    /// Command macro for RenewEnvironment
-    /// Synopsis, one of:
-    ///
-    /// \renewenvironment{env}{begdef}{enddef}
-    /// \renewenvironment{env}[nargs]{begdef}{enddef}
-    /// \renewenvironment{env}[nargs][optargdefault]{begdef}{enddef}
-    RenewEnvironment,
-    /// Command macro for RenewEnvironmentStar
-    /// Synopsis, one of:
-    ///
-    /// \renewenvironment*{env}{begdef}{enddef}
-    /// \renewenvironment*{env}[nargs]{begdef}{enddef}
-    /// \renewenvironment*{env}[nargs][optargdefault]{begdef}{enddef}
-    RenewEnvironmentStar,
     /// Command macro for AtEndOfClass
     /// Synopsis,
     /// \AtEndOfClass{code}
@@ -241,16 +189,49 @@ pub enum DeclareMacro {
 
 fn define_declarative_macros(macros: &mut MacroMap) {
     for (name, value) in [
-        ("newcommand", DeclareMacro::NewCommand),
-        ("newcommand*", DeclareMacro::NewCommandStar),
-        ("renewcommand", DeclareMacro::RenewCommand),
-        ("renewcommand*", DeclareMacro::RenewCommandStar),
-        ("providecommand", DeclareMacro::ProvideCommand),
-        ("providecommand*", DeclareMacro::ProvideCommandStar),
-        ("DeclareRobustCommand", DeclareMacro::DeclareRobustCommand),
+        (
+            "newcommand",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewCommand {
+                renew: false,
+                star: false,
+            }),
+        ),
+        (
+            "newcommand*",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewCommand {
+                renew: false,
+                star: true,
+            }),
+        ),
+        (
+            "renewcommand",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewCommand {
+                renew: true,
+                star: false,
+            }),
+        ),
+        (
+            "renewcommand*",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewCommand {
+                renew: true,
+                star: true,
+            }),
+        ),
+        (
+            "providecommand",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::ProvideCommand { star: false }),
+        ),
+        (
+            "providecommand*",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::ProvideCommand { star: true }),
+        ),
+        (
+            "DeclareRobustCommand",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::DeclareRobustCommand { star: false }),
+        ),
         (
             "DeclareRobustCommand*",
-            DeclareMacro::DeclareRobustCommandStar,
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::DeclareRobustCommand { star: true }),
         ),
         ("DeclareTextCommand", DeclareMacro::DeclareTextCommand),
         (
@@ -262,10 +243,34 @@ fn define_declarative_macros(macros: &mut MacroMap) {
             "ProvideTextCommandDefault",
             DeclareMacro::ProvideTextCommandDefault,
         ),
-        ("newenvironment", DeclareMacro::NewEnvironment),
-        ("newenvironment*", DeclareMacro::NewEnvironmentStar),
-        ("renewenvironment", DeclareMacro::RenewEnvironment),
-        ("renewenvironment*", DeclareMacro::RenewEnvironmentStar),
+        (
+            "newenvironment",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewEnvironment {
+                renew: false,
+                star: false,
+            }),
+        ),
+        (
+            "newenvironment*",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewEnvironment {
+                renew: false,
+                star: true,
+            }),
+        ),
+        (
+            "renewenvironment",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewEnvironment {
+                renew: true,
+                star: false,
+            }),
+        ),
+        (
+            "renewenvironment*",
+            DeclareMacro::CmdOrEnv(DeclareCmdOrEnv::NewEnvironment {
+                renew: true,
+                star: true,
+            }),
+        ),
         ("AtEndOfClass", DeclareMacro::AtEndOfClass),
         ("AtEndOfPackage", DeclareMacro::AtEndOfPackage),
         ("AtBeginDocument", DeclareMacro::AtBeginDocument),
@@ -333,6 +338,10 @@ impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
     fn bump(&mut self, ctx: &mut StreamContext<'a>) {
         self.do_bump(ctx);
     }
+
+    fn get_macro(&self, name: &str) -> Option<Macro<'a>> {
+        self.macros.get(name).cloned()
+    }
 }
 
 impl<'a> MacroEngine<'a> {
@@ -354,13 +363,20 @@ impl<'a> MacroEngine<'a> {
         const PAGE_SIZE: usize = 4096;
         /// The item size of the peek cache
         const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
+        /// Reserve one item for the peeked token
+        const PEEK_CACHE_SIZE_M1: usize = PEEK_CACHE_SIZE - 1;
 
-        while ctx.peek_cache.len() < PEEK_CACHE_SIZE {
-            let Some(token) = ctx.inner.next() else {
+        ctx.next_token();
+        while ctx.peek_cache.len() < PEEK_CACHE_SIZE_M1 {
+            let Some(token) = ctx.peek_full() else {
                 break;
             };
 
-            self.trapped_by_token(ctx, (token.unwrap(), ctx.inner.slice()));
+            self.trapped_by_token(ctx, token);
+        }
+
+        if let Some(e) = ctx.peek_full() {
+            ctx.peek_cache.push(e);
         }
 
         // Reverse the peek cache to make it a stack
@@ -371,31 +387,192 @@ impl<'a> MacroEngine<'a> {
     }
 
     #[inline]
-    fn trapped_by_token(&mut self, ctx: &mut StreamContext<'a>, (kind, text): PeekTok<'a>) {
+    fn trapped_by_token(
+        &mut self,
+        ctx: &mut StreamContext<'a>,
+        (kind, text): PeekTok<'a>,
+    ) -> Option<()> {
         if kind != Token::CommandName(CommandName::Generic) {
             ctx.peek_cache.push((kind, text));
-            return;
+            ctx.next_token();
+            return None;
         }
 
         let cmd_name = &text[1..];
 
-        // todo: trap begin/end env
-        let name = classify(cmd_name);
-        if name != CommandName::Generic {
-            ctx.peek_cache.push((Token::CommandName(name), text));
-            return;
-        }
-
         let Some(m) = self.macros.get(cmd_name) else {
             ctx.peek_cache
                 .push((Token::CommandName(CommandName::Generic), text));
-            return;
+            ctx.next_token();
+            return None;
         };
 
+        use DeclareMacro::*;
         match m {
-            Macro::Declare(_) => todo!(),
-            Macro::Cmd(_) => todo!(),
-            Macro::Env(_) => todo!(),
+            Macro::Declare(CmdOrEnv(c)) => {
+                // {\cmd}[nargs][optargdefault]{defn}
+
+                ctx.next_not_trivia()
+                    .filter(|nx| *nx == Token::Left(BraceKind::Curly))?;
+                ctx.next_not_trivia();
+
+                let name = ctx
+                    .read_command_name_option(BraceKind::Curly)?
+                    .1
+                    .strip_prefix('\\')
+                    .unwrap();
+
+                #[derive(Clone, Copy, PartialEq)]
+                enum MatchState {
+                    NArgs,
+                    OptArgDefault,
+                    DefN,
+                }
+
+                let mut state = MatchState::NArgs;
+
+                let mut num_args: u8 = 0;
+                let mut opt = None;
+                let def;
+                'match_loop: loop {
+                    let nx = ctx.peek()?;
+
+                    match (state, nx) {
+                        (
+                            MatchState::NArgs | MatchState::OptArgDefault,
+                            Token::Left(BraceKind::Bracket),
+                        ) => {
+                            if state == MatchState::NArgs {
+                                ctx.next_not_trivia();
+                                num_args = {
+                                    let Some(res) = ctx.read_u8_option(BraceKind::Bracket) else {
+                                        return None;
+                                    };
+                                    res
+                                };
+                                state = MatchState::OptArgDefault;
+                            } else {
+                                ctx.next_token();
+                                opt = Some(ctx.read_until_balanced(BraceKind::Bracket));
+                                ctx.eat_if(Token::Right(BraceKind::Bracket));
+                                state = MatchState::DefN;
+                            }
+                        }
+                        (_, Token::Left(BraceKind::Curly)) => {
+                            ctx.next_token();
+                            def = ctx.read_until_balanced(BraceKind::Curly);
+                            ctx.eat_if(Token::Right(BraceKind::Curly));
+                            break 'match_loop;
+                        }
+                        (_, t) => {
+                            def = vec![(t, ctx.curr_text())];
+                            ctx.next_token();
+                            break 'match_loop;
+                        }
+                    }
+                }
+
+                enum UpdateAction {
+                    New,
+                    Renew,
+                    Provide,
+                }
+
+                let mut is_env = false;
+                let mut end_def = None;
+                let action = match c {
+                    DeclareCmdOrEnv::NewCommand { renew, star: _ } => {
+                        if *renew {
+                            UpdateAction::Renew
+                        } else {
+                            UpdateAction::New
+                        }
+                    }
+                    DeclareCmdOrEnv::DeclareRobustCommand { star: _ } => UpdateAction::New,
+                    DeclareCmdOrEnv::ProvideCommand { star: _ } => UpdateAction::Provide,
+                    DeclareCmdOrEnv::NewEnvironment { renew, star: _ } => {
+                        is_env = true;
+
+                        if matches!(ctx.peek()?, Token::Left(BraceKind::Curly)) {
+                            end_def = Some(ctx.read_until_balanced(BraceKind::Curly));
+                            ctx.eat_if(Token::Right(BraceKind::Curly));
+                        }
+
+                        if *renew {
+                            UpdateAction::Renew
+                        } else {
+                            UpdateAction::New
+                        }
+                    }
+                };
+
+                let m = if is_env {
+                    Macro::Env(Arc::new(EnvMacro {
+                        name: name.to_owned(),
+                        num_args,
+                        opt,
+                        begin_def: def,
+                        end_def: end_def?,
+                    }))
+                } else {
+                    Macro::Cmd(Arc::new(CmdMacro {
+                        name: name.to_owned(),
+                        num_args,
+                        opt,
+                        def,
+                    }))
+                };
+
+                // todo: improve performance
+                match action {
+                    UpdateAction::New => {
+                        if self.get_macro(name).is_some() {
+                            ctx.peek_cache.push((Token::Error, name));
+                        }
+
+                        self.add_macro(name, m);
+                    }
+                    UpdateAction::Renew => {
+                        if self.get_macro(name).is_none() {
+                            ctx.peek_cache.push((Token::Error, name));
+                        }
+
+                        self.add_macro(name, m);
+                    }
+                    UpdateAction::Provide => {
+                        if self.get_macro(name).is_none() {
+                            self.add_macro(name, m);
+                        }
+                    }
+                }
+
+                None
+            }
+            Macro::Declare(
+                DeclareTextCommand
+                | ProvideTextCommand
+                | DeclareTextCommandDefault
+                | ProvideTextCommandDefault,
+            ) => {
+                ctx.peek_cache.push((kind, text));
+                ctx.next_token();
+                None
+            }
+            Macro::Declare(AtEndOfClass | AtEndOfPackage | AtBeginDocument | AtEndDocument) => {
+                ctx.peek_cache.push((kind, text));
+                ctx.next_token();
+                None
+            }
+            Macro::Cmd(_) => {
+                ctx.peek_cache.push((kind, text));
+                ctx.next_token();
+                None
+            }
+            Macro::Env(_) => {
+                ctx.peek_cache.push((kind, text));
+                ctx.next_token();
+                None
+            }
         }
     }
 
@@ -415,9 +592,9 @@ impl<'a> MacroEngine<'a> {
     }
 
     /// Peek the next token and its text
-    pub fn add_macro(&mut self, name: &str, value: &Macro) {
+    pub fn add_macro(&mut self, name: &'a str, value: Macro<'a>) {
         // self.symbol_table.insert(name.to_owned(), value.to_owned());
         format!("{:?} => {:?}", name, value);
-        todo!()
+        self.macros.to_mut().insert(name, value);
     }
 }

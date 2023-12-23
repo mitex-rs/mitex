@@ -240,12 +240,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     /// Lexer Interface
     /// Consume tokens until the next non-trivia token
     fn trivia(&mut self) {
-        fn is_trivia(kind: Token) -> bool {
-            use Token::*;
-            matches!(kind, LineBreak | Whitespace | LineComment)
-        }
-
-        while self.peek().map_or(false, is_trivia) {
+        while self.peek().as_ref().map_or(false, Token::is_trivia) {
             self.eat();
         }
     }
@@ -359,7 +354,8 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             | Token::NewLine
             | Token::LineBreak
             | Token::Whitespace
-            | Token::LineComment => {
+            | Token::LineComment
+            | Token::Error => {
                 self.eat();
                 return false;
             }

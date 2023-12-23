@@ -2,6 +2,7 @@ use logos::{Logos, Source};
 mod macro_engine;
 pub mod snapshot_map;
 
+use macro_engine::Macro;
 use mitex_spec::CommandSpec;
 
 pub use macro_engine::MacroEngine;
@@ -22,6 +23,120 @@ pub struct StreamContext<'a> {
     /// A set of peeked tokens takes up to one page of memory
     /// It also takes CPU locality into consideration
     pub peek_cache: Vec<PeekTok<'a>>,
+
+    /// Internal peek
+    pub peek_inner: Option<Token>,
+}
+
+impl<'a> StreamContext<'a> {
+    #[inline]
+    pub fn next_full(&mut self) -> Option<PeekTok<'a>> {
+        let nx = self.next_token();
+        nx.map(|nx| (nx, self.curr_text()))
+    }
+
+    #[inline]
+    pub fn peek_full(&mut self) -> Option<PeekTok<'a>> {
+        let nx = self.peek();
+        nx.map(|nx| (nx, self.curr_text()))
+    }
+
+    #[inline]
+    pub fn next_token_inner(&mut self) -> Option<Token> {
+        self.inner.next().map(|e| {
+            let tok = e.unwrap();
+
+            if let Token::CommandName(CommandName::Generic) = tok {
+                Token::CommandName(classify(&self.curr_text()[1..]))
+            } else {
+                tok
+            }
+        })
+    }
+
+    #[inline]
+    pub fn next_token(&mut self) -> Option<Token> {
+        let nx = self.next_token_inner();
+        self.peek_inner = nx;
+        nx
+    }
+
+    #[inline]
+    pub fn curr_text(&mut self) -> &'a str {
+        self.inner.slice()
+    }
+
+    fn next_not_trivia(&mut self) -> Option<Token> {
+        std::iter::from_fn(|| self.next_token_inner())
+            .find(|e| !e.is_trivia())
+            .map(|t| {
+                self.peek_inner = Some(t);
+                t
+            })
+    }
+
+    fn peek(&mut self) -> Option<Token> {
+        self.peek_inner
+    }
+
+    fn eat_if(&mut self, tk: Token) {
+        if self.peek().map_or(false, |e| e == tk) {
+            self.next_token();
+        }
+    }
+
+    fn read_u8_option(&mut self, bk: BraceKind) -> Option<u8> {
+        let until_tok = Token::Right(bk);
+        let nx = self.peek()?;
+        if nx != Token::Word {
+            self.next_not_trivia();
+            return None;
+        }
+
+        let w: u64 = self.curr_text().parse().ok()?;
+
+        self.next_not_trivia()?;
+        self.eat_if(until_tok);
+        (w <= 9).then_some(w as u8)
+    }
+
+    fn read_command_name_option(&mut self, bk: BraceKind) -> Option<PeekTok<'a>> {
+        let until_tok = Token::Right(bk);
+        let nx = self.peek()?;
+        if !matches!(nx, Token::CommandName(..)) {
+            self.next_not_trivia();
+            return None;
+        }
+
+        let res = (nx, self.curr_text());
+
+        self.next_not_trivia()?;
+        self.eat_if(until_tok);
+        Some(res)
+    }
+
+    fn read_until_balanced(&mut self, bk: BraceKind) -> Vec<PeekTok<'a>> {
+        let until_tok = Token::Right(bk);
+
+        let mut c = 0;
+        self.peek_full()
+            .into_iter()
+            .chain(std::iter::from_fn(|| self.next_full()))
+            .take_while(|(e, _)| {
+                let e = *e;
+                if c == 0 && e == until_tok {
+                    false
+                } else {
+                    if e == Token::Left(BraceKind::Curly) {
+                        c += 1;
+                    } else if e == Token::Right(BraceKind::Curly) {
+                        c -= 1;
+                    }
+                    true
+                }
+            })
+            .collect()
+    }
 }
 
 /// A trait for bumping the token stream
@@ -33,6 +148,10 @@ pub trait BumpTokenStream<'a> {
     /// time
     fn bump(&mut self, ctx: &mut StreamContext<'a>) {
         default_bump(ctx)
+    }
+
+    fn get_macro(&self, _name: &str) -> Option<Macro<'a>> {
+        None
     }
 }
 
@@ -74,6 +193,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
             ctx: StreamContext {
                 inner,
                 peeked: None,
+                peek_inner: None,
                 peek_cache: Vec::with_capacity(16),
             },
             bumper,
@@ -128,6 +248,10 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
         self.next();
         Some(peeked)
     }
+
+    pub fn get_macro(&mut self, name: &str) -> Option<Macro<'a>> {
+        self.bumper.get_macro(name)
+    }
 }
 
 /// fills the peek cache with a page of tokens at the same time
@@ -139,18 +263,8 @@ fn default_bump(ctx: &mut StreamContext<'_>) {
     const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
 
     for _ in 0..PEEK_CACHE_SIZE {
-        let tok = ctx.inner.next().map(|token| {
-            let token = token.unwrap();
-            let text = ctx.inner.slice();
-            if token == Token::CommandName(CommandName::Generic) {
-                let name = classify(&text[1..]);
-                (Token::CommandName(name), text)
-            } else {
-                (token, text)
-            }
-        });
-        if let Some(kind) = tok {
-            ctx.peek_cache.push(kind);
+        if let Some(tok) = ctx.next_full() {
+            ctx.peek_cache.push(tok);
         } else {
             break;
         }
@@ -273,6 +387,16 @@ pub enum Token {
 
     #[regex(r"\\", lex_command_name, priority = 3)]
     CommandName(CommandName),
+
+    /// Macro error
+    Error,
+}
+
+impl Token {
+    pub fn is_trivia(&self) -> bool {
+        use Token::*;
+        matches!(self, LineBreak | Whitespace | LineComment)
+    }
 }
 
 /// Lex a valid command name

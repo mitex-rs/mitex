@@ -5,10 +5,11 @@ use std::rc::Rc;
 
 pub use mitex_parser::command_preludes;
 use mitex_parser::parse;
-use mitex_parser::parse_with_macro;
+use mitex_parser::parse_without_macro;
 pub use mitex_parser::spec::*;
 use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
+use mitex_parser::syntax::SyntaxNode;
 use rowan::ast::AstNode;
 use rowan::SyntaxToken;
 
@@ -430,8 +431,13 @@ impl fmt::Display for TypstMathRepr {
     }
 }
 
-pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
-    let node = parse(input, spec.unwrap_or_else(|| DEFAULT_SPEC.clone()));
+#[inline(always)]
+fn convert_math_inner(
+    input: &str,
+    spec: Option<CommandSpec>,
+    do_parse: fn(input: &str, spec: CommandSpec) -> SyntaxNode,
+) -> Result<String, String> {
+    let node = do_parse(input, spec.unwrap_or_else(|| DEFAULT_SPEC.clone()));
     // println!("{:#?}", node);
     // println!("{:#?}", node.text());
     let mut output = String::new();
@@ -446,21 +452,13 @@ pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, St
     Ok(output)
 }
 
+pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
+    convert_math_inner(input, spec, parse)
+}
+
 /// For internal testing
-pub fn convert_math_macro(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
-    let node = parse_with_macro(input, spec.unwrap_or_else(|| DEFAULT_SPEC.clone()));
-    // println!("{:#?}", node);
-    // println!("{:#?}", node.text());
-    let mut output = String::new();
-    let err = String::new();
-    let err = Rc::new(RefCell::new(err));
-    let repr = TypstMathRepr(
-        LatexSyntaxElem::Node(node),
-        DEFAULT_SPEC.clone(),
-        err.clone(),
-    );
-    core::fmt::write(&mut output, format_args!("{}", repr)).map_err(|_| err.borrow().to_owned())?;
-    Ok(output)
+pub fn convert_math_no_macro(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
+    convert_math_inner(input, spec, parse_without_macro)
 }
 
 static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
