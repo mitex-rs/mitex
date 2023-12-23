@@ -363,6 +363,7 @@ version = "0.1.0"
 name = "mitex-lexer"
 version = "0.1.0"
 dependencies = [
+ "divan",
  "ecow",
  "ena",
  "fxhash",
