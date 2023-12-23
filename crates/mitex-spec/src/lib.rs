@@ -9,7 +9,7 @@
 //!
 //! See <https://github.com/OrangeX4/mitex/blob/main/docs/spec.typ> for detailed description.
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize as rDeser, Serialize as rSer};
@@ -36,7 +36,7 @@ pub enum CommandSpecItem {
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CommandSpecRepr {
     /// A map from command name to command specification
-    pub commands: HashMap<String, CommandSpecItem>,
+    pub commands: fxhash::FxHashMap<String, CommandSpecItem>,
 }
 
 /// Command specification that is cheap to clone
@@ -77,7 +77,7 @@ impl CommandSpec {
 
 impl CommandSpec {
     /// Create a new command specification
-    pub fn new(commands: HashMap<String, CommandSpecItem>) -> Self {
+    pub fn new(commands: fxhash::FxHashMap<String, CommandSpecItem>) -> Self {
         Self(Arc::new(CommandSpecRepr { commands }))
     }
 

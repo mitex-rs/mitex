@@ -10,6 +10,7 @@ use std::rc::Rc;
 
 pub use mitex_parser::command_preludes;
 use mitex_parser::parse;
+use mitex_parser::parser::parse_with_macro;
 pub use mitex_parser::spec::*;
 use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
@@ -454,6 +455,23 @@ pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, St
     Ok(output)
 }
 
+/// For internal testing
+pub fn convert_math_macro(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
+    let node = parse_with_macro(input, spec.unwrap_or_else(|| DEFAULT_SPEC.clone()));
+    // println!("{:#?}", node);
+    // println!("{:#?}", node.text());
+    let mut output = String::new();
+    let err = String::new();
+    let err = Rc::new(RefCell::new(err));
+    let repr = TypstMathRepr(
+        LatexSyntaxElem::Node(node),
+        DEFAULT_SPEC.clone(),
+        err.clone(),
+    );
+    core::fmt::write(&mut output, format_args!("{}", repr)).map_err(|_| err.borrow().to_owned())?;
+    Ok(output)
+}
+
 static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
     CommandSpec::from_bytes(include_bytes!(
         "../../../target/mitex-artifacts/spec/default.rkyv"
@@ -829,9 +847,9 @@ a & b & c
         assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###);
         assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \\\"b \\\"c ""###);
         assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""text(\"a\\\"b\\\"c\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""text(\"a \\\" b \\\" c\")""###);     
+        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""text(\"a \\\" b \\\" c\")""###);
     }
-    
+
     #[test]
     fn test_convert_text() {
         assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""text(\"abc\")""###);

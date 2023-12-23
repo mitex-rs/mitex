@@ -17,6 +17,7 @@ members = ["crates/*"]
 
 serde = "1.0.188"
 serde_json = "1.0.106"
+fxhash = "0.2.1"
 
 [profile.release]
 lto = true        # Enable link-time optimization
