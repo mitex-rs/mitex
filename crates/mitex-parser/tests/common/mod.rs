@@ -77,6 +77,7 @@ pub mod ast_snapshot {
                 SyntaxKind::TokenWord => "word'",
                 SyntaxKind::TokenDollar => "dollar'",
                 SyntaxKind::TokenAmpersand => "ampersand'",
+                SyntaxKind::TokenHash => "hash'",
                 SyntaxKind::TokenUnderscore => "underscore'",
                 SyntaxKind::TokenCaret => "caret'",
                 SyntaxKind::TokenApostrophe => "apostrophe'",

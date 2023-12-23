@@ -22,6 +22,7 @@ pub enum SyntaxKind {
     TokenWord,
     TokenDollar,
     TokenAmpersand,
+    TokenHash,
     TokenUnderscore,
     TokenCaret,
     TokenApostrophe,
@@ -76,8 +77,10 @@ impl From<Token> for SyntaxKind {
             Token::Word => SyntaxKind::TokenWord,
             Token::Dollar => SyntaxKind::TokenDollar,
             Token::Ampersand => SyntaxKind::TokenAmpersand,
+            Token::Hash => SyntaxKind::TokenHash,
             Token::NewLine => SyntaxKind::ItemNewLine,
             Token::Error => SyntaxKind::TokenError,
+            Token::MacroArg(_) => SyntaxKind::TokenWord,
             Token::CommandName(_) => SyntaxKind::ClauseCommandName,
         }
     }

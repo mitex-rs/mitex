@@ -355,6 +355,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             | Token::LineBreak
             | Token::Whitespace
             | Token::LineComment
+            | Token::Hash
             | Token::Error => {
                 self.eat();
                 return false;
@@ -368,7 +369,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 return false;
             }
             Token::Left(BraceKind::Curly) => self.item_group(ItemCurly),
-            Token::Right(BraceKind::Curly) => {
+            Token::Right(BraceKind::Curly) | Token::MacroArg(_) => {
                 self.builder.start_node(TokenError.into());
                 self.eat();
                 self.builder.finish_node();

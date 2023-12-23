@@ -10,6 +10,25 @@ pub use macro_engine::MacroEngine;
 /// A peeked token
 type PeekTok<'a> = (Token, &'a str);
 
+#[derive(Debug, Clone)]
+pub struct PeekCache<'a> {
+    /// Prepare for token peeking
+    /// The last peeked token
+    pub peeked: Option<PeekTok<'a>>,
+    /// A set of peeked tokens takes up to one page of memory
+    /// It also takes CPU locality into consideration
+    pub peek_cache: Vec<PeekTok<'a>>,
+}
+
+impl Default for PeekCache<'_> {
+    fn default() -> Self {
+        Self {
+            peeked: None,
+            peek_cache: Vec::with_capacity(8),
+        }
+    }
+}
+
 /// A stream context for [`Lexer`]
 #[derive(Debug, Clone)]
 pub struct StreamContext<'a> {
@@ -17,37 +36,20 @@ pub struct StreamContext<'a> {
     /// The inner lexer
     pub inner: logos::Lexer<'a, Token>,
 
-    /// Prepare for token peeking
-    /// The last peeked token
-    pub peeked: Option<PeekTok<'a>>,
-    /// A set of peeked tokens takes up to one page of memory
-    /// It also takes CPU locality into consideration
-    pub peek_cache: Vec<PeekTok<'a>>,
-
+    /// Outer peek
+    pub peek_outer: PeekCache<'a>,
     /// Internal peek
-    pub peek_inner: Option<Token>,
+    peek_inner: PeekCache<'a>,
 }
 
 impl<'a> StreamContext<'a> {
     #[inline]
-    pub fn next_full(&mut self) -> Option<PeekTok<'a>> {
-        let nx = self.next_token();
-        nx.map(|nx| (nx, self.curr_text()))
-    }
-
-    #[inline]
-    pub fn peek_full(&mut self) -> Option<PeekTok<'a>> {
-        let nx = self.peek();
-        nx.map(|nx| (nx, self.curr_text()))
-    }
-
-    #[inline]
-    pub fn next_token_inner(&mut self) -> Option<Token> {
-        self.inner.next().map(|e| {
+    fn next_token_inner(inner: &mut logos::Lexer<'a, Token>) -> Option<Token> {
+        inner.next().map(|e| {
             let tok = e.unwrap();
 
             if let Token::CommandName(CommandName::Generic) = tok {
-                Token::CommandName(classify(&self.curr_text()[1..]))
+                Token::CommandName(classify(&inner.slice()[1..]))
             } else {
                 tok
             }
@@ -55,45 +57,58 @@ impl<'a> StreamContext<'a> {
     }
 
     #[inline]
-    pub fn next_token(&mut self) -> Option<Token> {
-        let nx = self.next_token_inner();
-        self.peek_inner = nx;
-        nx
+    fn next_full(&mut self) -> Option<PeekTok<'a>> {
+        self.next_token();
+        self.peek_inner.peeked
     }
 
     #[inline]
-    pub fn curr_text(&mut self) -> &'a str {
-        self.inner.slice()
+    fn peek_full(&mut self) -> Option<PeekTok<'a>> {
+        self.peek_inner.peeked
+    }
+
+    // Inner bumping is not cached
+    #[inline]
+    pub fn next_token(&mut self) {
+        if let Some(peeked) = self.peek_inner.peek_cache.pop() {
+            self.peek_inner.peeked = Some(peeked);
+            return;
+        }
+
+        self.peek_inner.peeked =
+            Self::next_token_inner(&mut self.inner).map(|e| (e, self.inner.slice()));
+    }
+
+    fn peek_not_trivia(&mut self) -> Option<Token> {
+        self.peek()
+            .into_iter()
+            .chain(std::iter::from_fn(|| self.next_full().map(|(e, _)| e)))
+            .find(|e| !e.is_trivia())
     }
 
     fn next_not_trivia(&mut self) -> Option<Token> {
-        std::iter::from_fn(|| self.next_token_inner())
-            .find(|e| !e.is_trivia())
-            .map(|t| {
-                self.peek_inner = Some(t);
-                t
-            })
+        std::iter::from_fn(|| self.next_full().map(|(e, _)| e)).find(|e| !e.is_trivia())
     }
 
     fn peek(&mut self) -> Option<Token> {
-        self.peek_inner
+        self.peek_inner.peeked.map(|(kind, _)| kind)
     }
 
     fn eat_if(&mut self, tk: Token) {
-        if self.peek().map_or(false, |e| e == tk) {
+        if self.peek_inner.peeked.map_or(false, |e| e.0 == tk) {
             self.next_token();
         }
     }
 
     fn read_u8_option(&mut self, bk: BraceKind) -> Option<u8> {
         let until_tok = Token::Right(bk);
-        let nx = self.peek()?;
+        let (nx, t) = self.peek_full()?;
         if nx != Token::Word {
             self.next_not_trivia();
             return None;
         }
 
-        let w: u64 = self.curr_text().parse().ok()?;
+        let w: u64 = t.parse().ok()?;
 
         self.next_not_trivia()?;
         self.eat_if(until_tok);
@@ -102,13 +117,11 @@ impl<'a> StreamContext<'a> {
 
     fn read_command_name_option(&mut self, bk: BraceKind) -> Option<PeekTok<'a>> {
         let until_tok = Token::Right(bk);
-        let nx = self.peek()?;
-        if !matches!(nx, Token::CommandName(..)) {
+        let res = self.peek_full()?;
+        if !matches!(res.0, Token::CommandName(..)) {
             self.next_not_trivia();
             return None;
         }
-
-        let res = (nx, self.curr_text());
 
         self.next_not_trivia()?;
         self.eat_if(until_tok);
@@ -137,6 +150,19 @@ impl<'a> StreamContext<'a> {
             })
             .collect()
     }
+
+    fn push_outer(&mut self, peeked: PeekTok<'a>) {
+        self.peek_outer.peek_cache.push(peeked);
+    }
+
+    fn extend_inner(&mut self, peeked: impl Iterator<Item = PeekTok<'a>>) {
+        if let Some(peeked) = self.peek_inner.peeked {
+            self.peek_inner.peek_cache.push(peeked);
+            self.peek_inner.peeked = None;
+        }
+        self.peek_inner.peek_cache.extend(peeked);
+        self.next_token();
+    }
 }
 
 /// A trait for bumping the token stream
@@ -147,7 +173,7 @@ pub trait BumpTokenStream<'a> {
     /// By default, it fills the peek cache with a page of tokens at the same
     /// time
     fn bump(&mut self, ctx: &mut StreamContext<'a>) {
-        default_bump(ctx)
+        default_bump(&mut ctx.inner, &mut ctx.peek_outer)
     }
 
     fn get_macro(&self, _name: &str) -> Option<Macro<'a>> {
@@ -192,9 +218,8 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
         let mut n = Self {
             ctx: StreamContext {
                 inner,
-                peeked: None,
-                peek_inner: None,
-                peek_cache: Vec::with_capacity(16),
+                peek_outer: PeekCache::default(),
+                peek_inner: PeekCache::default(),
             },
             bumper,
         };
@@ -206,8 +231,8 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
     /// Private method to advance the lexer by one token
     #[inline]
     fn next(&mut self) {
-        if let Some(peeked) = self.ctx.peek_cache.pop() {
-            self.ctx.peeked = Some(peeked);
+        if let Some(peeked) = self.ctx.peek_outer.peek_cache.pop() {
+            self.ctx.peek_outer.peeked = Some(peeked);
             return;
         }
 
@@ -217,12 +242,12 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
 
     /// Peek the next token
     pub fn peek(&self) -> Option<Token> {
-        self.ctx.peeked.map(|(kind, _)| kind)
+        self.ctx.peek_outer.peeked.map(|(kind, _)| kind)
     }
 
     /// Peek the next token's text
     pub fn peek_text(&self) -> Option<&'a str> {
-        self.ctx.peeked.map(|(_, text)| text)
+        self.ctx.peek_outer.peeked.map(|(_, text)| text)
     }
 
     /// Peek the next token's first char
@@ -232,7 +257,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
 
     /// Update the text part of the peeked token
     pub fn consume_utf8_bytes(&mut self, cnt: usize) {
-        let Some(peek_mut) = &mut self.ctx.peeked else {
+        let Some(peek_mut) = &mut self.ctx.peek_outer.peeked else {
             return;
         };
         if peek_mut.1.len() <= cnt {
@@ -244,7 +269,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
 
     /// Update the peeked token and return the old one
     pub fn eat(&mut self) -> Option<(Token, &'a str)> {
-        let peeked = self.ctx.peeked.take()?;
+        let peeked = self.ctx.peek_outer.peeked.take()?;
         self.next();
         Some(peeked)
     }
@@ -255,7 +280,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
 }
 
 /// fills the peek cache with a page of tokens at the same time
-fn default_bump(ctx: &mut StreamContext<'_>) {
+fn default_bump<'a>(l: &mut logos::Lexer<'a, Token>, cache: &mut PeekCache<'a>) {
     /// The size of a page, in some architectures it is 16384B but that doesn't
     /// matter
     const PAGE_SIZE: usize = 4096;
@@ -263,18 +288,18 @@ fn default_bump(ctx: &mut StreamContext<'_>) {
     const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
 
     for _ in 0..PEEK_CACHE_SIZE {
-        if let Some(tok) = ctx.next_full() {
-            ctx.peek_cache.push(tok);
+        if let Some(tok) = StreamContext::next_token_inner(l).map(|nx| (nx, l.slice())) {
+            cache.peek_cache.push(tok);
         } else {
             break;
         }
     }
 
     // Reverse the peek cache to make it a stack
-    ctx.peek_cache.reverse();
+    cache.peek_cache.reverse();
 
     // Pop the first token again
-    ctx.peeked = ctx.peek_cache.pop();
+    cache.peeked = cache.peek_cache.pop();
 }
 
 /// Classify the command name so parser can use it repeatedly
@@ -370,10 +395,13 @@ pub enum Token {
     #[token(";")]
     Semicolon,
 
+    #[token("#")]
+    Hash,
+
     #[token("_", priority = 2)]
     Underscore,
 
-    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_'";&^]+"#, priority = 1)]
+    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_'";&^#]+"#, priority = 1)]
     Word,
 
     #[regex(r"\$\$?")]
@@ -390,6 +418,8 @@ pub enum Token {
 
     /// Macro error
     Error,
+
+    MacroArg(u8),
 }
 
 impl Token {

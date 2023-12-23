@@ -40,6 +40,13 @@ fn no_macros() {
     Whitespace(" ")
     Word("world")
     "###);
+    assert_snapshot!(assert_plain_tokens("{a#1a}"), @r###"
+    Left(Curly)("{")
+    Word("a")
+    Hash("#")
+    Word("1a")
+    Right(Curly)("}")
+    "###);
 }
 
 // collect all tokens until eat() returns None
@@ -142,5 +149,28 @@ fn declare_macro() {
             ],
         },
     )
+    "###);
+}
+
+#[test]
+fn subst_macro() {
+    assert_snapshot!(tokens(r#"\newcommand{\f}[2]{#1f(#2)}\f\hat xy"#), @r###"
+    CommandName(Generic)("\\hat")
+    Word("f")
+    Left(Paren)("(")
+    Word("x")
+    Right(Paren)(")")
+    Word("y")
+    "###);
+}
+
+#[test]
+fn newcommand_recursive() {
+    assert_snapshot!(tokens(r#"\newcommand{\DeclareMathDelimit}[2]{\newcommand{#1}[1]{\left#2\mitexrecurse{#1}\right#2}}\DeclareMathDelimit{\abs}{\vert}\abs{abc}"#), @r###"
+    CommandName(Left)("\\left")
+    CommandName(Generic)("\\vert")
+    Word("abc")
+    CommandName(Right)("\\right")
+    CommandName(Generic)("\\vert")
     "###);
 }
