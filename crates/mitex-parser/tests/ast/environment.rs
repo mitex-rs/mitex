@@ -112,7 +112,7 @@ fn space_around_and() {
     |||cmd-name("\\begin")
     |||curly(lbrace'("{"),word'("bmatrix"),rbrace'("}"))
     ||text(word'("A"))
-    ||and'("&")
+    ||ampersand'("&")
     ||text(word'("B"))
     ||end
     |||cmd-name("\\end")
