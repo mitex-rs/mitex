@@ -78,7 +78,7 @@
 
 use std::{ops::Range, sync::Arc};
 
-use crate::{snapshot_map::SnapshotMap, Lexer, PeekTok, Token};
+use crate::{classify, snapshot_map::SnapshotMap, BumpTokenStream, CommandName, PeekTok, Token};
 use mitex_spec::CommandSpec;
 
 pub type Snapshot = ();
@@ -133,8 +133,8 @@ pub enum MacroNode<'a> {
 /// When it meets a macro in token stream, It evaluates a macro into expanded
 /// tokens.
 pub struct MacroEngine<'a> {
-    /// Lexer level structure
-    lexer: Lexer<'a>,
+    /// Command specification
+    pub spec: CommandSpec,
     /// Scoped unified symbol table
     symbol_table: MacroMap<'a>,
     /// Global macros in chain
@@ -147,11 +147,17 @@ pub struct MacroEngine<'a> {
     pub scanned_tokens: Vec<PeekTok<'a>>,
 }
 
+impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
+    fn bump(&mut self, ctx: &mut crate::StreamContext<'a>) {
+        self.do_bump(ctx);
+    }
+}
+
 impl<'a> MacroEngine<'a> {
-    /// Create a new macro evaluator
-    pub fn new(input: &'a str, spec: CommandSpec) -> Self {
+    /// Create a new macro engine
+    pub fn new(spec: CommandSpec) -> Self {
         Self {
-            lexer: Lexer::new(input, spec),
+            spec,
             symbol_table: SnapshotMap::default(),
             globals: MacroMap::default(),
             env_stack: Vec::new(),
@@ -160,9 +166,37 @@ impl<'a> MacroEngine<'a> {
         }
     }
 
-    /// Peek the next token
-    pub fn peek(&self) -> Option<Token> {
-        self.lexer.peek()
+    /// fills the peek cache with a page of tokens at the same time
+    fn do_bump(&mut self, ctx: &mut crate::StreamContext<'a>) {
+        /// The size of a page, in some architectures it is 16384B but that
+        /// doesn't matter
+        const PAGE_SIZE: usize = 4096;
+        /// The item size of the peek cache
+        const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
+
+        for _ in 0..PEEK_CACHE_SIZE {
+            let kind = ctx.inner.next().map(|token| {
+                let kind = token.unwrap();
+                let text = ctx.inner.slice();
+                if kind == Token::CommandName(CommandName::Generic) {
+                    let name = classify(&text[1..]);
+                    (Token::CommandName(name), text)
+                } else {
+                    (kind, text)
+                }
+            });
+            if let Some(kind) = kind {
+                ctx.peek_cache.push(kind);
+            } else {
+                break;
+            }
+        }
+
+        // Reverse the peek cache to make it a stack
+        ctx.peek_cache.reverse();
+
+        // Pop the first token again
+        ctx.peeked = ctx.peek_cache.pop();
     }
 
     /// Create a new scope for macro definitions

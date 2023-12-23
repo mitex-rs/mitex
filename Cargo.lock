@@ -350,6 +350,7 @@ version = "0.1.0"
 dependencies = [
  "ecow",
  "ena",
+ "insta",
  "logos",
  "mitex-spec",
  "once_cell",

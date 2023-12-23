@@ -36,6 +36,9 @@ pub trait BumpTokenStream<'a> {
     }
 }
 
+/// The default implementation of [`BumpTokenStream`]
+///
+/// See [`default_bump`] for implementation
 impl BumpTokenStream<'_> for () {}
 
 /// Small memory-efficient lexer for TeX
@@ -43,12 +46,17 @@ impl BumpTokenStream<'_> for () {}
 /// It gets improved performance on x86_64 but not wasm through
 #[derive(Debug, Clone)]
 pub struct Lexer<'a, S: BumpTokenStream<'a> = ()> {
+    /// A stream context shared with the bumper
     ctx: StreamContext<'a>,
+    /// Implementations to bump the token stream into [`Self::ctx`]
     bumper: S,
 }
 
 impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
-    /// Create a new lexer
+    /// Create a new lexer on a main input source
+    ///
+    /// Note that since we have a bumper, the returning string is not always
+    /// sliced from the input
     pub fn new(input: &'a str, spec: CommandSpec) -> Self
     where
         S: Default,
@@ -56,7 +64,10 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
         Self::new_with_bumper(input, spec, S::default())
     }
 
-    /// Create a new lexer with a bumper
+    /// Create a new lexer on a main input source with a bumper
+    ///
+    /// Note that since we have a bumper, the returning string is not always
+    /// sliced from the input
     pub fn new_with_bumper(input: &'a str, spec: CommandSpec, bumper: S) -> Self {
         let inner = Token::lexer_with_extras(input, spec);
         let mut n = Self {
@@ -72,7 +83,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
         n
     }
 
-    /// Private method to advance the lexer
+    /// Private method to advance the lexer by one token
     #[inline]
     fn next(&mut self) {
         if let Some(peeked) = self.ctx.peek_cache.pop() {
@@ -82,9 +93,6 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
 
         // it is not likely to be inlined
         self.bumper.bump(&mut self.ctx);
-
-        // Pop the first token again
-        self.ctx.peeked = self.ctx.peek_cache.pop();
     }
 
     /// Peek the next token
@@ -103,7 +111,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
     }
 
     /// Update the text part of the peeked token
-    pub fn consume_word(&mut self, cnt: usize) {
+    pub fn consume_utf8_bytes(&mut self, cnt: usize) {
         let Some(peek_mut) = &mut self.ctx.peeked else {
             return;
         };
@@ -116,9 +124,9 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
 
     /// Update the peeked token and return the old one
     pub fn eat(&mut self) -> Option<(Token, &'a str)> {
-        let (kind, text) = self.ctx.peeked.take()?;
+        let peeked = self.ctx.peeked.take()?;
         self.next();
-        Some((kind, text))
+        Some(peeked)
     }
 }
 
@@ -150,6 +158,9 @@ fn default_bump(ctx: &mut StreamContext<'_>) {
 
     // Reverse the peek cache to make it a stack
     ctx.peek_cache.reverse();
+
+    // Pop the first token again
+    ctx.peeked = ctx.peek_cache.pop();
 }
 
 /// Classify the command name so parser can use it repeatedly
