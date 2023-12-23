@@ -14,9 +14,9 @@
   }), spec))
 }
 
-#let mitex(it, block: true) = {
+#let mitex(it, block: true, numbering: none, supplement: auto) = {
   let res = mitex-convert(it)
-  math.equation(block: block, eval("$" + res + "$", scope: mitex-scope))
+  math.equation(block: block, eval("$" + res + "$", scope: mitex-scope), numbering: numbering, supplement: supplement)
 }
 
 #let mi = mitex.with(block: false)
