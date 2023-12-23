@@ -54,6 +54,9 @@
 //! - \ignorespaces
 //! - \ignorespacesafterend
 //!
+//! - \def
+//! - \gdef needs: globals: MacroMap<'a>,
+//!
 //! These commands will be definitely dropped or raise an error (since we are
 //! not a tex engine)
 //! - ifvoid
@@ -78,10 +81,14 @@
 
 use std::{ops::Range, sync::Arc};
 
-use crate::{classify, snapshot_map::SnapshotMap, BumpTokenStream, CommandName, PeekTok, Token};
+use crate::{
+    classify,
+    snapshot_map::{self, SnapshotMap},
+    BumpTokenStream, CommandName, PeekTok, StreamContext, Token,
+};
 use mitex_spec::CommandSpec;
 
-pub type Snapshot = ();
+pub type Checkpoint = (snapshot_map::Snapshot,);
 
 type MacroMap<'a> = SnapshotMap<String, Macro<'a>>;
 
@@ -103,7 +110,173 @@ pub struct EnvMacro<'a> {
 }
 
 #[derive(Debug)]
+pub enum DeclareMacro {
+    /// Command macro for NewCommand
+    /// Synopsis, one of:
+    ///
+    /// \newcommand{\cmd}{defn}
+    /// \newcommand{\cmd}[nargs]{defn}
+    /// \newcommand{\cmd}[nargs][optargdefault]{defn}
+    NewCommand,
+    /// Command macro for NewCommandStar
+    /// Synopsis, one of:
+    ///
+    /// \newcommand*{\cmd}{defn}
+    /// \newcommand*{\cmd}[nargs]{defn}
+    /// \newcommand*{\cmd}[nargs][optargdefault]{defn}
+    NewCommandStar,
+    /// Command macro for RenewCommand
+    /// Synopsis, one of:
+    ///
+    /// \renewcommand{\cmd}{defn}
+    /// \renewcommand{\cmd}[nargs]{defn}
+    /// \renewcommand{\cmd}[nargs][optargdefault]{defn}
+    RenewCommand,
+    /// Command macro for RenewCommandStar
+    /// Synopsis, one of:
+    ///
+    /// \renewcommand*{\cmd}{defn}
+    /// \renewcommand*{\cmd}[nargs]{defn}
+    /// \renewcommand*{\cmd}[nargs][optargdefault]{defn}
+    RenewCommandStar,
+    /// Command macro for ProvideCommand
+    /// Synopsis, one of:
+    ///
+    /// \providecommand{\cmd}{defn}
+    /// \providecommand{\cmd}[nargs]{defn}
+    /// \providecommand{\cmd}[nargs][optargdefault]{defn}
+    ProvideCommand,
+    /// Command macro for ProvideCommandStar
+    /// Synopsis, one of:
+    ///
+    /// \providecommand*{\cmd}{defn}
+    /// \providecommand*{\cmd}[nargs]{defn}
+    /// \providecommand*{\cmd}[nargs][optargdefault]{defn}
+    ProvideCommandStar,
+    /// Command macro for DeclareRobustCommand
+    /// Synopsis, one of:
+    ///
+    /// \DeclareRobustCommand{\cmd}{defn}
+    /// \DeclareRobustCommand{\cmd}[nargs]{defn}
+    /// \DeclareRobustCommand{\cmd}[nargs][optargdefault]{defn}
+    DeclareRobustCommand,
+    /// Command macro for DeclareRobustCommandStar
+    /// Synopsis, one of:
+    ///
+    /// \DeclareRobustCommand*{\cmd}{defn}
+    /// \DeclareRobustCommand*{\cmd}[nargs]{defn}
+    /// \DeclareRobustCommand*{\cmd}[nargs][optargdefault]{defn}
+    DeclareRobustCommandStar,
+    /// Command macro for DeclareTextCommand
+    /// Synopsis, one of:
+    ///
+    /// \DeclareTextCommand{\cmd}{encoding}{defn}
+    /// \DeclareTextCommand{\cmd}{encoding}[nargs]{defn}
+    /// \DeclareTextCommand{\cmd}{encoding}[nargs][optargdefault]{defn}
+    DeclareTextCommand,
+    /// Command macro for DeclareTextCommandDefault
+    /// Synopsis,
+    /// \DeclareTextCommandDefault{\cmd}{defn}
+    DeclareTextCommandDefault,
+    /// Command macro for ProvideTextCommand
+    /// Synopsis, one of:
+    ///
+    /// \ProvideTextCommand{\cmd}{encoding}{defn}
+    /// \ProvideTextCommand{\cmd}{encoding}[nargs]{defn}
+    /// \ProvideTextCommand{\cmd}{encoding}[nargs][optargdefault]{defn}
+    ProvideTextCommand,
+    /// Command macro for ProvideTextCommandDefault
+    /// Synopsis,
+    /// \ProvideTextCommandDefault{\cmd}{defn}
+    ProvideTextCommandDefault,
+    /// Command macro for NewEnvironment
+    /// Synopsis, one of:
+    ///
+    /// \newenvironment{env}{begdef}{enddef}
+    /// \newenvironment{env}[nargs]{begdef}{enddef}
+    /// \newenvironment{env}[nargs][optargdefault]{begdef}{enddef}
+    NewEnvironment,
+    /// Command macro for NewEnvironmentStar
+    /// Synopsis, one of:
+    ///
+    /// \newenvironment*{env}{begdef}{enddef}
+    /// \newenvironment*{env}[nargs]{begdef}{enddef}
+    /// \newenvironment*{env}[nargs][optargdefault]{begdef}{enddef}
+    NewEnvironmentStar,
+    /// Command macro for RenewEnvironment
+    /// Synopsis, one of:
+    ///
+    /// \renewenvironment{env}{begdef}{enddef}
+    /// \renewenvironment{env}[nargs]{begdef}{enddef}
+    /// \renewenvironment{env}[nargs][optargdefault]{begdef}{enddef}
+    RenewEnvironment,
+    /// Command macro for RenewEnvironmentStar
+    /// Synopsis, one of:
+    ///
+    /// \renewenvironment*{env}{begdef}{enddef}
+    /// \renewenvironment*{env}[nargs]{begdef}{enddef}
+    /// \renewenvironment*{env}[nargs][optargdefault]{begdef}{enddef}
+    RenewEnvironmentStar,
+    /// Command macro for AtEndOfClass
+    /// Synopsis,
+    /// \AtEndOfClass{code}
+    AtEndOfClass,
+    /// Command macro for AtEndOfPackage
+    /// Synopsis,
+    /// \AtEndOfPackage{code}
+    AtEndOfPackage,
+    /// Command macro for AtBeginDocument
+    /// Synopsis,
+    /// \AtBeginDocument{code}
+    AtBeginDocument,
+    /// Command macro for AtEndDocument
+    /// Synopsis,
+    /// \AtEndDocument{code}
+    AtEndDocument,
+}
+
+fn define_declarative_macros(macros: &mut MacroMap) {
+    for (name, value) in [
+        ("newcommand", DeclareMacro::NewCommand),
+        ("newcommand*", DeclareMacro::NewCommandStar),
+        ("renewcommand", DeclareMacro::RenewCommand),
+        ("renewcommand*", DeclareMacro::RenewCommandStar),
+        ("providecommand", DeclareMacro::ProvideCommand),
+        ("providecommand*", DeclareMacro::ProvideCommandStar),
+        ("DeclareRobustCommand", DeclareMacro::DeclareRobustCommand),
+        (
+            "DeclareRobustCommand*",
+            DeclareMacro::DeclareRobustCommandStar,
+        ),
+        ("DeclareTextCommand", DeclareMacro::DeclareTextCommand),
+        (
+            "DeclareTextCommandDefault",
+            DeclareMacro::DeclareTextCommandDefault,
+        ),
+        ("ProvideTextCommand", DeclareMacro::ProvideTextCommand),
+        (
+            "ProvideTextCommandDefault",
+            DeclareMacro::ProvideTextCommandDefault,
+        ),
+        ("newenvironment", DeclareMacro::NewEnvironment),
+        ("newenvironment*", DeclareMacro::NewEnvironmentStar),
+        ("renewenvironment", DeclareMacro::RenewEnvironment),
+        ("renewenvironment*", DeclareMacro::RenewEnvironmentStar),
+        ("AtEndOfClass", DeclareMacro::AtEndOfClass),
+        ("AtEndOfPackage", DeclareMacro::AtEndOfPackage),
+        ("AtBeginDocument", DeclareMacro::AtBeginDocument),
+        ("AtEndDocument", DeclareMacro::AtEndDocument),
+    ]
+    .into_iter()
+    {
+        macros.insert(name.to_owned(), Macro::Declare(value));
+    }
+}
+
+#[derive(Debug)]
 pub enum Macro<'a> {
+    /// Builtin macro for defining new macros
+    Declare(DeclareMacro),
     /// Command macro
     Cmd(Arc<CmdMacro<'a>>),
     /// Environment macro
@@ -135,10 +308,8 @@ pub enum MacroNode<'a> {
 pub struct MacroEngine<'a> {
     /// Command specification
     pub spec: CommandSpec,
-    /// Scoped unified symbol table
-    symbol_table: MacroMap<'a>,
-    /// Global macros in chain
-    globals: MacroMap<'a>,
+    /// Scoped unified table of macros
+    macros: MacroMap<'a>,
     /// Environment stack
     env_stack: Vec<EnvMacro<'a>>,
     /// Macro stack
@@ -148,7 +319,7 @@ pub struct MacroEngine<'a> {
 }
 
 impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
-    fn bump(&mut self, ctx: &mut crate::StreamContext<'a>) {
+    fn bump(&mut self, ctx: &mut StreamContext<'a>) {
         self.do_bump(ctx);
     }
 }
@@ -156,10 +327,12 @@ impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
 impl<'a> MacroEngine<'a> {
     /// Create a new macro engine
     pub fn new(spec: CommandSpec) -> Self {
+        let mut macros = SnapshotMap::default();
+        define_declarative_macros(&mut macros);
+
         Self {
             spec,
-            symbol_table: SnapshotMap::default(),
-            globals: MacroMap::default(),
+            macros,
             env_stack: Vec::new(),
             reading_macro: Vec::new(),
             scanned_tokens: Vec::new(),
@@ -167,29 +340,19 @@ impl<'a> MacroEngine<'a> {
     }
 
     /// fills the peek cache with a page of tokens at the same time
-    fn do_bump(&mut self, ctx: &mut crate::StreamContext<'a>) {
+    fn do_bump(&mut self, ctx: &mut StreamContext<'a>) {
         /// The size of a page, in some architectures it is 16384B but that
         /// doesn't matter
         const PAGE_SIZE: usize = 4096;
         /// The item size of the peek cache
         const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
 
-        for _ in 0..PEEK_CACHE_SIZE {
-            let kind = ctx.inner.next().map(|token| {
-                let kind = token.unwrap();
-                let text = ctx.inner.slice();
-                if kind == Token::CommandName(CommandName::Generic) {
-                    let name = classify(&text[1..]);
-                    (Token::CommandName(name), text)
-                } else {
-                    (kind, text)
-                }
-            });
-            if let Some(kind) = kind {
-                ctx.peek_cache.push(kind);
-            } else {
+        while ctx.peek_cache.len() < PEEK_CACHE_SIZE {
+            let Some(token) = ctx.inner.next() else {
                 break;
-            }
+            };
+
+            self.trapped_by_token(ctx, (token.unwrap(), ctx.inner.slice()));
         }
 
         // Reverse the peek cache to make it a stack
@@ -199,20 +362,52 @@ impl<'a> MacroEngine<'a> {
         ctx.peeked = ctx.peek_cache.pop();
     }
 
+    #[inline]
+    fn trapped_by_token(&mut self, ctx: &mut StreamContext<'a>, (kind, text): PeekTok<'a>) {
+        if kind != Token::CommandName(CommandName::Generic) {
+            ctx.peek_cache.push((kind, text));
+            return;
+        }
+
+        let cmd_name = &text[1..];
+
+        // todo: trap begin/end env
+        let name = classify(cmd_name);
+        if name != CommandName::Generic {
+            ctx.peek_cache.push((Token::CommandName(name), text));
+            return;
+        }
+
+        let Some(m) = self.macros.get(cmd_name) else {
+            ctx.peek_cache
+                .push((Token::CommandName(CommandName::Generic), text));
+            return;
+        };
+
+        match m {
+            Macro::Declare(_) => todo!(),
+            Macro::Cmd(_) => todo!(),
+            Macro::Env(_) => todo!(),
+        }
+    }
+
     /// Create a new scope for macro definitions
-    pub fn create_scope(&mut self) -> Snapshot {
-        // let _ = MacroMap::<'a>::with_log;
+    pub fn create_scope(&mut self) -> Checkpoint {
         let _ = self.env_stack;
+
+        (self.macros.snapshot(),)
     }
 
     /// Restore the scope (delete all macros defined in the child scope)
-    pub fn restore(&mut self, _snapshot: Snapshot) {}
+    pub fn restore(&mut self, (snapshot,): Checkpoint) {
+        let _ = self.env_stack;
+
+        self.macros.rollback_to(snapshot);
+    }
 
     /// Peek the next token and its text
     pub fn add_macro(&mut self, name: &str, value: &Macro) {
         // self.symbol_table.insert(name.to_owned(), value.to_owned());
-        let _ = self.symbol_table;
-        let _ = self.globals;
         format!("{:?} => {:?}", name, value);
         todo!()
     }

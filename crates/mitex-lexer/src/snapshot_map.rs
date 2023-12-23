@@ -85,8 +85,12 @@ where
         }
     }
 
-    pub fn get(&self, key: &K) -> Option<&V> {
-        self.map.borrow().get(key)
+    pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.map.borrow().get(k)
     }
 }
 

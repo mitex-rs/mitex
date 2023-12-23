@@ -41,3 +41,13 @@ fn no_macros() {
     Word("world")
     "###);
 }
+
+#[test]
+fn declare_macro() {
+    // assert_snapshot!(tokens(r#"
+    // \newcommand{\mytheta}{\theta}"#), @r###"
+    // Word("hello")
+    // Whitespace(" ")
+    // Word("world")
+    // "###);
+}
