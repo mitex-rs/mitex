@@ -4,7 +4,7 @@
 //! - <https://en.wikibooks.org/wiki/Category:Book:TeX>
 //! - <https://www.tug.org/utilities/plain/cseq.html>
 //!
-//! Commands in plan
+//! Commands Supported
 //!
 //! - \newcommand
 //! - \newcommand*
@@ -12,12 +12,15 @@
 //! - \renewcommand*
 //! - \DeclareRobustCommand
 //! - \DeclareRobustCommand*
+//! - \providecommand
+//! - \providecommand*
+//!
+//! Commands in plan
+//!
 //! - \DeclareTextCommand
 //! - \DeclareTextCommandDefault
 //! - \ProvideTextCommand
 //! - \ProvideTextCommandDefault
-//! - \providecommand
-//! - \providecommand*
 //! - \newenvironment
 //! - \newenvironment*
 //! - \renewenvironment
@@ -325,7 +328,7 @@ pub struct MacroEngine<'a> {
     /// Command specification
     pub spec: CommandSpec,
     /// Scoped unified table of macros
-    pub macros: Cow<'a, MacroMap<'a>>,
+    macros: Cow<'a, MacroMap<'a>>,
     /// Environment stack
     env_stack: Vec<EnvMacro<'a>>,
     /// Macro stack
@@ -367,7 +370,7 @@ impl<'a> MacroEngine<'a> {
         const PEEK_CACHE_SIZE_M1: usize = PEEK_CACHE_SIZE - 1;
 
         ctx.next_token();
-        while ctx.peek_cache.len() < PEEK_CACHE_SIZE_M1 {
+        while ctx.peek_outer.peek_cache.len() < PEEK_CACHE_SIZE_M1 {
             let Some(token) = ctx.peek_full() else {
                 break;
             };
@@ -376,14 +379,14 @@ impl<'a> MacroEngine<'a> {
         }
 
         if let Some(e) = ctx.peek_full() {
-            ctx.peek_cache.push(e);
+            ctx.push_outer(e);
         }
 
         // Reverse the peek cache to make it a stack
-        ctx.peek_cache.reverse();
+        ctx.peek_outer.peek_cache.reverse();
 
         // Pop the first token again
-        ctx.peeked = ctx.peek_cache.pop();
+        ctx.peek_outer.peeked = ctx.peek_outer.peek_cache.pop();
     }
 
     #[inline]
@@ -393,7 +396,7 @@ impl<'a> MacroEngine<'a> {
         (kind, text): PeekTok<'a>,
     ) -> Option<()> {
         if kind != Token::CommandName(CommandName::Generic) {
-            ctx.peek_cache.push((kind, text));
+            ctx.push_outer((kind, text));
             ctx.next_token();
             return None;
         }
@@ -401,8 +404,7 @@ impl<'a> MacroEngine<'a> {
         let cmd_name = &text[1..];
 
         let Some(m) = self.macros.get(cmd_name) else {
-            ctx.peek_cache
-                .push((Token::CommandName(CommandName::Generic), text));
+            ctx.push_outer((Token::CommandName(CommandName::Generic), text));
             ctx.next_token();
             return None;
         };
@@ -464,8 +466,8 @@ impl<'a> MacroEngine<'a> {
                             ctx.eat_if(Token::Right(BraceKind::Curly));
                             break 'match_loop;
                         }
-                        (_, t) => {
-                            def = vec![(t, ctx.curr_text())];
+                        _ => {
+                            def = vec![ctx.peek_full().unwrap()];
                             ctx.next_token();
                             break 'match_loop;
                         }
@@ -506,13 +508,16 @@ impl<'a> MacroEngine<'a> {
                     }
                 };
 
+                let def = Self::process_macro_def(def);
+
                 let m = if is_env {
+                    let end_def = end_def.map(|e| Self::process_macro_def(e))?;
                     Macro::Env(Arc::new(EnvMacro {
                         name: name.to_owned(),
                         num_args,
                         opt,
                         begin_def: def,
-                        end_def: end_def?,
+                        end_def,
                     }))
                 } else {
                     Macro::Cmd(Arc::new(CmdMacro {
@@ -527,14 +532,14 @@ impl<'a> MacroEngine<'a> {
                 match action {
                     UpdateAction::New => {
                         if self.get_macro(name).is_some() {
-                            ctx.peek_cache.push((Token::Error, name));
+                            ctx.push_outer((Token::Error, name));
                         }
 
                         self.add_macro(name, m);
                     }
                     UpdateAction::Renew => {
                         if self.get_macro(name).is_none() {
-                            ctx.peek_cache.push((Token::Error, name));
+                            ctx.push_outer((Token::Error, name));
                         }
 
                         self.add_macro(name, m);
@@ -554,22 +559,135 @@ impl<'a> MacroEngine<'a> {
                 | DeclareTextCommandDefault
                 | ProvideTextCommandDefault,
             ) => {
-                ctx.peek_cache.push((kind, text));
+                ctx.push_outer((kind, text));
                 ctx.next_token();
                 None
             }
             Macro::Declare(AtEndOfClass | AtEndOfPackage | AtBeginDocument | AtEndDocument) => {
-                ctx.peek_cache.push((kind, text));
+                ctx.push_outer((kind, text));
                 ctx.next_token();
                 None
             }
-            Macro::Cmd(_) => {
-                ctx.peek_cache.push((kind, text));
+            Macro::Cmd(cmd) => {
+                let mut args = Vec::<Vec<PeekTok<'a>>>::with_capacity(cmd.num_args as usize);
+
                 ctx.next_token();
+                let mut num_of_read: u8 = 0;
+                loop {
+                    match ctx.peek_not_trivia() {
+                        Some(Token::Left(BraceKind::Curly)) => {
+                            ctx.next_token();
+                            args.push(ctx.read_until_balanced(BraceKind::Curly));
+                            ctx.eat_if(Token::Right(BraceKind::Curly));
+                        }
+                        Some(Token::Word) => {
+                            let t = ctx.peek_full().unwrap().1;
+                            let mut split_cnt = 0;
+                            for c in t.chars() {
+                                args.push(vec![(
+                                    Token::Word,
+                                    &t[split_cnt..split_cnt + c.len_utf8()],
+                                )]);
+                                split_cnt += c.len_utf8();
+                                num_of_read += 1;
+                                if num_of_read == cmd.num_args {
+                                    break;
+                                }
+                            }
+                            if split_cnt < t.len() {
+                                ctx.peek_inner.peeked.as_mut().unwrap().1 = &t[split_cnt..];
+                            } else {
+                                ctx.next_token();
+                            }
+                            if num_of_read == cmd.num_args {
+                                break;
+                            }
+                        }
+                        Some(_) => {
+                            args.push(vec![ctx.peek_full().unwrap()]);
+                            ctx.next_token();
+                        }
+                        None => {
+                            break;
+                        }
+                    }
+
+                    num_of_read += 1;
+                    if num_of_read == cmd.num_args {
+                        break;
+                    }
+                }
+
+                if num_of_read != cmd.num_args {
+                    let mut ok = false;
+                    if cmd.num_args - num_of_read == 1 {
+                        if let Some(opt) = cmd.opt.clone() {
+                            args.push(opt);
+                            ok = true;
+                        }
+                    }
+
+                    if !ok {
+                        ctx.push_outer((Token::Error, "invalid number of arguments"));
+                        return None;
+                    }
+                }
+
+                // expand macro args
+                let mut stream = vec![];
+
+                let mut i = 0;
+                let mut bc = 0;
+                while i < cmd.def.len() {
+                    let e = &cmd.def[i];
+                    match e.0 {
+                        Token::MacroArg(num) => {
+                            if let Some(arg) = args.get(num as usize - 1) {
+                                stream.extend(arg.iter().cloned());
+                            }
+                        }
+                        Token::CommandName(CommandName::Generic) => {
+                            let name = e.1.strip_prefix('\\').unwrap();
+                            match name {
+                                "mitexrecurse" => loop {
+                                    i += 1;
+                                    if i >= cmd.def.len() {
+                                        break;
+                                    }
+                                    let e = &cmd.def[i];
+                                    if e.0 == Token::Left(BraceKind::Curly) {
+                                        if bc > 0 {
+                                            stream.push(*e);
+                                        }
+                                        bc += 1;
+                                    } else if e.0 == Token::Right(BraceKind::Curly) {
+                                        bc -= 1;
+                                        if bc == 0 {
+                                            break;
+                                        } else {
+                                            stream.push(*e);
+                                        }
+                                    } else if bc != 0 {
+                                        stream.push(*e);
+                                    } else if !e.0.is_trivia() {
+                                        stream.push(*e);
+                                        break;
+                                    }
+                                },
+                                _ => stream.push(*e),
+                            }
+                        }
+                        _ => stream.push(*e),
+                    }
+                    i += 1;
+                }
+
+                ctx.extend_inner(stream.into_iter().rev());
+
                 None
             }
             Macro::Env(_) => {
-                ctx.peek_cache.push((kind, text));
+                ctx.push_outer((kind, text));
                 ctx.next_token();
                 None
             }
@@ -593,8 +711,45 @@ impl<'a> MacroEngine<'a> {
 
     /// Peek the next token and its text
     pub fn add_macro(&mut self, name: &'a str, value: Macro<'a>) {
-        // self.symbol_table.insert(name.to_owned(), value.to_owned());
-        format!("{:?} => {:?}", name, value);
         self.macros.to_mut().insert(name, value);
+    }
+
+    fn process_macro_def(mut def: Vec<(Token, &str)>) -> Vec<(Token, &str)> {
+        // process hash, it will grab the next token
+        let mut empty_texts = false;
+        for i in 0..def.len() {
+            if def[i].0 == Token::Hash {
+                let next = def.get_mut(i + 1).unwrap();
+                if next.0 == Token::Word {
+                    let Some(first_char) = next.1.chars().next() else {
+                        continue;
+                    };
+
+                    if first_char.is_ascii_digit() {
+                        let Some(num) = first_char.to_digit(10) else {
+                            continue;
+                        };
+                        if num == 0 {
+                            continue;
+                        }
+                        if num > 9 {
+                            panic!("macro argument number must be in range 1..9");
+                        }
+                        next.1 = &next.1[1..];
+                        if next.1.is_empty() {
+                            empty_texts = true;
+                        }
+                        def[i].0 = Token::MacroArg(num as u8);
+                    }
+                }
+            }
+        }
+
+        if !empty_texts {
+            return def;
+        }
+
+        def.retain(|e| e.0 != Token::Word || !e.1.is_empty());
+        def
     }
 }

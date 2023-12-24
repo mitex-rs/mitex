@@ -223,6 +223,9 @@ impl MathConverter {
             TokenUnderscore => {
                 f.write_str("\\_")?;
             }
+            TokenHash => {
+                f.write_str("\\#")?;
+            }
             TokenDitto => {
                 f.write_str("\\\"")?;
             }
