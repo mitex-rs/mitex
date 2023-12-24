@@ -28,8 +28,9 @@ Write inline equations like #mi("x") or #mi[y].
 Also block equations (this case is from #text(blue.lighten(20%), link("https://katex.org/")[katex.org])):
 
 #mitex(`
-  f(x) = \int_{-\infty}^\infty
-    \hat f(\xi)\,e^{2 \pi i \xi x}
+  \newcommand{\f}[2]{#1f(#2)}
+  \f\relax{x} = \int_{-\infty}^\infty
+    \f\hat\xi\,e^{2 \pi i \xi x}
     \,d\xi
 `)
 ```
@@ -41,11 +42,12 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 - [x] LaTeX equations support.
 - [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
 - [x] Support for various environments, such as aligned, matrix, cases.
+- [x] User-defined TeX (macro) commands, such as `\newcommand{\mysym}{\alpha}`.
 
 ## Features to Implement
 
-- [ ] User-defined commands (specification), such as `\newcommand{\mysym}{\alpha}` or bind `\newcommand{\myop}[1]{\operatorname{#1}}` to a typst's native function `let myop(it) = op(upright(it))`.
-- [ ] "usepackage" support, which means that you can change set of commands by telling MiTeX to use a list of packages.
+- [ ] Pass command specification to MiTeX plugin dynamically. With that you can define a typst function `let myop(it) = op(upright(it))` and then use it by `\myop{it}`.
+- [ ] Package support, which means that you can change set of commands by telling MiTeX to use a list of packages.
 - [ ] Text mode support, enabling the rendering entire LaTeX documents in Typst!
 
 ## Differences between MiTeX and other solutions
