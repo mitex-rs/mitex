@@ -14,9 +14,18 @@
   }), spec))
 }
 
-#let mitex(it, block: true) = {
+#let mitex(it, block: true, numbering: auto, supplement: auto) = {
   let res = mitex-convert(it)
-  math.equation(block: block, eval("$" + res + "$", scope: mitex-scope))
+  let eval-res = eval("$" + res + "$", scope: mitex-scope)
+  if numbering == auto and supplement == auto {
+    math.equation(block: block, eval-res)
+  } else if numbering == auto {
+    math.equation(block: block, eval-res, supplement: supplement)
+  } else if supplement == auto {
+    math.equation(block: block, eval-res, numbering: numbering)
+  } else {
+    math.equation(block: block, eval-res, numbering: numbering, supplement: supplement)
+  }
 }
 
 #let mi = mitex.with(block: false)
