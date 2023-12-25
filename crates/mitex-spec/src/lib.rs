@@ -1,13 +1,13 @@
-//! Specification structure of a set of LaTeX commands
+//! Specification structure of a set of LaTeX commands.
 //!
-//! The specification object will be passed to MiTeX Parser and MiTeX Converter.
-//! It is used by the parser to produce ASTs which respects shape of commands.
-//! It is used by the converter to convert ASTs into a valid typst code.
+//! The specification will be passed to MiTeX for converting LaTeX code
+//! correctly. For example, MiTeX Parser uses it to produce an AST that respect
+//! the shape of commands.
 //!
-//! Note: since we need process environments statically, users cannot override
-//! `\begin`, `\end`, `\left`, and `\right` command.
+//! Note: since we need to process environments statically, users cannot
+//! override the `\begin` and `\end` commands.
 //!
-//! See <https://github.com/OrangeX4/mitex/blob/main/docs/spec.typ> for detailed description.
+//! See <https://github.com/mitex-rs/mitex/blob/main/docs/spec.typ> for detailed description.
 
 use std::sync::Arc;
 
@@ -19,8 +19,13 @@ pub mod query;
 mod stream;
 pub use query::CommandSpecRepr as JsonCommandSpec;
 
-/// An item of command specification.
-/// It is either a command or an environment.
+/// An item of command specification. It is either a normal _command_ or an
+/// _environment_.
+/// See [Command Syntax] for concept of _command_.
+/// See [Environment Syntax] for concept of _environment_.
+///
+/// [Command Syntax]: https://latexref.xyz/LaTeX-command-syntax.html
+/// [Environment Syntax]: https://latexref.xyz/Environment-syntax.html
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
@@ -29,8 +34,7 @@ pub enum CommandSpecItem {
     Env(EnvShape),
 }
 
-/// Command specification contains a set of commands
-/// and environments.
+/// Command specification that contains a set of commands and environments.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
@@ -81,12 +85,12 @@ impl CommandSpec {
         Self(Arc::new(CommandSpecRepr { commands }))
     }
 
-    /// Get the command specification
+    /// Get an item by name
     pub fn get(&self, name: &str) -> Option<&CommandSpecItem> {
         self.0.commands.get(name)
     }
 
-    /// Get the command specification in kind of command
+    /// Get an item by name in kind of _command_
     pub fn get_cmd(&self, name: &str) -> Option<&CmdShape> {
         self.get(name).and_then(|item| {
             if let CommandSpecItem::Cmd(item) = item {
@@ -97,7 +101,7 @@ impl CommandSpec {
         })
     }
 
-    /// Get the command specification in kind of environment
+    /// Get an item by name in kind of _environment_
     pub fn get_env(&self, name: &str) -> Option<&EnvShape> {
         self.get(name).and_then(|item| {
             if let CommandSpecItem::Env(item) = item {
@@ -113,10 +117,10 @@ impl CommandSpec {
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CmdShape {
-    /// Describing how could we matches the arguments of a command item
+    /// Describes how we could match the arguments of a command item.
     pub args: ArgShape,
-    /// Alias command for typst handler
-    /// For exmaple, alias `\prod` to typst's `product`
+    /// Makes the command alias to some Typst handler.
+    /// For exmaple, alias `\prod` to Typst's `product`
     pub alias: Option<String>,
 }
 
@@ -124,15 +128,13 @@ pub struct CmdShape {
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct EnvShape {
-    /// Describing how could we matches the arguments of an environment item
+    /// Describes how we could match the arguments of an environment item.
     pub args: ArgPattern,
-    /// Specify how could we process items before passing them
-    /// to the typst handler
+    /// Specifies how we could process items before passing them
+    /// to the Typst handler
     pub ctx_feature: ContextFeature,
-    /// Alias command for typst handler
-    /// For exmaple, alias `pmatrix` to `pmat`
-    /// And specify `let pmat = math.mat.with(delim: "(")`
-    /// in scope
+    /// Makes the command alias to some Typst handler.
+    /// For exmaple, alias `\pmatrix` to a Typst function `pmat` in scope.
     pub alias: Option<String>,
 }
 
@@ -147,63 +149,74 @@ pub mod argument_kind {
     pub const ARGUMENT_KIND_PAREN: char = 'p';
 }
 
-/// An efficient pattern used for matching.
-/// It is essential regex things but one
-/// can specify the pattern by fixed, range,
-/// or greedy length to achieve higher performance.
+/// An efficient pattern used for argument matching.
 ///
-/// Let us show usage of glob pattern by \sqrt, which is `{,b}t`
-/// Exp 1. For `\sqrt{2}{3}`, parser
-///   requires the pattern to match with `tt`,
-///   Here, `{,b}t` matches and
-///   yields string `t` (correspond to `{2}`)
-/// Exp 2. For `\sqrt[1]{2}{2}`, parser
-///   requires the pattern to match with `btt`,
-///   Here, `{,b}t` matches and
-///   yields string `bt` (correspond to `[1]{2}`)
+/// There are four kinds of pattern. The most powerful one is
+/// [`ArgPattern::Glob`], which matches an sequence of input as arguments. Among
+/// these four kinds, [`ArgPattern::Glob`] can already match all possible inputs
+/// in our use cases. But one should specify a fixed length pattern
+/// ([`ArgPattern::FixedLenTerm`]), a range length pattern
+/// ([`ArgPattern::RangeLenTerm`]), or a greedy pattern
+/// ([`ArgPattern::Greedy`]) to achieve better performance.
 ///
-/// Kind of item to match, also see [`argument_kind`]:
+/// Let us look at usage of a glob pattern by \sqrt, which is `{,b}t`.
+///
+/// - Example 1. For `\sqrt{2}{3}`, parser requires the pattern to match with an
+///   encoded string `tt`. Here, `{,b}t` matches and yields the string `t`
+///   (which corresponds to `{2}`).
+///
+/// - Example 2. For `\sqrt[1]{2}{2}`, parser requires the pattern to match with
+///   an encoded string `btt`. Here, `{,b}t` matches and yields the string `bt`
+///   (which corresponds to `[1]{2}`).
+///
+/// Kinds of item to match:
 /// - Bracket/b: []
 /// - Parenthesis/p: ()
-/// - Term/t: any rest of terms, typically {} or single char
+/// - Term/t: any remaining terms, typically {} or a single char
+///
+/// Note: any prefix of the argument pattern are matched during the parse stage,
+/// so you need to check whether it is complete in later stages.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ArgPattern {
-    /// None of arguments is passed, i.e. it is processed as a
-    /// variable in typst.
-    /// Note: this is different from FixedLenTerm(0)
-    /// Where, \alpha is None, but not FixedLenTerm(0)
-    /// E.g. \alpha => $alpha$
+    /// No arguments are passed, i.e. this is processed as a variable in Typst.
+    ///
+    /// E.g. `\alpha` => `$alpha$`, where `\alpha` has an argument pattern of
+    /// `None`
     None,
-    /// Fixed length pattern, equivalent to `/t{x}/g`
-    /// E.g. \hat x y => $hat(x) y$,
-    /// E.g. 1 \sum\limits => $1 limits(sum)$,
+    /// Fixed length pattern, equivalent to repeat `{,t}` for `x` times
+    ///
+    /// E.g. `\hat x y` => `$hat(x) y$`, where `\hat` has an argument pattern of
+    /// `FixedLenTerm(1)`
+    ///
+    /// E.g. `1 \sum\limits` => `$1 limits(sum)$`, where `\limits` has an
+    /// argument pattern of `FixedLenTerm(1)`
     FixedLenTerm(u8),
-    /// Range length pattern (as much as possible),
-    /// equivalent to `/t{x,y}/g`
+    /// Range length pattern (matches as much as possible), equivalent to
+    /// repeat `t` for `x` times, then repeat `{,t}` for `y` times.
+    ///
     /// No example
     RangeLenTerm(u8, u8),
-    /// Receive terms as much as possible,
-    /// equivalent to `/t*/g`
+    /// Receives any items as much as possible, equivalent to `*`.
+    ///
     /// E.g. \over, \displaystyle
     Greedy,
-    /// Most powerful pattern, but slightly slow
-    /// Note that the glob must accept all prefix of the input
+    /// The most powerful pattern, but slightly slow.
+    /// Note that the glob must accept the whole prefix of the input.
     ///
-    /// E.g. \sqrt has a glob pattern of `{,b}t`
-    /// Description:
-    /// - {,b}: first, it matches an bracket option, e.g. `\sqrt[3]`
-    /// - t: it later matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
-    /// Note: any prefix of the glob is valid in parse stage hence you need to
-    /// check whether it is complete in later stage.
+    /// E.g. \sqrt has a glob argument pattern of `{,b}t`
+    ///
+    /// Description of the glob pattern:
+    /// - {,b}: first, it matches a bracket option, e.g. `\sqrt[3]`
+    /// - t: it then matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
     Glob(Arc<str>),
 }
 
 // struct ArgShape(ArgPattern, Direction);
 
-/// Shape of arguments
-/// With direction to match since
+/// Shape of arguments with direction to match since.
+///
 /// Note: We currently only support
 /// - `Direction::Right` with any `ArgPattern`
 /// - `Direction::Left` with `ArgPattern::FixedLenTerm(1)`
@@ -212,15 +225,19 @@ pub enum ArgPattern {
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ArgShape {
-    /// A command that assosicates with right side of items.
-    /// E.g. \hat
+    /// A command that associates with the right side of items.
+    ///
+    /// E.g. `\hat`
     Right(ArgPattern),
-    /// A command that assosicates with left side of items, and with
-    /// `ArgPattern::FixedLenTerm(1)`. E.g. \limits
+    /// A command that associates with the left side of items, and with
+    /// `ArgPattern::FixedLenTerm(1)`.
+    ///
+    /// E.g. `\limits`
     Left1,
-    /// A command that assosicates with both side of items, and with
-    /// `ArgPattern::Greedy`. Also known as infix operators.
-    /// E.g. \over
+    /// A command that associates with both side of items, and with
+    /// `ArgPattern::Greedy`, also known as infix operators.
+    ///
+    /// E.g. `\over`
     InfixGreedy,
 }
 

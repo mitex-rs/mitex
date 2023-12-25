@@ -18,9 +18,9 @@ pub struct PackageSpec {
 pub struct PackagesVec(pub Vec<PackageSpec>);
 
 /// An item of command specification.
-/// This contains more sugar than the canonical representation.
+/// This enum contains more sugar than the canonical representation.
 ///
-/// See [`mitex_spec::CommandSpecItem`] for more details.
+/// See [`crate::CommandSpecItem`] for more details.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum CommandSpecItem {
@@ -41,20 +41,28 @@ pub enum CommandSpecItem {
     /// A command that takes two arguments.
     #[serde(rename = "cmd2")]
     Command2,
+    /// A command that takes one argument and is a left-associative operator.
     #[serde(rename = "left1-cmd")]
     CmdLeft1,
+    /// A command that takes no argument and is a matrix environment.
     #[serde(rename = "matrix-env")]
     EnvMatrix,
+    /// A command that takes no argument and is a normal environment.
     #[serde(rename = "normal-env")]
     EnvNormal,
 
+    /// A command that is aliased to a Typst symbol.
     #[serde(rename = "alias-sym")]
     SymAlias { alias: String },
+    /// A command that is greedy and is aliased to a Typst handler.
     #[serde(rename = "greedy-cmd")]
     CmdGreedy { alias: String },
     #[serde(rename = "infix-cmd")]
+    /// A command that is an infix operator and is aliased to a Typst handler.
     CmdInfix { alias: String },
     #[serde(rename = "glob-cmd")]
+    /// A command that has a glob argument pattern and is aliased to a Typst
+    /// handler.
     CmdGlob { pattern: String, alias: String },
 }
 
@@ -82,6 +90,8 @@ impl From<CommandSpecItem> for crate::CommandSpecItem {
     }
 }
 
+/// The following defined structs are copied so we don't maintain their
+/// comments. See [`crate::CommandSpecRepr`] for canonical representation.
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct CommandSpecRepr {
     pub commands: HashMap<String, CommandSpecItem>,
