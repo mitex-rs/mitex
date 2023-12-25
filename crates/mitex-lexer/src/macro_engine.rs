@@ -14,6 +14,10 @@
 //! - \DeclareRobustCommand*
 //! - \providecommand
 //! - \providecommand*
+//! - \newenvironment
+//! - \newenvironment*
+//! - \renewenvironment
+//! - \renewenvironment*
 //!
 //! Commands in plan
 //!
@@ -21,10 +25,6 @@
 //! - \DeclareTextCommandDefault
 //! - \ProvideTextCommand
 //! - \ProvideTextCommandDefault
-//! - \newenvironment
-//! - \newenvironment*
-//! - \renewenvironment
-//! - \renewenvironment*
 //! - \AtEndOfClass
 //! - \AtEndOfPackage
 //! - \AtBeginDocument
@@ -320,6 +320,12 @@ pub enum MacroNode<'a> {
     HalfReadingTok(Range<usize>),
 }
 
+enum UpdateAction {
+    New,
+    Renew,
+    Provide,
+}
+
 /// MacroEngine has exact same interface as Lexer, but it expands macros.
 ///
 /// When it meets a macro in token stream, It evaluates a macro into expanded
@@ -377,9 +383,27 @@ impl<'a> MacroEngine<'a> {
                 break;
             };
 
-            self.trapped_by_token(ctx, token);
+            match token.0 {
+                // a generic command token traps stream into a macro checking
+                //
+                // If it is a real macro, it will be expanded into tokens so parser is unaware of
+                // the macro.
+                Token::CommandName(CommandName::Generic) => {
+                    self.trapped_by_macro(ctx, token, &token.1[1..], false);
+                }
+                // a begin environment token traps stream into a macro checking
+                Token::CommandName(CommandName::BeginEnvironment) => {
+                    self.trapped_by_macro(ctx, token, token.1, true);
+                }
+                // The token is impossible to relate to some macro
+                _ => {
+                    ctx.push_outer(token);
+                    ctx.next_token();
+                }
+            }
         }
 
+        // Push the remaining token in inner stream to outer stream
         if let Some(e) = ctx.peek_full() {
             ctx.push_outer(e);
         }
@@ -392,131 +416,33 @@ impl<'a> MacroEngine<'a> {
     }
 
     #[inline]
-    fn trapped_by_token(
+    fn trapped_by_macro(
         &mut self,
         ctx: &mut StreamContext<'a>,
-        (kind, text): Tok<'a>,
+        token: Tok<'a>,
+        name: &'a str,
+        is_env: bool,
     ) -> Option<()> {
-        if kind != Token::CommandName(CommandName::Generic) {
-            ctx.push_outer((kind, text));
-            ctx.next_token();
-            return None;
-        }
-
-        let cmd_name = &text[1..];
-
-        let Some(m) = self.macros.get(cmd_name) else {
-            ctx.push_outer((Token::CommandName(CommandName::Generic), text));
+        // No such macro
+        let Some(m) = self.macros.get(name) else {
+            ctx.push_outer(token);
             ctx.next_token();
             return None;
         };
 
+        // The kind of macro is not expected
+        // todo: raise an macro error
+        let cmd_is_env = matches!(m, Macro::Env(_));
+        if is_env != cmd_is_env {
+            ctx.push_outer(token);
+            ctx.next_token();
+            return None;
+        }
+
         use DeclareMacro::*;
         match m {
             Macro::Declare(CmdOrEnv(c)) => {
-                // {\cmd}[nargs][optargdefault]{defn}
-
-                ctx.next_not_trivia()
-                    .filter(|nx| *nx == Token::Left(BraceKind::Curly))?;
-                ctx.next_not_trivia();
-
-                let name = ctx
-                    .peek_cmd_name_opt(BraceKind::Curly)?
-                    .1
-                    .strip_prefix('\\')
-                    .unwrap();
-
-                #[derive(Clone, Copy, PartialEq)]
-                enum MatchState {
-                    NArgs,
-                    OptArgDefault,
-                    DefN,
-                }
-
-                let mut state = MatchState::NArgs;
-
-                let mut num_args: u8 = 0;
-                let mut opt = None;
-                let def;
-                'match_loop: loop {
-                    let nx = ctx.peek()?;
-
-                    match (state, nx) {
-                        (MatchState::NArgs, Token::Left(BraceKind::Bracket)) => {
-                            ctx.next_not_trivia();
-                            num_args = ctx.peek_u8_opt(BraceKind::Bracket).filter(|e| *e <= 9)?;
-                            state = MatchState::OptArgDefault;
-                        }
-                        (MatchState::OptArgDefault, Token::Left(BraceKind::Bracket)) => {
-                            ctx.next_token();
-                            opt = Some(ctx.read_until_balanced(BraceKind::Bracket));
-                            state = MatchState::DefN;
-                        }
-                        (_, Token::Left(BraceKind::Curly)) => {
-                            ctx.next_token();
-                            def = ctx.read_until_balanced(BraceKind::Curly);
-                            break 'match_loop;
-                        }
-                        _ => {
-                            def = vec![ctx.peek_full().unwrap()];
-                            ctx.next_token();
-                            break 'match_loop;
-                        }
-                    }
-                }
-
-                enum UpdateAction {
-                    New,
-                    Renew,
-                    Provide,
-                }
-
-                let mut is_env = false;
-                let mut end_def = None;
-                let action = match c {
-                    DeclareCmdOrEnv::NewCommand { renew, star: _ } => {
-                        if *renew {
-                            UpdateAction::Renew
-                        } else {
-                            UpdateAction::New
-                        }
-                    }
-                    DeclareCmdOrEnv::DeclareRobustCommand { star: _ } => UpdateAction::New,
-                    DeclareCmdOrEnv::ProvideCommand { star: _ } => UpdateAction::Provide,
-                    DeclareCmdOrEnv::NewEnvironment { renew, star: _ } => {
-                        is_env = true;
-
-                        if matches!(ctx.peek()?, Token::Left(BraceKind::Curly)) {
-                            end_def = Some(ctx.read_until_balanced(BraceKind::Curly));
-                        }
-
-                        if *renew {
-                            UpdateAction::Renew
-                        } else {
-                            UpdateAction::New
-                        }
-                    }
-                };
-
-                let def = Self::process_macro_def(def);
-
-                let m = if is_env {
-                    let end_def = end_def.map(|e| Self::process_macro_def(e))?;
-                    Macro::Env(Arc::new(EnvMacro {
-                        name: name.to_owned(),
-                        num_args,
-                        opt,
-                        begin_def: def,
-                        end_def,
-                    }))
-                } else {
-                    Macro::Cmd(Arc::new(CmdMacro {
-                        name: name.to_owned(),
-                        num_args,
-                        opt,
-                        def,
-                    }))
-                };
+                let (name, action, m) = Self::identify_macro_update(ctx, c)?;
 
                 // todo: improve performance
                 match action {
@@ -549,79 +475,170 @@ impl<'a> MacroEngine<'a> {
                 | DeclareTextCommandDefault
                 | ProvideTextCommandDefault,
             ) => {
-                ctx.push_outer((kind, text));
+                // Not yet implemented
+                ctx.push_outer(token);
                 ctx.next_token();
                 None
             }
             Macro::Declare(AtEndOfClass | AtEndOfPackage | AtBeginDocument | AtEndDocument) => {
-                ctx.push_outer((kind, text));
+                // Not yet implemented
+                ctx.push_outer(token);
                 ctx.next_token();
                 None
             }
             Macro::Cmd(cmd) => {
+                ctx.next_token();
+
+                // Read arguments according to the macro definition
                 let args = Self::read_macro_args(ctx, cmd.num_args, cmd.opt.clone())?;
-                // expand macro args
-                let mut stream = vec![];
+                // Expand tokens by arguments
+                let expanded = Self::expand_tokens(&args, &cmd.def);
 
-                let mut i = 0;
-                let mut bc = 0;
-                while i < cmd.def.len() {
-                    let e = &cmd.def[i];
-                    match e.0 {
-                        Token::MacroArg(num) => {
-                            if let Some(arg) = args.get(num as usize - 1) {
-                                stream.extend(arg.iter().cloned());
-                            }
-                        }
-                        Token::CommandName(CommandName::Generic) => {
-                            let name = e.1.strip_prefix('\\').unwrap();
-                            match name {
-                                "mitexrecurse" => loop {
-                                    i += 1;
-                                    if i >= cmd.def.len() {
-                                        break;
-                                    }
-                                    let e = &cmd.def[i];
-                                    if e.0 == Token::Left(BraceKind::Curly) {
-                                        if bc > 0 {
-                                            stream.push(*e);
-                                        }
-                                        bc += 1;
-                                    } else if e.0 == Token::Right(BraceKind::Curly) {
-                                        bc -= 1;
-                                        if bc == 0 {
-                                            break;
-                                        } else {
-                                            stream.push(*e);
-                                        }
-                                    } else if bc != 0 {
-                                        stream.push(*e);
-                                    } else if !e.0.is_trivia() {
-                                        stream.push(*e);
-                                        break;
-                                    }
-                                },
-                                _ => stream.push(*e),
-                            }
-                        }
-                        _ => stream.push(*e),
-                    }
-                    i += 1;
-                }
-
-                ctx.extend_inner(stream.into_iter().rev());
+                // Push the reversed tokens to inner stream
+                ctx.extend_inner(expanded.into_iter().rev());
+                // We may consumed the last token in inner stream before, so we need to reload
+                // it after extending
                 if ctx.peek_inner.peeked.is_none() {
                     ctx.next_token();
                 }
 
                 None
             }
-            Macro::Env(_) => {
-                ctx.push_outer((kind, text));
+            Macro::Env(env) => {
                 ctx.next_token();
+
+                // Read arguments according to the macro definition
+                let args = Self::read_macro_args(ctx, env.num_args, env.opt.clone())?;
+                let body = Self::read_env_body(ctx, &env.name)?;
+                let expanded_begin = Self::expand_tokens(&args, &env.begin_def);
+                let expanded_end = Self::expand_tokens(&args, &env.end_def);
+
+                ctx.extend_inner(
+                    expanded_end
+                        .into_iter()
+                        .rev()
+                        .chain(body.into_iter().rev())
+                        .chain(expanded_begin.into_iter().rev()),
+                );
+
+                // We may consumed the last token in inner stream before, so we need to reload
+                // it after extending
+                if ctx.peek_inner.peeked.is_none() {
+                    ctx.next_token();
+                }
+
                 None
             }
         }
+    }
+
+    fn identify_macro_update(
+        ctx: &mut StreamContext<'a>,
+        c: &DeclareCmdOrEnv,
+    ) -> Option<(&'a str, UpdateAction, Macro<'a>)> {
+        // {\cmd}[nargs][optargdefault]{defn}
+
+        ctx.next_not_trivia()
+            .filter(|nx| *nx == Token::Left(BraceKind::Curly))?;
+        ctx.next_not_trivia();
+
+        let name = if matches!(c, DeclareCmdOrEnv::NewEnvironment { .. }) {
+            ctx.peek_word_opt(BraceKind::Curly)?.1
+        } else {
+            ctx.peek_cmd_name_opt(BraceKind::Curly)?
+                .1
+                .strip_prefix('\\')
+                .unwrap()
+        };
+
+        #[derive(Clone, Copy, PartialEq)]
+        enum MatchState {
+            NArgs,
+            OptArgDefault,
+            DefN,
+        }
+
+        let mut state = MatchState::NArgs;
+
+        let mut num_args: u8 = 0;
+        let mut opt = None;
+        let def;
+        'match_loop: loop {
+            let nx = ctx.peek()?;
+
+            match (state, nx) {
+                (MatchState::NArgs, Token::Left(BraceKind::Bracket)) => {
+                    ctx.next_not_trivia();
+                    num_args = ctx.peek_u8_opt(BraceKind::Bracket).filter(|e| *e <= 9)?;
+                    state = MatchState::OptArgDefault;
+                }
+                (MatchState::OptArgDefault, Token::Left(BraceKind::Bracket)) => {
+                    ctx.next_token();
+                    opt = Some(ctx.read_until_balanced(BraceKind::Bracket));
+                    state = MatchState::DefN;
+                }
+                (_, Token::Left(BraceKind::Curly)) => {
+                    ctx.next_token();
+                    def = ctx.read_until_balanced(BraceKind::Curly);
+                    break 'match_loop;
+                }
+                _ => {
+                    def = vec![ctx.peek_full().unwrap()];
+                    ctx.next_token();
+                    break 'match_loop;
+                }
+            }
+        }
+
+        let mut is_env = false;
+        let mut end_def = None;
+        let action = match c {
+            DeclareCmdOrEnv::NewCommand { renew, star: _ } => {
+                if *renew {
+                    UpdateAction::Renew
+                } else {
+                    UpdateAction::New
+                }
+            }
+            DeclareCmdOrEnv::DeclareRobustCommand { star: _ } => UpdateAction::New,
+            DeclareCmdOrEnv::ProvideCommand { star: _ } => UpdateAction::Provide,
+            DeclareCmdOrEnv::NewEnvironment { renew, star: _ } => {
+                is_env = true;
+
+                if matches!(ctx.peek()?, Token::Left(BraceKind::Curly)) {
+                    ctx.next_token();
+                    end_def = Some(ctx.read_until_balanced(BraceKind::Curly));
+                }
+
+                if *renew {
+                    UpdateAction::Renew
+                } else {
+                    UpdateAction::New
+                }
+            }
+        };
+
+        let def = Self::process_macro_def(def);
+
+        let m = if is_env {
+            let end_def = end_def.map(|e| Self::process_macro_def(e))?;
+            Macro::Env(Arc::new(EnvMacro {
+                name: name.to_owned(),
+                num_args,
+                opt,
+                begin_def: def,
+                end_def,
+            }))
+        } else {
+            Macro::Cmd(Arc::new(CmdMacro {
+                name: name.to_owned(),
+                num_args,
+                opt,
+                def,
+            }))
+        };
+
+        Some((name, action, m))
     }
 
     fn read_macro_args(
@@ -631,7 +648,6 @@ impl<'a> MacroEngine<'a> {
     ) -> Option<Vec<Vec<Tok<'a>>>> {
         let mut args = Vec::with_capacity(num_args as usize);
 
-        ctx.next_token();
         let mut num_of_read: u8 = 0;
         loop {
             match ctx.peek_not_trivia() {
@@ -692,6 +708,97 @@ impl<'a> MacroEngine<'a> {
         Some(args)
     }
 
+    fn read_env_body(ctx: &mut StreamContext<'a>, name: &str) -> Option<Vec<Tok<'a>>> {
+        let mut bc = 0;
+        let mut body = Vec::new();
+        loop {
+            let e = ctx.peek_full()?;
+            if e.0 == Token::CommandName(CommandName::EndEnvironment) {
+                if bc == 0 {
+                    if e.1 != name {
+                        ctx.push_outer((Token::Error, "unmatched environment"));
+                        return None;
+                    }
+
+                    ctx.next_token();
+                    break;
+                } else {
+                    body.push(e);
+                    bc -= 1;
+                }
+            } else if e.0 == Token::CommandName(CommandName::BeginEnvironment) {
+                body.push(e);
+                bc += 1;
+            } else {
+                body.push(e);
+            }
+            ctx.next_token();
+        }
+
+        if bc != 0 {
+            ctx.push_outer((Token::Error, "invalid environment"));
+            return None;
+        }
+
+        Some(body)
+    }
+
+    fn expand_tokens(args: &[Vec<Tok<'a>>], tokens: &[Tok<'a>]) -> Vec<Tok<'a>> {
+        // expand tokens by arguments
+        let mut result = vec![];
+        if tokens.is_empty() {
+            return result;
+        }
+
+        let mut i = 0;
+        let mut bc = 0;
+        while i < tokens.len() {
+            let e = &tokens[i];
+            match e.0 {
+                Token::MacroArg(num) => {
+                    if let Some(arg) = args.get(num as usize - 1) {
+                        result.extend(arg.iter().cloned());
+                    }
+                }
+                Token::CommandName(CommandName::Generic) => {
+                    let name = e.1.strip_prefix('\\').unwrap();
+                    match name {
+                        "mitexrecurse" => loop {
+                            i += 1;
+                            if i >= tokens.len() {
+                                break;
+                            }
+                            let e = &tokens[i];
+                            if e.0 == Token::Left(BraceKind::Curly) {
+                                if bc > 0 {
+                                    result.push(*e);
+                                }
+                                bc += 1;
+                            } else if e.0 == Token::Right(BraceKind::Curly) {
+                                bc -= 1;
+                                if bc == 0 {
+                                    break;
+                                } else {
+                                    result.push(*e);
+                                }
+                            } else if bc != 0 {
+                                result.push(*e);
+                            } else if !e.0.is_trivia() {
+                                result.push(*e);
+                                break;
+                            }
+                        },
+                        _ => result.push(*e),
+                    }
+                }
+                _ => result.push(*e),
+            }
+            i += 1;
+        }
+
+        result
+    }
+
     /// Create a new scope for macro definitions
     pub fn create_scope(&mut self) -> Checkpoint {
         let _ = self.env_stack;
@@ -727,11 +834,8 @@ impl<'a> MacroEngine<'a> {
                         let Some(num) = first_char.to_digit(10) else {
                             continue;
                         };
-                        if num == 0 {
+                        if num == 0 || num > 9 {
                             continue;
-                        }
-                        if num > 9 {
-                            panic!("macro argument number must be in range 1..9");
                         }
                         next.1 = &next.1[1..];
                         if next.1.is_empty() {

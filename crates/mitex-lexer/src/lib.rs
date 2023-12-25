@@ -170,6 +170,15 @@ impl<'a> StreamContext<'a> {
         res
     }
 
+    fn peek_word_opt(&mut self, bk: BraceKind) -> Option<Tok<'a>> {
+        let res = self.peek_full().filter(|res| matches!(res.0, Token::Word));
+        self.next_not_trivia()?;
+
+        self.eat_if(Token::Right(bk));
+
+        res
+    }
+
     fn peek_cmd_name_opt(&mut self, bk: BraceKind) -> Option<Tok<'a>> {
         let res = self
             .peek_full()

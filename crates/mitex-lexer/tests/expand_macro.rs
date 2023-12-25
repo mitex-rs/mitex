@@ -174,6 +174,11 @@ fn subst_macro() {
     Right(Paren)(")")
     Word("y")
     "###);
+    assert_snapshot!(tokens(r#"\newenvironment{f}[2]{begin}{end}\begin{f}test\end{f}"#), @r###"
+    Word("begin")
+    Word("st")
+    Word("end")
+    "###);
 }
 
 #[test]
