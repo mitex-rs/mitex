@@ -1,4 +1,4 @@
-use mitex_lexer::{BraceKind, Token};
+use mitex_lexer::{BraceKind, CommandName, Token};
 use rowan::ast::AstNode;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
@@ -79,8 +79,14 @@ impl From<Token> for SyntaxKind {
             Token::Ampersand => SyntaxKind::TokenAmpersand,
             Token::Hash => SyntaxKind::TokenHash,
             Token::NewLine => SyntaxKind::ItemNewLine,
-            Token::Error => SyntaxKind::TokenError,
             Token::MacroArg(_) => SyntaxKind::TokenWord,
+            Token::CommandName(
+                CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment,
+            )
+            | Token::Error => SyntaxKind::TokenError,
+            Token::CommandName(CommandName::BeginEnvironment | CommandName::EndEnvironment) => {
+                SyntaxKind::TokenCommandSym
+            }
             Token::CommandName(_) => SyntaxKind::ClauseCommandName,
         }
     }
@@ -244,9 +250,7 @@ impl EnvItem {
 
     /// Get the name of the environment
     pub fn name_tok(&self) -> Option<SyntaxToken> {
-        self.begin()
-            .and_then(|begin| begin.name())
-            .and_then(|name| name.key())
+        self.begin().and_then(|begin| begin.name())
     }
 
     /// Get the arguments of the environment
@@ -305,14 +309,11 @@ impl LRClause {
 syntax_tree_node!(BeginItem, ItemBegin);
 
 impl BeginItem {
-    /// Get the command in the begin clause
-    pub fn command(&self) -> Option<SyntaxToken> {
-        self.syntax().first_token()
-    }
-
     /// Get the name in the begin clause
-    pub fn name(&self) -> Option<CurlyWordItem> {
-        self.syntax().children().find_map(CurlyWordItem::cast)
+    pub fn name(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .first_token()
+            .filter(|node| node.kind() == TokenCommandSym)
     }
 
     /// Get the options of the environment
@@ -331,26 +332,11 @@ impl BeginItem {
 syntax_tree_node!(EndItem, ItemEnd);
 
 impl EndItem {
-    /// Get the command in the end clause
-    pub fn command(&self) -> Option<SyntaxToken> {
-        self.syntax().first_token()
-    }
-
     /// Get the name in the end clause
-    pub fn name(&self) -> Option<CurlyWordItem> {
-        self.syntax().children().find_map(CurlyWordItem::cast)
-    }
-}
-
-syntax_tree_node!(CurlyWordItem, ItemCurly);
-
-impl CurlyWordItem {
-    /// Get the word in the curly item
-    pub fn key(&self) -> Option<SyntaxToken> {
+    pub fn name(&self) -> Option<SyntaxToken> {
         self.syntax()
-            .children_with_tokens()
-            .filter_map(|node| node.into_token())
-            .find(|node| node.kind() == TokenWord)
+            .first_token()
+            .filter(|node| node.kind() == TokenCommandSym)
     }
 }
 

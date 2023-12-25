@@ -89,7 +89,13 @@ impl<'a> StreamContext<'a> {
     #[inline]
     fn lex_one(l: &mut logos::Lexer<'a, Token>) -> Option<Tok<'a>> {
         let tok = l.next()?.unwrap();
-        let source_text = l.slice();
+
+        let source_text = match tok {
+            Token::CommandName(CommandName::BeginEnvironment | CommandName::EndEnvironment) => {
+                l.source().slice(l.extras.1.clone()).unwrap()
+            }
+            _ => l.slice(),
+        };
 
         Some((tok, source_text))
     }
@@ -261,7 +267,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
     /// Note that since we have a bumper, the returning string is not always
     /// sliced from the input
     pub fn new_with_bumper(input: &'a str, spec: CommandSpec, bumper: S) -> Self {
-        let inner = Token::lexer_with_extras(input, spec);
+        let inner = Token::lexer_with_extras(input, (spec, 0..0));
         let mut n = Self {
             ctx: StreamContext {
                 inner,
@@ -361,7 +367,7 @@ fn bp(_: &mut logos::Lexer<Token>) -> BraceKind {
 ///
 /// It also specifies how logos would lex the token
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Logos)]
-#[logos(extras = CommandSpec)]
+#[logos(extras = (CommandSpec, logos::Span))]
 pub enum Token {
     #[regex(r"[\r\n]+", priority = 2)]
     LineBreak,
@@ -440,6 +446,9 @@ impl Token {
     }
 }
 
+/// The utf8 length of ascii chars
+const LEN_ASCII: usize = 1;
+
 /// Lex a valid command name
 // todo: handle commands with underscores, whcih would require command names
 // todo: from specification
@@ -467,13 +476,30 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
         return CommandName::Generic;
     }
 
-    /// The utf8 length of ascii chars
-    const LEN_ASCII: usize = 1;
-
     // Case3 (Rest): lex a general ascii command name
     // We treat the command name as ascii to improve performance slightly
-    let ascii_str = command_start.as_bytes()[LEN_ASCII..].iter();
+    let ascii_str = &command_start.as_bytes()[LEN_ASCII..];
+    let bump_size = advance_ascii_name(lexer, ascii_str, true);
+    lexer.bump(bump_size);
 
+    let name = &command_start[..LEN_ASCII + bump_size];
+    match name {
+        "iffalse" => CommandName::BeginBlockComment,
+        "fi" => CommandName::EndBlockComment,
+        "left" => CommandName::Left,
+        "right" => CommandName::Right,
+        "begin" => lex_begin_end(lexer, true),
+        "end" => lex_begin_end(lexer, false),
+        _ => CommandName::Generic,
+    }
+}
+
+fn advance_ascii_name(
+    lexer: &mut logos::Lexer<Token>,
+    ascii_str: &[u8],
+    lex_slash_command: bool,
+) -> usize {
+    let mut bump_size = 0;
     for c in ascii_str {
         match c {
             // Find the command name in the spec
@@ -484,36 +510,111 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
             // but overall this is not a bottleneck so we don't do it now
             // And RegexSet heavily increases the binary size
             b'*' => {
-                let spec = &lexer.extras;
-                let mut s = lexer.span();
-                // for char `\`
-                s.start += 1;
-                // for char  `*`
-                s.end += 1;
-                let name = lexer.source().slice(s);
-                if name.and_then(|s| spec.get(s)).is_some() {
-                    lexer.bump(LEN_ASCII);
+                let verified = if lex_slash_command {
+                    let spec = &lexer.extras.0;
+                    // for char `\`, etc.
+                    let s = lexer.span().start + 1;
+                    // for char  `*`
+                    let s = s..s + bump_size + 2;
+                    let t = lexer.source().slice(s);
+                    t.and_then(|s| spec.get(s)).is_some()
+                } else {
+                    true
+                };
+
+                if verified {
+                    bump_size += LEN_ASCII;
                 }
 
                 break;
             }
-            c if c.is_ascii_alphabetic() => lexer.bump(LEN_ASCII),
+            c if c.is_ascii_alphabetic() => bump_size += LEN_ASCII,
             // todo: math mode don't want :
-            // b'@' | b':' => lexer.bump(LEN_ASCII),
-            b'@' => lexer.bump(LEN_ASCII),
+            // b'@' | b':' => bump_size += LEN_ASCII,
+            b'@' => bump_size += LEN_ASCII,
             _ => break,
         };
     }
 
-    let name = &lexer.slice()[1..];
-    match name {
-        "iffalse" => CommandName::BeginBlockComment,
-        "fi" => CommandName::EndBlockComment,
-        "left" => CommandName::Left,
-        "right" => CommandName::Right,
-        "begin" => CommandName::BeginEnvironment,
-        "end" => CommandName::EndEnvironment,
-        _ => CommandName::Generic,
+    bump_size
+}
+
+fn lex_begin_end(lexer: &mut logos::Lexer<Token>, is_begin: bool) -> CommandName {
+    struct LexTask<'a, 'b> {
+        lexer: &'a mut logos::Lexer<'b, Token>,
+        chars: std::str::Chars<'b>,
+        collected: usize,
+    }
+
+    impl<'a, 'b> LexTask<'a, 'b> {
+        fn new(lexer: &'a mut logos::Lexer<'b, Token>) -> Self {
+            Self {
+                chars: lexer.source()[lexer.span().end..].chars(),
+                lexer,
+                collected: 0,
+            }
+        }
+
+        fn next_non_trivia(&mut self) -> Option<char> {
+            loop {
+                let c = match self.chars.next() {
+                    Some(c) => c,
+                    None => break None,
+                };
+
+                if c.is_whitespace() {
+                    self.collected += c.len_utf8();
+                    continue;
+                }
+
+                if c == '%' {
+                    self.collected += c.len_utf8();
+                    for c in self.chars.by_ref() {
+                        if c == '\n' || c == '\r' {
+                            break;
+                        }
+                        self.collected += c.len_utf8();
+                    }
+                    continue;
+                }
+
+                self.collected += c.len_utf8();
+                return Some(c);
+            }
+        }
+
+        #[inline(always)]
+        fn work(&mut self) -> Option<()> {
+            let c = self.next_non_trivia()?;
+
+            if c != '{' {
+                return None;
+            }
+
+            let ns = self.lexer.span().end + self.collected;
+            let ascii_str = self.lexer.source()[ns..].as_bytes();
+
+            let bump_size = advance_ascii_name(self.lexer, ascii_str, false);
+            self.lexer.extras.1 = ns..ns + bump_size;
+            self.collected += bump_size;
+            self.chars = self.lexer.source()[ns + bump_size..].chars();
+
+            let c = self.next_non_trivia()?;
+            if c != '}' {
+                return None;
+            }
+
+            self.lexer.bump(self.collected);
+            Some(())
+        }
+    }
+
+    let mut task = LexTask::new(lexer);
+    match (task.work(), is_begin) {
+        (Some(..), true) => CommandName::BeginEnvironment,
+        (Some(..), false) => CommandName::EndEnvironment,
+        (None, true) => CommandName::ErrorBeginEnvironment,
+        (None, false) => CommandName::ErrorEndEnvironment,
     }
 }
 
@@ -526,6 +627,10 @@ pub enum CommandName {
     BeginEnvironment,
     /// clause of Environment: \end
     EndEnvironment,
+    /// clause of Environment: \begin, but error
+    ErrorBeginEnvironment,
+    /// clause of Environment: \end, but error
+    ErrorEndEnvironment,
     /// clause of BlockComment: \iffalse
     BeginBlockComment,
     /// clause of BlockComment: \fi

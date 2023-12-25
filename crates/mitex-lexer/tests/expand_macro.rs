@@ -34,6 +34,18 @@ fn assert_plain_tokens(input: &str) -> String {
 }
 
 #[test]
+fn begin_end() {
+    assert_snapshot!(assert_plain_tokens(r#"\begin{eq}\end{eq}"#), @r###"
+    CommandName(BeginEnvironment)("eq")
+    CommandName(EndEnvironment)("eq")
+    "###);
+    assert_snapshot!(assert_plain_tokens(r#"\begin{align*}\end{align*}"#), @r###"
+    CommandName(BeginEnvironment)("align*")
+    CommandName(EndEnvironment)("align*")
+    "###);
+}
+
+#[test]
 fn no_macros() {
     assert_snapshot!(assert_plain_tokens("hello world"), @r###"
     Word("hello")

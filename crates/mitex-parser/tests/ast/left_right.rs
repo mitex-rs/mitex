@@ -60,29 +60,21 @@ fn base() {
     assert_debug_snapshot!(parse(r#"\begin{equation}\left.\right\end{equation}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    ||begin(sym'("equation"))
     ||lr
     |||clause-lr(cmd-name("\\left"),word'("."))
     |||clause-lr(cmd-name("\\right"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    ||end(sym'("equation"))
     "###);
     // Note: this is an invalid expression
     // Error handling
     assert_debug_snapshot!(parse(r#"\begin{equation}\left\right\end{equation}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    ||begin(sym'("equation"))
     ||lr
     |||clause-lr(cmd-name("\\left"))
     |||clause-lr(cmd-name("\\right"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    ||end(sym'("equation"))
     "###);
 }

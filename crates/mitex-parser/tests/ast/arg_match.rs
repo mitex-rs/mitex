@@ -71,9 +71,9 @@ fn special_marks() {
     |br'("\n")
     |space'("    ")
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
+    ||begin(sym'("matrix"))
+    ||br'("\n")
+    ||space'("        ")
     ||cmd
     |||cmd-name("\\displaystyle")
     |||args
@@ -92,9 +92,9 @@ fn special_marks() {
     ||newline("\\\\")
     ||br'("\n")
     ||space'("    ")
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    ||end(sym'("matrix"))
+    |br'("\n")
+    |space'("    ")
     "###);
     assert_debug_snapshot!(parse(r#"
     \begin{matrix}
@@ -106,9 +106,9 @@ fn special_marks() {
     |br'("\n")
     |space'("    ")
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("        "))
+    ||begin(sym'("matrix"))
+    ||br'("\n")
+    ||space'("        ")
     ||cmd
     |||cmd-name("\\displaystyle")
     |||args
@@ -121,9 +121,9 @@ fn special_marks() {
     ||newline("\\\\")
     ||br'("\n")
     ||space'("    ")
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    ||end(sym'("matrix"))
+    |br'("\n")
+    |space'("    ")
     "###);
     assert_debug_snapshot!(parse(r#"
     \begin{matrix}\frac{1} & {2}\end{matrix}
@@ -132,9 +132,7 @@ fn special_marks() {
     |br'("\n")
     |space'("    ")
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||begin(sym'("matrix"))
     ||cmd
     |||cmd-name("\\frac")
     |||args
@@ -149,9 +147,9 @@ fn special_marks() {
     |||lbrace'("{")
     |||text(word'("2"))
     |||rbrace'("}")
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    ||end(sym'("matrix"))
+    |br'("\n")
+    |space'("    ")
     "###);
     assert_debug_snapshot!(parse(r#"
     \begin{matrix}\frac{1} \\ {2}\end{matrix}
@@ -160,9 +158,7 @@ fn special_marks() {
     |br'("\n")
     |space'("    ")
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||begin(sym'("matrix"))
     ||cmd
     |||cmd-name("\\frac")
     |||args
@@ -177,9 +173,9 @@ fn special_marks() {
     |||lbrace'("{")
     |||text(word'("2"))
     |||rbrace'("}")
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    ||end(sym'("matrix"))
+    |br'("\n")
+    |space'("    ")
     "###);
     assert_debug_snapshot!(parse(r#"
     1 \over 2 \\ 3 
@@ -342,9 +338,7 @@ fn special_marks_in_env() {
     |br'("\n")
     |space'("    ")
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||begin(sym'("matrix"))
     ||cmd
     |||args
     ||||text(word'("a"),space'(" "))
@@ -355,9 +349,9 @@ fn special_marks_in_env() {
     ||newline("\\\\")
     ||space'(" ")
     ||text(word'("c"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"),space'("    "))
+    ||end(sym'("matrix"))
+    |br'("\n")
+    |space'("    ")
     "###);
 }
 

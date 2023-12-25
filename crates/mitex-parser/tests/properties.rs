@@ -17,7 +17,7 @@ mod properties {
                 .map(SnapToken)
         }
 
-        assert_debug_snapshot!(env_name(r#"\begin{equation}\end{equation}"#).unwrap(), @r###"word'("equation")"###);
+        assert_debug_snapshot!(env_name(r#"\begin{equation}\end{equation}"#).unwrap(), @r###"sym'("equation")"###);
     }
 
     #[test]
