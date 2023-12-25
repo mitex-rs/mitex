@@ -85,13 +85,13 @@ It produces:
   $ alpha x $
 ]
 
-= Specification to LaTeX Commands (for developers)
+= Specification of LaTeX Commands (for developers)
 
-// todo: translate rust code descriptions to natural language
+// todo: translate Rust code descriptions to natural language
 
-Define how one user specifies commands in typst for #mitex. And it is aware of a special case of command, environment, which is in shape of `\begin{e}...\end{e}`.
+Define how a user specifies commands in Typst for #mitex. Mitex is aware of a special case of command, environment, which is in shape of `\begin{e}...\end{e}`.
 
-The specification is structured as following in rust:
+The specification is structured as following in Rust:
 
 ```rs
 pub enum Command {
@@ -104,54 +104,54 @@ pub struct CommandSpec {
 }
 ```
 
-The specification will be passed to #mitex Parser, and used for produce ASTs which respects shape of commands.
+The specification will be passed to the #mitex Parser and used to produce ASTs, which respect the shape of commands.
 
-Note: since we need process environments statically, users cannot override `\begin` and `\end` command.
+Note: since we need to process environments statically, users cannot override the `\begin` and `\end` commands.
 
 ```rust
 pub struct CmdShape {
-    /// Describing how could we matches the arguments of a command item
+    /// Describing how we could match the arguments of a command item
     pub args: ArgShape,
     /// Alias command for typst handler
-    /// For exmaple, alias `\prod` to typst's `product`
+    /// For exmaple, alias `\prod` to Typst's `product`
     pub alias: Option<String>,
 }
 
 pub struct EnvShape {
-    /// Describing how could we matches the arguments of an environment item
+    /// Describing how we could match the arguments of an environment item
     pub args: ArgPattern,
-    /// Specify how could we process items before passing them
-    /// to the typst handler
+    /// Specify how we could process items before passing them
+    /// to the Typst handler
     pub ctx_feature: ContextFeature,
-    /// Alias command for typst handler
+    /// Alias command for Typst handler.
     /// For exmaple, alias `pmatrix` to `pmat`
-    /// And specify `let pmat = math.mat.with(delim: "(")`
-    /// in scope
+    /// and specify `let pmat = math.mat.with(delim: "(")`
+    /// in scope:
     pub alias: Option<String>,
 }
 
 /// An efficient pattern used for matching.
-/// It is essential regex things but one
-/// can specify the pattern by fixed, range,
-/// or greedy length to achieve higher performance.
+/// It is essential to use regex but one
+/// can specify a fixed pattern, a range,
+/// or a greedy length to achieve better performance.
 ///
-/// Let us show usage of glob pattern by \sqrt, which is `{,b}t`
+/// Let us look at usage of a glob pattern by \sqrt, which is `{,b}t`
 /// Exp 1. For `\sqrt{2}{3}`, parser
 ///   requires the pattern to match with `tt`,
 ///   Here, `{,b}t` matches and
-///   yields string `t` (correspond to `{2}`)
+///   yields the string `t` (which corresponds to `{2}`).
 /// Exp 2. For `\sqrt[1]{2}{2}`, parser
 ///   requires the pattern to match with `btt`,
 ///   Here, `{,b}t` matches and
-///   yields string `bt` (correspond to `[1]{2}`)
+///   yields the string `bt` (which corresponds to `[1]{2}`).
 ///
-/// Kind of item to match:
+/// Kinds of item to match:
 /// - Bracket/b: []
 /// - Parenthesis/p: ()
-/// - Term/t: any rest of terms, typically {} or single char
+/// - Term/t: any remaining terms, typically {} or a single char
 pub enum ArgPattern {
-    /// None of arguments is passed, i.e. it is processed as a
-    /// variable in typst.
+    /// No arguments are passed, i.e. this is processed as a
+    /// variable in Typst.
     /// Note: this is different from FixedLenTerm(0)
     /// Where, \alpha is None, but not FixedLenTerm(0)
     /// E.g. \alpha => $alpha$
@@ -168,15 +168,15 @@ pub enum ArgPattern {
     /// equivalent to `/t*/g`
     /// E.g. \over, \displaystyle
     Greedy,
-    /// Most powerful pattern, but slightly slow
-    /// Note that the glob must accept all prefix of the input
+    /// The most powerful pattern, but slightly slow.
+    /// Note that the glob must accept the whole prefix of the input.
     ///
     /// E.g. \sqrt has a glob pattern of `{,b}t`
     /// Description:
-    /// - {,b}: first, it matches an bracket option, e.g. `\sqrt[3]`
-    /// - t: it later matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
-    /// Note: any prefix of the glob is valid in parse stage hence you need to
-    /// check whether it is complete in later stage.
+    /// - {,b}: first, it matches a bracket option, e.g. `\sqrt[3]`
+    /// - t: it then matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
+    /// Note: any prefix of the glob is valid during the parse stage, so you need to
+    /// check whether it is complete in later stages.
     Glob(Arc<str>),
 }
 
@@ -189,13 +189,13 @@ pub enum ArgPattern {
 /// - `Direction::Left` with `ArgPattern::FixedLenTerm(1)`
 /// - `Direction::Infix` with `ArgPattern::Greedy`
 pub enum ArgShape {
-    /// A command that assosicates with right side of items.
+    /// A command that associates with the right side of items.
     /// E.g. \hat
     Right(ArgPattern),
-    /// A command that assosicates with left side of items, and with `ArgPattern::FixedLenTerm(1)`.
+    /// A command that associates with the left side of items, and with `ArgPattern::FixedLenTerm(1)`.
     /// E.g. \limits
     Left1,
-    /// A command that assosicates with both side of items, and with `ArgPattern::Greedy`.
+    /// A command that associates with both side of items, and with `ArgPattern::Greedy`.
     /// Also known as infix operators.
     /// E.g. \over
     InfixGreedy,
@@ -246,13 +246,13 @@ AttachItem(
   Bottom(Word("x"))
 ),
 Word("f"),
-# used for paren escaping (special case in typst)
+# used for paren escaping (a special case in typst)
 Paren(Word("x")),
 ```
 
 Sample #sample-counter():
 
-Spaces are not omitted. It is useful for processing `\text`.
+Spaces are not omitted. This is useful for processing `\text`.
 
 ```tex
 \frac 1  2 ␠
@@ -271,7 +271,7 @@ Space(" "),
 
 Sample #sample-counter():
 
-Attach items are identified.
+Attached items are identified.
 
 ```tex
 x_1''^2␠
@@ -287,7 +287,7 @@ AttachItem(
 
 Sample #sample-counter():
 
-Attach items are identified (case 2).
+Attached items are identified (case 2).
 
 ```tex
 x''_1␠
@@ -303,7 +303,7 @@ AttachItem(
 
 Sample #sample-counter():
 
-Apostrophes without attach target will become regular text.
+Apostrophes without an attached target will become regular text.
 
 ```tex
 ''␠
@@ -316,7 +316,7 @@ Word("'")
 
 Sample #sample-counter():
 
-Apostrophes that occupy position of command argument will become regular text.
+Apostrophes that in the position of a command argument will become regular text.
 
 ```tex
 \frac''␠
