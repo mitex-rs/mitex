@@ -1,7 +1,7 @@
 //! Specification structure of a set of LaTeX commands.
 //!
-//! The specification will be passed to #mitex for converting LaTeX code
-//! correctly. For example, #mitex Parser uses it to produce an AST that respect
+//! The specification will be passed to MiTeX for converting LaTeX code
+//! correctly. For example, MiTeX Parser uses it to produce an AST that respect
 //! the shape of commands.
 //!
 //! Note: since we need to process environments statically, users cannot
