@@ -89,7 +89,7 @@ You can use the `#mitex-convert()` function to get the Typst Code generated from
 
 ### Add missing TeX commands
 
-Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](https://github.com/OrangeX4/mitex/tree/main/packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
+Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifying [specification files](https://github.com/OrangeX4/mitex/tree/main/packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
 
 In the future, we will provide the ability to customize TeX commands, which will make it easier for you to use the commands you create for yourself.
 
