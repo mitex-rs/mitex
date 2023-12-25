@@ -90,7 +90,7 @@ use std::{
 
 use crate::{
     snapshot_map::{self, SnapshotMap},
-    BraceKind, BumpTokenStream, CommandName, PeekTok, StreamContext, Token,
+    BraceKind, BumpTokenStream, CommandName, MacroifyStream, StreamContext, Tok, Token,
 };
 use mitex_spec::CommandSpec;
 
@@ -102,17 +102,17 @@ type MacroMap<'a> = SnapshotMap<&'a str, Macro<'a>>;
 pub struct CmdMacro<'a> {
     pub name: String,
     pub num_args: u8,
-    pub opt: Option<Vec<PeekTok<'a>>>,
-    pub def: Vec<PeekTok<'a>>,
+    pub opt: Option<Vec<Tok<'a>>>,
+    pub def: Vec<Tok<'a>>,
 }
 
 #[derive(Debug)]
 pub struct EnvMacro<'a> {
     pub name: String,
     pub num_args: u8,
-    pub opt: Option<Vec<PeekTok<'a>>>,
-    pub begin_def: Vec<PeekTok<'a>>,
-    pub end_def: Vec<PeekTok<'a>>,
+    pub opt: Option<Vec<Tok<'a>>>,
+    pub begin_def: Vec<Tok<'a>>,
+    pub end_def: Vec<Tok<'a>>,
 }
 
 #[derive(Debug, Clone)]
@@ -334,14 +334,16 @@ pub struct MacroEngine<'a> {
     /// Macro stack
     pub reading_macro: Vec<MacroNode<'a>>,
     /// Toekns used by macro stack
-    pub scanned_tokens: Vec<PeekTok<'a>>,
+    pub scanned_tokens: Vec<Tok<'a>>,
 }
 
 impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
     fn bump(&mut self, ctx: &mut StreamContext<'a>) {
         self.do_bump(ctx);
     }
+}
 
+impl<'a> MacroifyStream<'a> for MacroEngine<'a> {
     fn get_macro(&self, name: &str) -> Option<Macro<'a>> {
         self.macros.get(name).cloned()
     }
@@ -365,12 +367,12 @@ impl<'a> MacroEngine<'a> {
         /// doesn't matter
         const PAGE_SIZE: usize = 4096;
         /// The item size of the peek cache
-        const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<PeekTok<'static>>();
+        const PEEK_CACHE_SIZE: usize = (PAGE_SIZE - 16) / std::mem::size_of::<Tok<'static>>();
         /// Reserve one item for the peeked token
         const PEEK_CACHE_SIZE_M1: usize = PEEK_CACHE_SIZE - 1;
 
         ctx.next_token();
-        while ctx.peek_outer.peek_cache.len() < PEEK_CACHE_SIZE_M1 {
+        while ctx.peek_outer.buf.len() < PEEK_CACHE_SIZE_M1 {
             let Some(token) = ctx.peek_full() else {
                 break;
             };
@@ -383,17 +385,17 @@ impl<'a> MacroEngine<'a> {
         }
 
         // Reverse the peek cache to make it a stack
-        ctx.peek_outer.peek_cache.reverse();
+        ctx.peek_outer.buf.reverse();
 
         // Pop the first token again
-        ctx.peek_outer.peeked = ctx.peek_outer.peek_cache.pop();
+        ctx.peek_outer.peeked = ctx.peek_outer.buf.pop();
     }
 
     #[inline]
     fn trapped_by_token(
         &mut self,
         ctx: &mut StreamContext<'a>,
-        (kind, text): PeekTok<'a>,
+        (kind, text): Tok<'a>,
     ) -> Option<()> {
         if kind != Token::CommandName(CommandName::Generic) {
             ctx.push_outer((kind, text));
@@ -419,7 +421,7 @@ impl<'a> MacroEngine<'a> {
                 ctx.next_not_trivia();
 
                 let name = ctx
-                    .read_command_name_option(BraceKind::Curly)?
+                    .peek_cmd_name_opt(BraceKind::Curly)?
                     .1
                     .strip_prefix('\\')
                     .unwrap();
@@ -440,30 +442,19 @@ impl<'a> MacroEngine<'a> {
                     let nx = ctx.peek()?;
 
                     match (state, nx) {
-                        (
-                            MatchState::NArgs | MatchState::OptArgDefault,
-                            Token::Left(BraceKind::Bracket),
-                        ) => {
-                            if state == MatchState::NArgs {
-                                ctx.next_not_trivia();
-                                num_args = {
-                                    let Some(res) = ctx.read_u8_option(BraceKind::Bracket) else {
-                                        return None;
-                                    };
-                                    res
-                                };
-                                state = MatchState::OptArgDefault;
-                            } else {
-                                ctx.next_token();
-                                opt = Some(ctx.read_until_balanced(BraceKind::Bracket));
-                                ctx.eat_if(Token::Right(BraceKind::Bracket));
-                                state = MatchState::DefN;
-                            }
+                        (MatchState::NArgs, Token::Left(BraceKind::Bracket)) => {
+                            ctx.next_not_trivia();
+                            num_args = ctx.peek_u8_opt(BraceKind::Bracket).filter(|e| *e <= 9)?;
+                            state = MatchState::OptArgDefault;
+                        }
+                        (MatchState::OptArgDefault, Token::Left(BraceKind::Bracket)) => {
+                            ctx.next_token();
+                            opt = Some(ctx.read_until_balanced(BraceKind::Bracket));
+                            state = MatchState::DefN;
                         }
                         (_, Token::Left(BraceKind::Curly)) => {
                             ctx.next_token();
                             def = ctx.read_until_balanced(BraceKind::Curly);
-                            ctx.eat_if(Token::Right(BraceKind::Curly));
                             break 'match_loop;
                         }
                         _ => {
@@ -497,7 +488,6 @@ impl<'a> MacroEngine<'a> {
 
                         if matches!(ctx.peek()?, Token::Left(BraceKind::Curly)) {
                             end_def = Some(ctx.read_until_balanced(BraceKind::Curly));
-                            ctx.eat_if(Token::Right(BraceKind::Curly));
                         }
 
                         if *renew {
@@ -569,70 +559,7 @@ impl<'a> MacroEngine<'a> {
                 None
             }
             Macro::Cmd(cmd) => {
-                let mut args = Vec::<Vec<PeekTok<'a>>>::with_capacity(cmd.num_args as usize);
-
-                ctx.next_token();
-                let mut num_of_read: u8 = 0;
-                loop {
-                    match ctx.peek_not_trivia() {
-                        Some(Token::Left(BraceKind::Curly)) => {
-                            ctx.next_token();
-                            args.push(ctx.read_until_balanced(BraceKind::Curly));
-                            ctx.eat_if(Token::Right(BraceKind::Curly));
-                        }
-                        Some(Token::Word) => {
-                            let t = ctx.peek_full().unwrap().1;
-                            let mut split_cnt = 0;
-                            for c in t.chars() {
-                                args.push(vec![(
-                                    Token::Word,
-                                    &t[split_cnt..split_cnt + c.len_utf8()],
-                                )]);
-                                split_cnt += c.len_utf8();
-                                num_of_read += 1;
-                                if num_of_read == cmd.num_args {
-                                    break;
-                                }
-                            }
-                            if split_cnt < t.len() {
-                                ctx.peek_inner.peeked.as_mut().unwrap().1 = &t[split_cnt..];
-                            } else {
-                                ctx.next_token();
-                            }
-                            if num_of_read == cmd.num_args {
-                                break;
-                            }
-                        }
-                        Some(_) => {
-                            args.push(vec![ctx.peek_full().unwrap()]);
-                            ctx.next_token();
-                        }
-                        None => {
-                            break;
-                        }
-                    }
-
-                    num_of_read += 1;
-                    if num_of_read == cmd.num_args {
-                        break;
-                    }
-                }
-
-                if num_of_read != cmd.num_args {
-                    let mut ok = false;
-                    if cmd.num_args - num_of_read == 1 {
-                        if let Some(opt) = cmd.opt.clone() {
-                            args.push(opt);
-                            ok = true;
-                        }
-                    }
-
-                    if !ok {
-                        ctx.push_outer((Token::Error, "invalid number of arguments"));
-                        return None;
-                    }
-                }
-
+                let args = Self::read_macro_args(ctx, cmd.num_args, cmd.opt.clone())?;
                 // expand macro args
                 let mut stream = vec![];
 
@@ -683,6 +610,9 @@ impl<'a> MacroEngine<'a> {
                 }
 
                 ctx.extend_inner(stream.into_iter().rev());
+                if ctx.peek_inner.peeked.is_none() {
+                    ctx.next_token();
+                }
 
                 None
             }
@@ -692,6 +622,74 @@ impl<'a> MacroEngine<'a> {
                 None
             }
         }
+    }
+
+    fn read_macro_args(
+        ctx: &mut StreamContext<'a>,
+        num_args: u8,
+        opt: Option<Vec<Tok<'a>>>,
+    ) -> Option<Vec<Vec<Tok<'a>>>> {
+        let mut args = Vec::with_capacity(num_args as usize);
+
+        ctx.next_token();
+        let mut num_of_read: u8 = 0;
+        loop {
+            match ctx.peek_not_trivia() {
+                Some(Token::Left(BraceKind::Curly)) => {
+                    ctx.next_token();
+                    args.push(ctx.read_until_balanced(BraceKind::Curly));
+                }
+                Some(Token::Word) => {
+                    let t = ctx.peek_full().unwrap().1;
+                    let mut split_cnt = 0;
+                    for c in t.chars() {
+                        args.push(vec![(Token::Word, &t[split_cnt..split_cnt + c.len_utf8()])]);
+                        split_cnt += c.len_utf8();
+                        num_of_read += 1;
+                        if num_of_read == num_args {
+                            break;
+                        }
+                    }
+                    if split_cnt < t.len() {
+                        ctx.peek_inner.peeked.as_mut().unwrap().1 = &t[split_cnt..];
+                    } else {
+                        ctx.next_token();
+                    }
+                    if num_of_read == num_args {
+                        break;
+                    }
+                }
+                Some(_) => {
+                    args.push(vec![ctx.peek_full().unwrap()]);
+                    ctx.next_token();
+                }
+                None => {
+                    break;
+                }
+            }
+
+            num_of_read += 1;
+            if num_of_read == num_args {
+                break;
+            }
+        }
+
+        if num_of_read != num_args {
+            let mut ok = false;
+            if num_args - num_of_read == 1 {
+                if let Some(opt) = opt {
+                    args.push(opt);
+                    ok = true;
+                }
+            }
+
+            if !ok {
+                ctx.push_outer((Token::Error, "invalid number of arguments"));
+                return None;
+            }
+        }
+
+        Some(args)
     }
 
     /// Create a new scope for macro definitions
