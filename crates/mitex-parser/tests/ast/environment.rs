@@ -5,12 +5,8 @@ fn easy() {
     assert_debug_snapshot!(parse(r#"\begin{equation}\end{equation}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("equation"),rbrace'("}"))
+    ||begin(sym'("equation"))
+    ||end(sym'("equation"))
     "###);
 }
 
@@ -23,9 +19,8 @@ c & d
 \end{matrix}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"),br'("\n"))
+    ||begin(sym'("matrix"))
+    ||br'("\n")
     ||text(word'("a"),space'(" "))
     ||ampersand'("&")
     ||space'(" ")
@@ -36,35 +31,25 @@ c & d
     ||ampersand'("&")
     ||space'(" ")
     ||text(word'("d"),br'("\n"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("matrix"),rbrace'("}"))
+    ||end(sym'("matrix"))
     "###);
     assert_debug_snapshot!(parse(
             r#"\begin{pmatrix}\\\end{pmatrix}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    ||begin(sym'("pmatrix"))
     ||newline("\\\\")
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    ||end(sym'("pmatrix"))
     "###);
     assert_debug_snapshot!(parse(
             r#"\begin{pmatrix}x{\\}x\end{pmatrix}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    ||begin(sym'("pmatrix"))
     ||text(word'("x"))
     ||curly(lbrace'("{"),newline("\\\\"),rbrace'("}"))
     ||text(word'("x"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("pmatrix"),rbrace'("}"))
+    ||end(sym'("pmatrix"))
     "###);
 }
 
@@ -78,8 +63,7 @@ c & d
     root
     |env
     ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("array"),rbrace'("}"))
+    |||sym'("array")
     |||args
     ||||curly
     |||||lbrace'("{")
@@ -96,9 +80,7 @@ c & d
     ||ampersand'("&")
     ||space'(" ")
     ||text(word'("d"),br'("\n"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("array"),rbrace'("}"))
+    ||end(sym'("array"))
     "###);
 }
 
@@ -108,14 +90,10 @@ fn space_around_and() {
             r#"\begin{bmatrix}A&B\end{bmatrix}"#), @r###"
     root
     |env
-    ||begin
-    |||cmd-name("\\begin")
-    |||curly(lbrace'("{"),word'("bmatrix"),rbrace'("}"))
+    ||begin(sym'("bmatrix"))
     ||text(word'("A"))
     ||ampersand'("&")
     ||text(word'("B"))
-    ||end
-    |||cmd-name("\\end")
-    |||curly(lbrace'("{"),word'("bmatrix"),rbrace'("}"))
+    ||end(sym'("bmatrix"))
     "###);
 }

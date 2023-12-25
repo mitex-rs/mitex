@@ -407,6 +407,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 CommandName::EndBlockComment => return self.command(),
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
+                CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
             },
         }
 
@@ -427,26 +428,6 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             self.eat();
         }
         self.builder.finish_node();
-    }
-
-    /// Item parsers
-    /// Parse a group of items which is enclosed by a pair of curly braces,
-    /// but accept a word as the enclosing token
-    ///
-    /// Returns the word if it is present
-    fn curly_group_word(&mut self) -> Option<&'a str> {
-        self.builder.start_node(ItemCurly.into());
-        self.eat();
-        let mut w = self.lexer.peek_text();
-        match self.peek() {
-            Some(Token::Word | Token::CommandName(_)) => {
-                self.eat_as(TokenWord);
-            }
-            Some(_) | None => w = None,
-        }
-        self.eat_if(Token::Right(BraceKind::Curly));
-        self.builder.finish_node();
-        w
     }
 
     /// Internally used by `Self::command`
@@ -520,13 +501,10 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
         {
             self.builder.start_node(ItemBegin.into());
 
+            let env_name = self.lexer.peek_text().unwrap();
             self.eat();
-            self.trivia();
 
-            let env_name = (self.peek() == Some(Token::Left(BraceKind::Curly)))
-                .then(|| self.curly_group_word())
-                .flatten();
-            let arg_shape = env_name.and_then(|tok| self.spec.get_env(tok));
+            let arg_shape = self.spec.get_env(env_name);
             let right_pat = match arg_shape.map(|cmd| &cmd.args) {
                 None | Some(ArgPattern::None | ArgPattern::FixedLenTerm(0)) => None,
                 Some(pattern) => Some(pattern),
@@ -545,12 +523,6 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
         if self.peek() == Some(Token::CommandName(CommandName::EndEnvironment)) {
             self.builder.start_node(ItemEnd.into());
             self.eat();
-            self.trivia();
-
-            if self.peek() == Some(Token::Left(BraceKind::Curly)) {
-                self.curly_group_word();
-            }
-
             self.builder.finish_node();
         }
 

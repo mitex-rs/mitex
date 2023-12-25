@@ -106,10 +106,10 @@ impl MathConverter {
         use LatexSyntaxKind::*;
 
         match elem.kind() {
-            TokenError => Err(format!(
-                "error unexpected: {:?}",
-                elem.as_node().unwrap().text()
-            ))?,
+            TokenError => Err(match elem {
+                LatexSyntaxElem::Node(node) => format!("error unexpected: {:?}", node.text()),
+                LatexSyntaxElem::Token(token) => format!("error unexpected: {:?}", token.text()),
+            })?,
             ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText | ItemBracket
             | ItemParen => {
                 for child in elem.as_node().unwrap().children_with_tokens() {
@@ -754,7 +754,7 @@ mod tests {
         assert_debug_snapshot!(convert_math(
                      r#"$\begin{pmatrix} \\ & \ddots \end{pmatrix}$"#
             ).unwrap(),
-            @r###""pmatrix(zws ; zws , dots.down  )""###
+            @r###""pmatrix( zws ; zws , dots.down  )""###
         );
         assert_debug_snapshot!(convert_math(
                 r#"$\begin{matrix}
@@ -764,7 +764,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "matrix(1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "matrix(\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -776,7 +776,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "Vmatrix(1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "Vmatrix(\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -804,7 +804,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(1  & 2  & 3 \\ \na  & b  & c \n)",
+            "aligned(\n        1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -816,7 +816,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(1  & 2  & 3 \\ \na  & b  & c \n)",
+            "aligned(\n        1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -828,7 +828,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "cases(1  & 2  & 3 ,\na  & b  & c \n)",
+            "cases(\n        1  & 2  & 3 ,\na  & b  & c \n)",
         )
         "###
         );
