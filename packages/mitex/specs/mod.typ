@@ -9,7 +9,7 @@
 [
   // 2. export all packages with specs by metadata and <mitex-packages> label,
   //    mitex-cli can fetch them by
-  //    `typst query --root . .\packages\latex-spec\mod.typ "<mitex-packages>"`
+  //    `typst query --root . ./packages/mitex/specs/mod.typ "<mitex-packages>"`
   #metadata(packages) <mitex-packages>
   #packages
 ]
