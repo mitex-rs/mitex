@@ -94,93 +94,109 @@ Define how a user specifies commands in Typst for #mitex. Mitex is aware of a sp
 The specification is structured as following in Rust:
 
 ```rs
-pub enum Command {
+/// An item of command specification. It is either a normal _command_ or an
+/// _environment_.
+/// See [Command Syntax] for concept of _command_.
+/// See [Environment Syntax] for concept of _environment_.
+///
+/// [Command Syntax]: https://latexref.xyz/LaTeX-command-syntax.html
+/// [Environment Syntax]: https://latexref.xyz/Environment-syntax.html
+pub enum CommandSpecItem {
     Cmd(CmdShape),
     Env(EnvShape),
 }
 
-pub struct CommandSpec {
-    pub commands: HashMap<String, Command>,
+/// Command specification that contains a set of commands and environments.
+pub struct CommandSpecRepr {
+    /// A map from command name to command specification
+    pub commands: fxhash::FxHashMap<String, CommandSpecItem>,
 }
 ```
 
-The specification will be passed to the #mitex Parser and used to produce ASTs, which respect the shape of commands.
+The specification will be passed to #mitex for converting LaTeX code correctly. For example, #mitex Parser uses it to produce an AST that respect the shape of commands.
 
 Note: since we need to process environments statically, users cannot override the `\begin` and `\end` commands.
 
 ```rust
 pub struct CmdShape {
-    /// Describing how we could match the arguments of a command item
+    /// Describes how we could match the arguments of a command item.
     pub args: ArgShape,
-    /// Alias command for typst handler
+    /// Makes the command alias to some Typst handler.
     /// For exmaple, alias `\prod` to Typst's `product`
     pub alias: Option<String>,
 }
 
 pub struct EnvShape {
-    /// Describing how we could match the arguments of an environment item
+    /// Describes how we could match the arguments of an environment item.
     pub args: ArgPattern,
-    /// Specify how we could process items before passing them
+    /// Specifies how we could process items before passing them
     /// to the Typst handler
     pub ctx_feature: ContextFeature,
-    /// Alias command for Typst handler.
-    /// For exmaple, alias `pmatrix` to `pmat`
-    /// and specify `let pmat = math.mat.with(delim: "(")`
-    /// in scope:
+    /// Makes the command alias to some Typst handler.
+    /// For exmaple, alias `\pmatrix` to a Typst function `pmat` in scope.
     pub alias: Option<String>,
 }
 
-/// An efficient pattern used for matching.
-/// It is essential to use regex but one
-/// can specify a fixed pattern, a range,
-/// or a greedy length to achieve better performance.
+/// An efficient pattern used for argument matching.
 ///
-/// Let us look at usage of a glob pattern by \sqrt, which is `{,b}t`
-/// Exp 1. For `\sqrt{2}{3}`, parser
-///   requires the pattern to match with `tt`,
-///   Here, `{,b}t` matches and
-///   yields the string `t` (which corresponds to `{2}`).
-/// Exp 2. For `\sqrt[1]{2}{2}`, parser
-///   requires the pattern to match with `btt`,
-///   Here, `{,b}t` matches and
-///   yields the string `bt` (which corresponds to `[1]{2}`).
+/// There are four kinds of pattern. The most powerful one is
+/// [`ArgPattern::Glob`], which matches an sequence of input as arguments. Among
+/// these four kinds, [`ArgPattern::Glob`] can already match all possible inputs
+/// in our use cases. But one should specify a fixed length pattern
+/// ([`ArgPattern::FixedLenTerm`]), a range length pattern
+/// ([`ArgPattern::RangeLenTerm`]), or a greedy pattern
+/// ([`ArgPattern::Greedy`]) to achieve better performance.
+///
+/// Let us look at usage of a glob pattern by \sqrt, which is `{,b}t`.
+///
+/// - Example 1. For `\sqrt{2}{3}`, parser requires the pattern to match with an
+///   encoded string `tt`. Here, `{,b}t` matches and yields the string `t`
+///   (which corresponds to `{2}`).
+///
+/// - Example 2. For `\sqrt[1]{2}{2}`, parser requires the pattern to match with
+///   an encoded string `btt`. Here, `{,b}t` matches and yields the string `bt`
+///   (which corresponds to `[1]{2}`).
 ///
 /// Kinds of item to match:
 /// - Bracket/b: []
 /// - Parenthesis/p: ()
 /// - Term/t: any remaining terms, typically {} or a single char
+///
+/// Note: any prefix of the argument pattern are matched during the parse stage,
+/// so you need to check whether it is complete in later stages.
 pub enum ArgPattern {
-    /// No arguments are passed, i.e. this is processed as a
-    /// variable in Typst.
-    /// Note: this is different from FixedLenTerm(0)
-    /// Where, \alpha is None, but not FixedLenTerm(0)
-    /// E.g. \alpha => $alpha$
+    /// No arguments are passed, i.e. this is processed as a variable in Typst.
+    ///
+    /// E.g. `\alpha` => `$alpha$`, where `\alpha` has an argument pattern of
+    /// `None`
     None,
-    /// Fixed length pattern, equivalent to `/t{x}/g`
-    /// E.g. \hat x y => $hat(x) y$,
-    /// E.g. 1 \sum\limits => $1 limits(sum)$,
+    /// Fixed length pattern, equivalent to repeat `{,t}` for `x` times
+    ///
+    /// E.g. `\hat x y` => `$hat(x) y$`, where `\hat` has an argument pattern of
+    /// `FixedLenTerm(1)`
+    ///
+    /// E.g. `1 \sum\limits` => `$1 limits(sum)$`, where `\limits` has an
+    /// argument pattern of `FixedLenTerm(1)`
     FixedLenTerm(u8),
-    /// Range length pattern (as much as possible),
-    /// equivalent to `/t{x,y}/g`
+    /// Range length pattern (matches as much as possible), equivalent to
+    /// repeat `t` for `x` times, then repeat `{,t}` for `y` times.
+    ///
     /// No example
     RangeLenTerm(u8, u8),
-    /// Receive terms as much as possible,
-    /// equivalent to `/t*/g`
+    /// Receives any items as much as possible, equivalent to `*`.
+    ///
     /// E.g. \over, \displaystyle
     Greedy,
     /// The most powerful pattern, but slightly slow.
     /// Note that the glob must accept the whole prefix of the input.
     ///
-    /// E.g. \sqrt has a glob pattern of `{,b}t`
-    /// Description:
+    /// E.g. \sqrt has a glob argument pattern of `{,b}t`
+    ///
+    /// Description of the glob pattern:
     /// - {,b}: first, it matches a bracket option, e.g. `\sqrt[3]`
     /// - t: it then matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
-    /// Note: any prefix of the glob is valid during the parse stage, so you need to
-    /// check whether it is complete in later stages.
     Glob(Arc<str>),
 }
-
-// struct ArgShape(ArgPattern, Direction);
 
 /// Shape of arguments
 /// With direction to match since
@@ -190,20 +206,28 @@ pub enum ArgPattern {
 /// - `Direction::Infix` with `ArgPattern::Greedy`
 pub enum ArgShape {
     /// A command that associates with the right side of items.
-    /// E.g. \hat
+    ///
+    /// E.g. `\hat`
     Right(ArgPattern),
-    /// A command that associates with the left side of items, and with `ArgPattern::FixedLenTerm(1)`.
-    /// E.g. \limits
+    /// A command that associates with the left side of items, and with
+    /// `ArgPattern::FixedLenTerm(1)`.
+    ///
+    /// E.g. `\limits`
     Left1,
-    /// A command that associates with both side of items, and with `ArgPattern::Greedy`.
-    /// Also known as infix operators.
-    /// E.g. \over
+    /// A command that associates with both side of items, and with
+    /// `ArgPattern::Greedy`, also known as infix operators.
+    ///
+    /// E.g. `\over`
     InfixGreedy,
 }
 
 pub enum ContextFeature {
-    // 需要使用&和//分隔上下文中的内容
+    /// No special feature
+    None,
+    /// Parse content like mat arguments
     IsMatrix,
+    /// Parse content like cases
+    IsCases,
 }
 ```
 
