@@ -91,11 +91,7 @@ impl<'a> StreamContext<'a> {
         let tok = l.next()?.unwrap();
         let source_text = l.slice();
 
-        if tok != Token::CommandName(CommandName::Generic) {
-            return Some((tok, source_text));
-        }
-
-        Some((Token::CommandName(classify(&source_text[1..])), source_text))
+        Some((tok, source_text))
     }
 
     // Inner bumping is not cached
@@ -330,19 +326,6 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
     }
 }
 
-/// Classify the command name so parser can use it repeatedly
-fn classify(name: &str) -> CommandName {
-    match name {
-        "begin" => CommandName::BeginEnvironment,
-        "end" => CommandName::EndEnvironment,
-        "iffalse" => CommandName::BeginBlockComment,
-        "fi" => CommandName::EndBlockComment,
-        "left" => CommandName::Left,
-        "right" => CommandName::Right,
-        _ => CommandName::Generic,
-    }
-}
-
 /// Brace kinds in TeX, used by defining [`Token`]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum BraceKind {
@@ -522,7 +505,16 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
         };
     }
 
-    CommandName::Generic
+    let name = &lexer.slice()[1..];
+    match name {
+        "iffalse" => CommandName::BeginBlockComment,
+        "fi" => CommandName::EndBlockComment,
+        "left" => CommandName::Left,
+        "right" => CommandName::Right,
+        "begin" => CommandName::BeginEnvironment,
+        "end" => CommandName::EndEnvironment,
+        _ => CommandName::Generic,
+    }
 }
 
 /// The command name used by parser
