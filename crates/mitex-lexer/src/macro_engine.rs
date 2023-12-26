@@ -92,7 +92,8 @@ use std::{
 
 use crate::{
     snapshot_map::{self, SnapshotMap},
-    BraceKind, BumpTokenStream, CommandName, MacroifyStream, StreamContext, Tok, Token,
+    BraceKind, BumpTokenStream, CommandName, IfCommandName, MacroifyStream, StreamContext, Tok,
+    Token,
 };
 use mitex_spec::CommandSpec;
 
@@ -328,6 +329,15 @@ enum UpdateAction {
     Provide,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum IfState {
+    LitFalse,
+    TypstTrue,
+    TypstFalse,
+    False,
+    True,
+}
+
 /// MacroEngine has exact same interface as Lexer, but it expands macros.
 ///
 /// When it meets a macro in token stream, It evaluates a macro into expanded
@@ -341,6 +351,11 @@ pub struct MacroEngine<'a> {
     env_stack: Vec<EnvMacro<'a>>,
     /// Macro stack
     pub reading_macro: Vec<MacroNode<'a>>,
+    /// If stack
+    /// If the value is None, it means the if is not evaluated yet
+    /// If the value is Some(true), it means the if is evaluated to true
+    /// If the value is Some(false), it means the if is evaluated to false
+    reading_if: Vec<Option<IfState>>,
     /// Toekns used by macro stack
     pub scanned_tokens: Vec<Tok<'a>>,
 }
@@ -365,6 +380,7 @@ impl<'a> MacroEngine<'a> {
             macros: std::borrow::Cow::Borrowed(DEFAULT_MACROS.deref()),
             env_stack: Vec::new(),
             reading_macro: Vec::new(),
+            reading_if: Vec::new(),
             scanned_tokens: Vec::new(),
         }
     }
@@ -386,6 +402,16 @@ impl<'a> MacroEngine<'a> {
             };
 
             match token.0 {
+                // a begin environment token traps stream into a macro checking
+                Token::CommandName(CommandName::If(i)) => {
+                    self.trapped_by_if(ctx, token, i);
+                }
+                Token::CommandName(CommandName::Else) => {
+                    self.trapped_by_else(ctx, token);
+                }
+                Token::CommandName(CommandName::EndIf) => {
+                    self.trapped_by_endif(ctx, token);
+                }
                 // a generic command token traps stream into a macro checking
                 //
                 // If it is a real macro, it will be expanded into tokens so parser is unaware of
@@ -415,6 +441,95 @@ impl<'a> MacroEngine<'a> {
 
         // Pop the first token again
         ctx.peek_outer.peeked = ctx.peek_outer.buf.pop();
+    }
+
+    fn skip_false_tokens(&mut self, ctx: &mut StreamContext<'a>) {
+        let mut nested = 0;
+        while let Some(kind) = ctx.peek() {
+            match kind {
+                Token::CommandName(CommandName::If(..)) => {
+                    ctx.next_token();
+                    nested += 1;
+                }
+                Token::CommandName(CommandName::Else) | Token::CommandName(CommandName::EndIf) => {
+                    if nested == 0 {
+                        break;
+                    }
+                    ctx.next_token();
+                    nested -= 1;
+                }
+                _ => {
+                    ctx.next_token();
+                }
+            }
+        }
+    }
+
+    #[inline]
+    fn trapped_by_if(&mut self, ctx: &mut StreamContext<'a>, token: Tok<'a>, i: IfCommandName) {
+        ctx.next_token();
+        match i {
+            IfCommandName::IfFalse => {
+                ctx.push_outer(token);
+                self.reading_if.push(Some(IfState::LitFalse));
+            }
+            IfCommandName::IfTrue => {
+                self.reading_if.push(Some(IfState::True));
+            }
+            IfCommandName::IfTypst => {
+                ctx.push_outer(token);
+                self.reading_if.push(Some(IfState::TypstTrue));
+            }
+            _ => {
+                ctx.push_outer(token);
+                self.reading_if.push(None);
+            }
+        }
+    }
+
+    fn trapped_by_else(&mut self, ctx: &mut StreamContext<'a>, token: Tok<'a>) {
+        ctx.next_token();
+        let last_if = self.reading_if.last().cloned().unwrap_or(None);
+        match last_if {
+            Some(IfState::TypstTrue) => {
+                self.reading_if
+                    .last_mut()
+                    .unwrap()
+                    .replace(IfState::TypstFalse);
+                self.skip_false_tokens(ctx);
+            }
+            Some(IfState::True) => {
+                self.reading_if.last_mut().unwrap().replace(IfState::False);
+                self.skip_false_tokens(ctx);
+            }
+            Some(IfState::False) => {
+                self.reading_if.last_mut().unwrap().replace(IfState::True);
+            }
+            Some(IfState::TypstFalse) => {
+                self.reading_if
+                    .last_mut()
+                    .unwrap()
+                    .replace(IfState::TypstTrue);
+            }
+            Some(IfState::LitFalse) => {
+                self.reading_if.last_mut().unwrap().replace(IfState::True);
+                ctx.push_outer((Token::CommandName(CommandName::EndIf), "\\fi"));
+            }
+            None => {
+                ctx.push_outer(token);
+            }
+        }
+    }
+
+    fn trapped_by_endif(&mut self, ctx: &mut StreamContext<'a>, token: Tok<'a>) {
+        ctx.next_token();
+        let last_if = self.reading_if.pop().unwrap_or(None);
+        match last_if {
+            Some(IfState::True | IfState::False) => {}
+            Some(IfState::TypstFalse | IfState::TypstTrue | IfState::LitFalse) | None => {
+                ctx.push_outer(token);
+            }
+        }
     }
 
     #[inline]

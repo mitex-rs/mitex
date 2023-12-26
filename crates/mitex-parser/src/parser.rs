@@ -213,6 +213,12 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     }
 
     /// Lexer Interface
+    /// Drop the next token
+    fn drop(&mut self) {
+        self.lexer.eat();
+    }
+
+    /// Lexer Interface
     /// Consume the next token and attach it to the syntax tree with another
     /// syntax kind
     fn eat_as(&mut self, kind: SyntaxKind) {
@@ -406,7 +412,10 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
                 CommandName::If(IfCommandName::IfFalse) => self.block_comment(),
-                CommandName::If(..) | CommandName::EndIf => return self.command(),
+                CommandName::If(IfCommandName::IfTypst) => self.typst_code(),
+                CommandName::If(..) | CommandName::Else | CommandName::EndIf => {
+                    return self.command()
+                }
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
@@ -551,8 +560,19 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     /// Parse a block comment
     fn block_comment(&mut self) {
         self.builder.start_node(ItemBlockComment.into());
-        self.eat();
+        self.drop();
+        self.eat_body_of_ifs();
+        self.builder.finish_node();
+    }
 
+    fn typst_code(&mut self) {
+        self.builder.start_node(ItemTypstCode.into());
+        self.drop();
+        self.eat_body_of_ifs();
+        self.builder.finish_node();
+    }
+
+    fn eat_body_of_ifs(&mut self) {
         let mut nested = 0;
         while let Some(kind) = self.peek() {
             match kind {
@@ -563,10 +583,11 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                     nested += 1;
                 }
                 Token::CommandName(CommandName::EndIf) => {
-                    self.eat();
                     if nested == 0 {
+                        self.drop();
                         break;
                     }
+                    self.eat();
                     nested -= 1;
                 }
                 _ => {
@@ -574,8 +595,6 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 }
             }
         }
-
-        self.builder.finish_node();
     }
 
     /// Clause parsers

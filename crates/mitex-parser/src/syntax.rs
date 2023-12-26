@@ -47,6 +47,7 @@ pub enum SyntaxKind {
     ItemBegin,
     ItemEnd,
     ItemBlockComment,
+    ItemTypstCode,
     ItemAttachComponent,
     ItemFormula,
 

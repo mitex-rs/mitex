@@ -512,6 +512,7 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
         "ifdim" => CommandName::If(IfDim),
         "ifeof" => CommandName::If(IfEof),
         "@ifstar" => CommandName::If(IfStar),
+        "else" => CommandName::Else,
         "fi" => CommandName::EndIf,
         "left" => CommandName::Left,
         "right" => CommandName::Right,
@@ -701,6 +702,8 @@ pub enum CommandName {
     ErrorEndEnvironment,
     /// clause of BlockComment: \iffalse
     If(IfCommandName),
+    /// clause of BlockComment: \else
+    Else,
     /// clause of BlockComment: \fi
     EndIf,
     /// clause of LRItem: \left

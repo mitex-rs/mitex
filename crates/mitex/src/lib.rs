@@ -415,6 +415,9 @@ impl MathConverter {
 
                 self.exit_env(prev);
             }
+            ItemTypstCode => {
+                write!(f, "{}", elem.as_node().unwrap().text())?;
+            }
         };
 
         Ok(())
@@ -472,7 +475,7 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 
 #[cfg(test)]
 mod tests {
-    use insta::assert_debug_snapshot;
+    use insta::{assert_debug_snapshot, assert_snapshot};
 
     fn convert_math(input: &str) -> Result<String, String> {
         crate::convert_math(input, None)
@@ -851,5 +854,15 @@ a & b & c
         assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""text(\"ab c\")""###);
         // note: hack doesn't work in this case
         assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""text(\"ab\\colorredc\")""###);
+    }
+
+    #[test]
+    fn test_convert_typst_code() {
+        assert_snapshot!(convert_math(r#"\iftypst#show: template\fi"#).unwrap(), @"#show: template");
+        assert_snapshot!(convert_math(r#"\iftypst#import "template.typ": project
+#show: project\fi"#).unwrap(), @r###"
+        #import "template.typ": project
+        #show: project
+        "###);
     }
 }
