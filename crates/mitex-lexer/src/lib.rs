@@ -462,6 +462,7 @@ const LEN_ASCII: usize = 1;
 // todo: handle commands with underscores, whcih would require command names
 // todo: from specification
 fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
+    use IfCommandName::*;
     let command_start = &lexer.source()[lexer.span().end..];
 
     // Get the first char in utf8 case
@@ -493,8 +494,26 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
 
     let name = &command_start[..LEN_ASCII + bump_size];
     match name {
-        "iffalse" => CommandName::BeginBlockComment,
-        "fi" => CommandName::EndBlockComment,
+        "if" => CommandName::If(If),
+        "iftypst" => CommandName::If(IfTypst),
+        "iffalse" => CommandName::If(IfFalse),
+        "iftrue" => CommandName::If(IfTrue),
+        "ifcase" => CommandName::If(IfCase),
+        "ifnum" => CommandName::If(IfNum),
+        "ifcat" => CommandName::If(IfCat),
+        "ifx" => CommandName::If(IfX),
+        "ifvoid" => CommandName::If(IfVoid),
+        "ifhbox" => CommandName::If(IfHBox),
+        "ifvbox" => CommandName::If(IfVBox),
+        "ifhmode" => CommandName::If(IfHMode),
+        "ifmmode" => CommandName::If(IfMMode),
+        "ifvmode" => CommandName::If(IfVMode),
+        "ifinner" => CommandName::If(IfInner),
+        "ifdim" => CommandName::If(IfDim),
+        "ifeof" => CommandName::If(IfEof),
+        "@ifstar" => CommandName::If(IfStar),
+        "else" => CommandName::Else,
+        "fi" => CommandName::EndIf,
         "left" => CommandName::Left,
         "right" => CommandName::Right,
         "begin" => lex_begin_end(lexer, true),
@@ -629,6 +648,47 @@ fn lex_begin_end(lexer: &mut logos::Lexer<Token>, is_begin: bool) -> CommandName
 
 /// The command name used by parser
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+pub enum IfCommandName {
+    /// \if
+    If,
+    /// \iftypst
+    IfTypst,
+    /// \iffalse
+    IfFalse,
+    /// \iftrue
+    IfTrue,
+    /// \ifcase
+    IfCase,
+    /// \ifnum
+    IfNum,
+    /// \ifcat
+    IfCat,
+    /// \ifx
+    IfX,
+    /// \ifvoid
+    IfVoid,
+    /// \ifhbox
+    IfHBox,
+    /// \ifvbox
+    IfVBox,
+    /// \ifhmode
+    IfHMode,
+    /// \ifmmode
+    IfMMode,
+    /// \ifvmode
+    IfVMode,
+    /// \ifinner
+    IfInner,
+    /// \ifdim
+    IfDim,
+    /// \ifeof
+    IfEof,
+    /// \@ifstar
+    IfStar,
+}
+
+/// The command name used by parser
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum CommandName {
     /// Rest of the command names
     Generic,
@@ -640,10 +700,12 @@ pub enum CommandName {
     ErrorBeginEnvironment,
     /// clause of Environment: \end, but error
     ErrorEndEnvironment,
-    /// clause of BlockComment: \iffalse
-    BeginBlockComment,
-    /// clause of BlockComment: \fi
-    EndBlockComment,
+    /// clause of IfStatements: \if...
+    If(IfCommandName),
+    /// clause of IfStatements: \else
+    Else,
+    /// clause of IfStatements: \fi
+    EndIf,
     /// clause of LRItem: \left
     Left,
     /// clause of LRItem: \right

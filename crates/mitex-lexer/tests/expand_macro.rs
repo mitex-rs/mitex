@@ -182,6 +182,135 @@ fn subst_macro() {
 }
 
 #[test]
+fn subst_if() {
+    // Description: for block comment
+    assert_snapshot!(tokens(r#"\iffalse Block Comment\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    Whitespace(" ")
+    Word("Block")
+    Whitespace(" ")
+    Word("Comment")
+    CommandName(EndIf)("\\fi")
+    "###);
+    // Description: iftypst is not evaluated
+    assert_snapshot!(tokens(r#"\iftypst\alpha x\fi"#), @r###"
+    CommandName(If(IfTypst))("\\iftypst")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    CommandName(EndIf)("\\fi")
+    "###);
+    // Description: iftypst else is evaluated
+    assert_snapshot!(tokens(r#"\iftypst\alpha x\else\LaTeX code\fi"#), @r###"
+    CommandName(If(IfTypst))("\\iftypst")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    CommandName(EndIf)("\\fi")
+    "###);
+    // Description: iftypst else is evaluated
+    assert_snapshot!(tokens(r#"\iftypst\alpha x\else\LaTeX code\else\alpha x2\fi"#), @r###"
+    CommandName(If(IfTypst))("\\iftypst")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    "###);
+    // Description: ifhbox is not evaluated
+    assert_snapshot!(tokens(r#"\ifhbox\alpha x\fi"#), @r###"
+    CommandName(If(IfHBox))("\\ifhbox")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    CommandName(EndIf)("\\fi")
+    "###);
+    // Description: iftrue is evaluated
+    assert_snapshot!(tokens(r#"\iftrue\alpha x\fi"#), @r###"
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    "###);
+    // Description: nested ifs are evaluated
+    assert_snapshot!(tokens(r#"\iftrue\alpha x \iftrue\alpha x2\fi\fi"#), @r###"
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    "###);
+    assert_snapshot!(tokens(r#"\iftrue\alpha x \iffalse\alpha x2\fi\fi"#), @r###"
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(If(IfFalse))("\\iffalse")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    "###);
+    assert_snapshot!(tokens(r#"\iffalse\alpha x \iftrue\alpha x2\fi\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    "###);
+    assert_snapshot!(tokens(r#"\iffalse\alpha x \ifhbox\alpha x2\fi\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(If(IfHBox))("\\ifhbox")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    CommandName(EndIf)("\\fi")
+    "###);
+    // Description: iffalse else escape block comment
+    assert_snapshot!(tokens(r#"\iffalse Block Comment\else \alpha x\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    Whitespace(" ")
+    Word("Block")
+    Whitespace(" ")
+    Word("Comment")
+    CommandName(EndIf)("\\fi")
+    Whitespace(" ")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    "###);
+    // Description: iffalse else escape block comment
+    assert_snapshot!(tokens(r#"\iffalse Block Comment\else \alpha x\else Ignored\else Show Me\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    Whitespace(" ")
+    Word("Block")
+    Whitespace(" ")
+    Word("Comment")
+    CommandName(EndIf)("\\fi")
+    Whitespace(" ")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    Word("Show")
+    Whitespace(" ")
+    Word("Me")
+    "###);
+}
+
+#[test]
 fn newcommand_recursive() {
     assert_snapshot!(tokens(r#"\newcommand{\DeclareMathDelimit}[2]{\newcommand{#1}[1]{\left#2\mitexrecurse{#1}\right#2}}\DeclareMathDelimit{\abs}{\vert}\abs{abc}"#), @r###"
     CommandName(Left)("\\left")

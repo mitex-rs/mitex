@@ -4,7 +4,9 @@ use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
 use crate::spec::argument_kind::*;
 use crate::syntax::SyntaxKind::{self, *};
 use crate::{ArgPattern, ArgShape, CommandSpec};
-use mitex_lexer::{BraceKind, BumpTokenStream, CommandName, Lexer, MacroEngine, Token};
+use mitex_lexer::{
+    BraceKind, BumpTokenStream, CommandName, IfCommandName, Lexer, MacroEngine, Token,
+};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -211,6 +213,12 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     }
 
     /// Lexer Interface
+    /// Drop the next token
+    fn drop(&mut self) {
+        self.lexer.eat();
+    }
+
+    /// Lexer Interface
     /// Consume the next token and attach it to the syntax tree with another
     /// syntax kind
     fn eat_as(&mut self, kind: SyntaxKind) {
@@ -403,8 +411,11 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
-                CommandName::BeginBlockComment => self.block_comment(),
-                CommandName::EndBlockComment => return self.command(),
+                CommandName::If(IfCommandName::IfFalse) => self.block_comment(),
+                CommandName::If(IfCommandName::IfTypst) => self.typst_code(),
+                CommandName::If(..) | CommandName::Else | CommandName::EndIf => {
+                    return self.command()
+                }
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
@@ -549,24 +560,41 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     /// Parse a block comment
     fn block_comment(&mut self) {
         self.builder.start_node(ItemBlockComment.into());
-        self.eat();
+        self.drop();
+        self.eat_body_of_ifs();
+        self.builder.finish_node();
+    }
 
+    fn typst_code(&mut self) {
+        self.builder.start_node(ItemTypstCode.into());
+        self.drop();
+        self.eat_body_of_ifs();
+        self.builder.finish_node();
+    }
+
+    fn eat_body_of_ifs(&mut self) {
+        let mut nested = 0;
         while let Some(kind) = self.peek() {
             match kind {
-                Token::CommandName(CommandName::BeginBlockComment) => {
-                    self.block_comment();
-                }
-                Token::CommandName(CommandName::EndBlockComment) => {
+                Token::CommandName(CommandName::If(..)) => {
+                    // todo: nest block comment
+                    // self.block_comment();
                     self.eat();
-                    break;
+                    nested += 1;
+                }
+                Token::CommandName(CommandName::EndIf) => {
+                    if nested == 0 {
+                        self.drop();
+                        break;
+                    }
+                    self.eat();
+                    nested -= 1;
                 }
                 _ => {
                     self.eat();
                 }
             }
         }
-
-        self.builder.finish_node();
     }
 
     /// Clause parsers

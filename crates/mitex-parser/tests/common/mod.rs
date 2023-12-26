@@ -98,6 +98,7 @@ pub mod ast_snapshot {
                 SyntaxKind::ItemBegin => "begin",
                 SyntaxKind::ItemEnd => "end",
                 SyntaxKind::ItemBlockComment => "block-comment",
+                SyntaxKind::ItemTypstCode => "embedded-code",
                 SyntaxKind::ItemAttachComponent => "attach-comp",
                 SyntaxKind::ItemFormula => "formula",
                 SyntaxKind::ScopeRoot => "root",
