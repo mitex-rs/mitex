@@ -29,6 +29,13 @@ use rowan::SyntaxToken;
 // }
 
 #[derive(Debug, Clone, Copy, Default)]
+enum LaTeXMode {
+    #[default]
+    Text,
+    Math,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
 enum LaTeXEnv {
     #[default]
     None,
@@ -38,15 +45,28 @@ enum LaTeXEnv {
     Cases,
 }
 
-struct MathConverter {
+struct Converter {
+    mode: LaTeXMode,
     env: LaTeXEnv,
 }
 
-impl MathConverter {
-    fn new() -> Self {
+impl Converter {
+    fn new(mode: LaTeXMode) -> Self {
         Self {
+            mode,
             env: LaTeXEnv::default(),
         }
+    }
+
+    #[must_use]
+    fn enter_mode(&mut self, context: LaTeXMode) -> LaTeXMode {
+        let prev = self.mode;
+        self.mode = context;
+        prev
+    }
+
+    fn exit_mode(&mut self, prev: LaTeXMode) {
+        self.mode = prev;
     }
 
     #[must_use]
@@ -96,7 +116,7 @@ impl From<String> for ConvertError {
     }
 }
 
-impl MathConverter {
+impl Converter {
     fn convert(
         &mut self,
         f: &mut fmt::Formatter<'_>,
@@ -110,11 +130,18 @@ impl MathConverter {
                 LatexSyntaxElem::Node(node) => format!("error unexpected: {:?}", node.text()),
                 LatexSyntaxElem::Token(token) => format!("error unexpected: {:?}", token.text()),
             })?,
-            ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText | ItemBracket
+            ItemLR | ClauseArgument | ScopeRoot | ItemText | ItemBracket
             | ItemParen => {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
+            }
+            ItemFormula => {
+                let prev = self.enter_mode(LaTeXMode::Math);
+                for child in elem.as_node().unwrap().children_with_tokens() {
+                    self.convert(f, child, spec)?;
+                }
+                self.exit_mode(prev);
             }
             ItemCurly => {
                 // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
@@ -194,11 +221,15 @@ impl MathConverter {
             ClauseCommandName => Err("command name outside of command".to_owned())?,
             ItemBegin | ItemEnd => Err("clauses outside of environment".to_owned())?,
             TokenWord => {
-                // break up words into individual characters and add a space
-                let text = elem.as_token().unwrap().text().to_string();
-                for prev in text.chars() {
-                    f.write_char(prev)?;
-                    f.write_char(' ')?;
+                if matches!(self.mode, LaTeXMode::Math) {
+                    // break up words into individual characters and add a space
+                    let text = elem.as_token().unwrap().text().to_string();
+                    for prev in text.chars() {
+                        f.write_char(prev)?;
+                        f.write_char(' ')?;
+                    }
+                } else {
+                    f.write_str(elem.as_token().unwrap().text())?;
                 }
             }
             // do nothing
@@ -421,13 +452,13 @@ impl MathConverter {
     }
 }
 
-struct TypstMathRepr(LatexSyntaxElem, CommandSpec, Rc<RefCell<String>>);
+struct TypstRepr(LatexSyntaxElem, LaTeXMode, CommandSpec, Rc<RefCell<String>>);
 
-impl fmt::Display for TypstMathRepr {
+impl fmt::Display for TypstRepr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut ctx = MathConverter::new();
-        if let Err(e) = ctx.convert(f, self.0.clone(), &self.1) {
-            self.2.borrow_mut().push_str(&e.to_string());
+        let mut ctx = Converter::new(self.1);
+        if let Err(e) = ctx.convert(f, self.0.clone(), &self.2) {
+            self.3.borrow_mut().push_str(&e.to_string());
             return Err(fmt::Error);
         }
         Ok(())
@@ -435,8 +466,9 @@ impl fmt::Display for TypstMathRepr {
 }
 
 #[inline(always)]
-fn convert_math_inner(
+fn convert_inner(
     input: &str,
+    mode: LaTeXMode,
     spec: Option<CommandSpec>,
     do_parse: fn(input: &str, spec: CommandSpec) -> SyntaxNode,
 ) -> Result<String, String> {
@@ -446,8 +478,9 @@ fn convert_math_inner(
     let mut output = String::new();
     let err = String::new();
     let err = Rc::new(RefCell::new(err));
-    let repr = TypstMathRepr(
+    let repr = TypstRepr(
         LatexSyntaxElem::Node(node),
+        mode,
         DEFAULT_SPEC.clone(),
         err.clone(),
     );
@@ -455,13 +488,17 @@ fn convert_math_inner(
     Ok(output)
 }
 
+pub fn convert_text(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
+    convert_inner(input, LaTeXMode::Text, spec, parse)
+}
+
 pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
-    convert_math_inner(input, spec, parse)
+    convert_inner(input, LaTeXMode::Math, spec, parse)
 }
 
 /// For internal testing
 pub fn convert_math_no_macro(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
-    convert_math_inner(input, spec, parse_without_macro)
+    convert_inner(input, LaTeXMode::Math, spec, parse_without_macro)
 }
 
 static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
@@ -474,8 +511,21 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 mod tests {
     use insta::assert_debug_snapshot;
 
+    fn convert_text(input: &str) -> Result<String, String> {
+        crate::convert_text(input, None)
+    }
+
     fn convert_math(input: &str) -> Result<String, String> {
         crate::convert_math(input, None)
+    }
+
+    #[test]
+    fn test_convert_text_mode() {
+        assert_debug_snapshot!(convert_text(r#"abc"#), @r###"
+        Ok(
+            "abc",
+        )
+        "###);
     }
 
     #[test]
