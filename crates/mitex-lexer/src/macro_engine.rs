@@ -32,12 +32,11 @@
 //!
 //! - \@ifstar
 //! - if
-//! - ifdim
 //! - iffalse
+//! - iftypst
 //! - ifnum
 //! - ifodd
 //! - iftrue
-//! - ifx (restricted)
 //!
 //! - \DeclareOption
 //! - \DeclareOption*
@@ -47,7 +46,6 @@
 //! - \RequirePackage (only regards options)
 //! - \RequirePackageWithOptions (only regards options)
 //! - \documentclass (only regards options)
-//! - \PassOptionsToClass
 //! - \PassOptionsToPackage
 //!
 //! - \IfFileExists
@@ -60,15 +58,19 @@
 //! - \def
 //! - \gdef needs: globals: MacroMap<'a>,
 //!
-//! These commands will be definitely dropped or raise an error (since we are
-//! not a tex engine)
+//! - ifdim
+//! - ifx
 //! - ifvoid
-//! - ifinner
 //! - ifhbox
 //! - ifvbox
+//!
+//! These commands may dropped or raise an error
+//! - ifinner
 //! - ifhmode
 //! - ifmmode
 //! - ifvmode
+//!
+//! These commands will be definitely dropped or raise an error
 //!
 //! - CheckCommand
 //! - CheckCommand*
@@ -79,8 +81,8 @@
 //! - \newsavebox, See 14 Boxes
 //! - \newtheorem
 //! - \newfont
-//!
-//! - class commands, e.g. \ProvidesClass, \LoadClass, \LoadClassWithOptions
+//! - class commands, e.g. \ProvidesClass, \LoadClass, \PassOptionsToClass,
+//!   \LoadClassWithOptions
 
 use std::{
     borrow::Cow,

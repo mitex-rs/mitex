@@ -4,7 +4,9 @@ use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
 use crate::spec::argument_kind::*;
 use crate::syntax::SyntaxKind::{self, *};
 use crate::{ArgPattern, ArgShape, CommandSpec};
-use mitex_lexer::{BraceKind, BumpTokenStream, CommandName, Lexer, MacroEngine, Token};
+use mitex_lexer::{
+    BraceKind, BumpTokenStream, CommandName, IfCommandName, Lexer, MacroEngine, Token,
+};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -403,8 +405,8 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
-                CommandName::BeginBlockComment => self.block_comment(),
-                CommandName::EndBlockComment => return self.command(),
+                CommandName::If(IfCommandName::IfFalse) => self.block_comment(),
+                CommandName::If(..) | CommandName::EndIf => return self.command(),
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
@@ -551,14 +553,21 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
         self.builder.start_node(ItemBlockComment.into());
         self.eat();
 
+        let mut nested = 0;
         while let Some(kind) = self.peek() {
             match kind {
-                Token::CommandName(CommandName::BeginBlockComment) => {
-                    self.block_comment();
-                }
-                Token::CommandName(CommandName::EndBlockComment) => {
+                Token::CommandName(CommandName::If(..)) => {
+                    // todo: nest block comment
+                    // self.block_comment();
                     self.eat();
-                    break;
+                    nested += 1;
+                }
+                Token::CommandName(CommandName::EndIf) => {
+                    self.eat();
+                    if nested == 0 {
+                        break;
+                    }
+                    nested -= 1;
                 }
                 _ => {
                     self.eat();
