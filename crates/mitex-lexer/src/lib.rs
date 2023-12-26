@@ -700,11 +700,11 @@ pub enum CommandName {
     ErrorBeginEnvironment,
     /// clause of Environment: \end, but error
     ErrorEndEnvironment,
-    /// clause of BlockComment: \iffalse
+    /// clause of IfStatements: \if...
     If(IfCommandName),
-    /// clause of BlockComment: \else
+    /// clause of IfStatements: \else
     Else,
-    /// clause of BlockComment: \fi
+    /// clause of IfStatements: \fi
     EndIf,
     /// clause of LRItem: \left
     Left,
