@@ -44,6 +44,13 @@
 // 2. Standard package definitions, generate specs and scopes,
 //    for parser/convert and typst respectively
 #let (spec, scope) = process-spec((
+  // Text mode
+  section: define-cmd(1, alias: "#heading(level: 1)"),
+  subsection: define-cmd(1, alias: "#heading(level: 2)"),
+  subsubsection: define-cmd(1, alias: "#heading(level: 3)"),
+  textbf: define-cmd(1, alias: "#strong"),
+  textit: define-cmd(1, alias: "#emph"),
+  emph: define-cmd(1, alias: "#emph"),
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
   negthinspace: of-sym(h(-(3/18) * 1em)),
@@ -1028,10 +1035,8 @@
   text: define-cmd(1, handle: it => it),
   textmd: define-cmd(1, handle: it => it),
   textnormal: define-cmd(1, handle: it => it),
-  textbf: text-handle(math.bold),
   textrm: text-handle(math.upright),
   textup: text-handle(math.upright),
-  textit: text-handle(math.italic),
   textsf: text-handle(math.sans),
   texttt: text-handle(math.mono),
   over: define-infix-cmd("frac"),

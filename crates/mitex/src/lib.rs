@@ -130,8 +130,7 @@ impl Converter {
                 LatexSyntaxElem::Node(node) => format!("error unexpected: {:?}", node.text()),
                 LatexSyntaxElem::Token(token) => format!("error unexpected: {:?}", token.text()),
             })?,
-            ItemLR | ClauseArgument | ScopeRoot | ItemText | ItemBracket
-            | ItemParen => {
+            ItemLR | ClauseArgument | ScopeRoot | ItemText | ItemBracket | ItemParen => {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
@@ -155,10 +154,12 @@ impl Converter {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
-                // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`
-                f.write_str("zws ")?;
-                if enter_new_env {
-                    self.exit_env(prev);
+                if matches!(self.mode, LaTeXMode::Math) {
+                    // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`
+                    f.write_str("zws ")?;
+                    if enter_new_env {
+                        self.exit_env(prev);
+                    }
                 }
             }
             // handle lr
@@ -378,7 +379,7 @@ impl Converter {
 
                 if let ArgShape::Right(ArgPattern::None) = arg_shape {
                     f.write_char(' ')?
-                } else {
+                } else if matches!(self.mode, LaTeXMode::Math) {
                     f.write_char('(')?;
 
                     let mut cnt = 0;
@@ -393,6 +394,16 @@ impl Converter {
                     }
 
                     f.write_char(')')?;
+                } else {
+                    // Text mode
+                    for arg in args {
+                        let kind = arg.kind();
+                        if matches!(kind, ClauseArgument) {
+                            f.write_char('[')?;
+                            self.convert(f, arg, spec)?;
+                            f.write_char(']')?;
+                        }
+                    }
                 }
 
                 // hack for \substack{abc \\ bcd}
@@ -510,13 +521,20 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 #[cfg(test)]
 mod tests {
     use insta::assert_debug_snapshot;
-
+    use mitex_parser::spec::CommandSpec;
+    
+    static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
+        CommandSpec::from_bytes(include_bytes!(
+            "../../../target/mitex-artifacts/spec/default.rkyv"
+        ))
+    });
+    
     fn convert_text(input: &str) -> Result<String, String> {
-        crate::convert_text(input, None)
+        crate::convert_text(input, Some(DEFAULT_SPEC.clone()))
     }
 
     fn convert_math(input: &str) -> Result<String, String> {
-        crate::convert_math(input, None)
+        crate::convert_math(input, Some(DEFAULT_SPEC.clone()))
     }
 
     #[test]
@@ -524,6 +542,16 @@ mod tests {
         assert_debug_snapshot!(convert_text(r#"abc"#), @r###"
         Ok(
             "abc",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\section{Title}"#), @r###"
+        Ok(
+            "#heading(level: 1)[Title]",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"a \textbf{strong} text"#), @r###"
+        Ok(
+            "a #strong[strong ]text",
         )
         "###);
     }
