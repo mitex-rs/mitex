@@ -14,10 +14,15 @@
 //! - \DeclareRobustCommand*
 //! - \providecommand
 //! - \providecommand*
+//!
 //! - \newenvironment
 //! - \newenvironment*
 //! - \renewenvironment
 //! - \renewenvironment*
+//!
+//! - iftypst
+//! - iffalse
+//! - iftrue
 //!
 //! Commands in plan
 //!
@@ -32,11 +37,8 @@
 //!
 //! - \@ifstar
 //! - if
-//! - iffalse
-//! - iftypst
 //! - ifnum
 //! - ifodd
-//! - iftrue
 //!
 //! - \DeclareOption
 //! - \DeclareOption*
