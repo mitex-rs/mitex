@@ -233,6 +233,51 @@ fn subst_if() {
     Whitespace(" ")
     Word("x")
     "###);
+    // Description: nested ifs are evaluated
+    assert_snapshot!(tokens(r#"\iftrue\alpha x \iftrue\alpha x2\fi\fi"#), @r###"
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    "###);
+    assert_snapshot!(tokens(r#"\iftrue\alpha x \iffalse\alpha x2\fi\fi"#), @r###"
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(If(IfFalse))("\\iffalse")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    "###);
+    assert_snapshot!(tokens(r#"\iffalse\alpha x \iftrue\alpha x2\fi\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    "###);
+    assert_snapshot!(tokens(r#"\iffalse\alpha x \ifhbox\alpha x2\fi\fi"#), @r###"
+    CommandName(If(IfFalse))("\\iffalse")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x")
+    Whitespace(" ")
+    CommandName(If(IfHBox))("\\ifhbox")
+    CommandName(Generic)("\\alpha")
+    Whitespace(" ")
+    Word("x2")
+    CommandName(EndIf)("\\fi")
+    CommandName(EndIf)("\\fi")
+    "###);
     // Description: iffalse else escape block comment
     assert_snapshot!(tokens(r#"\iffalse Block Comment\else \alpha x\fi"#), @r###"
     CommandName(If(IfFalse))("\\iffalse")

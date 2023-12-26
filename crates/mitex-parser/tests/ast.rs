@@ -23,6 +23,9 @@ mod ast {
     #[cfg(test)]
     mod left_right;
 
+    #[cfg(test)]
+    mod block_comment;
+
     /// Convenient function to launch/debug a test case
     #[test]
     fn bug_playground() {}
