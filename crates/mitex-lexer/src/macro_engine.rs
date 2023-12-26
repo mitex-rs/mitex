@@ -404,13 +404,15 @@ impl<'a> MacroEngine<'a> {
             };
 
             match token.0 {
-                // a begin environment token traps stream into a macro checking
+                // check a \if... macro
                 Token::CommandName(CommandName::If(i)) => {
                     self.trapped_by_if(ctx, token, i);
                 }
+                // check a \else macro
                 Token::CommandName(CommandName::Else) => {
                     self.trapped_by_else(ctx, token);
                 }
+                // check a \fi macro
                 Token::CommandName(CommandName::EndIf) => {
                     self.trapped_by_endif(ctx, token);
                 }
@@ -445,6 +447,7 @@ impl<'a> MacroEngine<'a> {
         ctx.peek_outer.peeked = ctx.peek_outer.buf.pop();
     }
 
+    /// Skip tokens until a balanced \fi
     fn skip_false_tokens(&mut self, ctx: &mut StreamContext<'a>) {
         let mut nested = 0;
         while let Some(kind) = ctx.peek() {
@@ -467,6 +470,7 @@ impl<'a> MacroEngine<'a> {
         }
     }
 
+    /// \if...
     #[inline]
     fn trapped_by_if(&mut self, ctx: &mut StreamContext<'a>, token: Tok<'a>, i: IfCommandName) {
         ctx.next_token();
@@ -489,6 +493,8 @@ impl<'a> MacroEngine<'a> {
         }
     }
 
+    /// \else
+    #[inline]
     fn trapped_by_else(&mut self, ctx: &mut StreamContext<'a>, token: Tok<'a>) {
         ctx.next_token();
         let last_if = self.reading_if.last().cloned().unwrap_or(None);
@@ -523,6 +529,8 @@ impl<'a> MacroEngine<'a> {
         }
     }
 
+    /// \fi
+    #[inline]
     fn trapped_by_endif(&mut self, ctx: &mut StreamContext<'a>, token: Tok<'a>) {
         ctx.next_token();
         let last_if = self.reading_if.pop().unwrap_or(None);
