@@ -13,7 +13,7 @@ fn prelude_n(n: i32) -> CommandSpec {
     use mitex_spec::preludes::command::*;
     let mut builder = SpecBuilder::default();
     for i in 0..n {
-        builder.add_command(&format!("alpha{}", i), TEX_SYMBOL);
+        builder.add_command(&format!("alpha{i}"), TEX_SYMBOL);
     }
     builder.build()
 }
@@ -44,7 +44,7 @@ fn bench_json_deserialize(bencher: Bencher, n: i32) {
 
     let mut spec = query::CommandSpecRepr::default();
     for i in 0..n {
-        spec.commands.insert(format!("alpha{}", i), JSON_TEX_SYMBOL);
+        spec.commands.insert(format!("alpha{i}"), JSON_TEX_SYMBOL);
     }
 
     let bytes = serde_json::to_vec(&spec).unwrap();
@@ -104,7 +104,10 @@ fn deserialize_100000(bencher: Bencher) {
 fn bench_deserialize_trusted(bencher: Bencher, spec: CommandSpec) {
     let bytes = spec.to_bytes();
     bencher.bench(|| {
-        let _ = unsafe { CommandSpec::from_bytes_unchecked(&bytes) };
+        let _ = {
+            // Safety: the data source is trusted and valid.
+            unsafe { CommandSpec::from_bytes_unchecked(&bytes) }
+        };
     });
 }
 

@@ -121,6 +121,7 @@ impl rowan::Language for LatexLanguage {
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
         assert!(raw.0 <= ScopeRoot as u16);
+        // Safety: `SyntaxKind` is repr(u16)
         unsafe { std::mem::transmute::<u16, SyntaxKind>(raw.0) }
     }
 
