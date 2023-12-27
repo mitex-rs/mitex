@@ -245,7 +245,7 @@ pub trait MacroifyStream<'a> {
 /// See [`LexCache<'a>`] for implementation
 impl BumpTokenStream<'_> for () {}
 
-/// The default implementation of [`MacroHost`]
+/// The default implementation of [`MacroifyStream`]
 impl MacroifyStream<'_> for () {}
 
 /// Small memory-efficient lexer for TeX
