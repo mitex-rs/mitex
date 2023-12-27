@@ -22,7 +22,7 @@ fn heavy_spec() -> CommandSpec {
     let mut builder = SpecBuilder::default();
     builder.add_command("alpha", TEX_SYMBOL);
     for i in 0..1000 {
-        builder.add_command(&format!("alpha{}", i), TEX_SYMBOL);
+        builder.add_command(&format!("alpha{i}"), TEX_SYMBOL);
     }
     builder.build()
 }

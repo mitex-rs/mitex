@@ -51,6 +51,10 @@ pub struct CommandSpec(Arc<CommandSpecRepr>);
 
 #[cfg(feature = "rkyv")]
 impl CommandSpec {
+    /// Serializes the command specification into bytes in rkyv format.
+    ///
+    /// # Panics
+    /// Panics if rkyv doesn't work properly.
     pub fn to_bytes(&self) -> Vec<u8> {
         // Or you can customize your serialization for better performance
         // and compatibility with #![no_std] environments

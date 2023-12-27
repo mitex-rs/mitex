@@ -75,7 +75,7 @@ fn get_macro(input: &str, macro_name: &str) -> String {
     match lexer.get_macro(macro_name) {
         Some(e) => {
             assert_eq!(tokens(input), "");
-            format!("{:#?}", e)
+            format!("{e:#?}")
         }
         None => {
             format!("FailedRest:{}", tokens(input))

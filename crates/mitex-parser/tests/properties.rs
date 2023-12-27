@@ -46,7 +46,7 @@ mod properties {
                     let args = e
                         .arguments()
                         .map(SnapNode)
-                        .map(|e| format!("{:#?}", e).trim().to_string())
+                        .map(|e| format!("{e:#?}").trim().to_string())
                         .collect::<Vec<_>>()
                         .join("\n---\n");
 

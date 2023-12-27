@@ -74,13 +74,25 @@ mod list_state {
         /// The start position of the list
         #[inline]
         pub fn start(&self) -> Option<Checkpoint> {
-            self.has_start.then(|| unsafe { self.start.assume_init() })
+            self.has_start.then(|| {
+                // SAFETY:
+                // `has_start` is a private field.
+                // If `has_start` is false, then this is undefined
+                // Otherwise, this is a valid checkpoint
+                unsafe { self.start.assume_init() }
+            })
         }
 
         /// The last position of the list
         #[inline]
         pub fn last(&self) -> Option<Checkpoint> {
-            self.has_last.then(|| unsafe { self.last.assume_init() })
+            self.has_last.then(|| {
+                // SAFETY:
+                // `has_last` is a private field.
+                // If `has_last` is false, then this is undefined
+                // Otherwise, this is a valid checkpoint
+                unsafe { self.last.assume_init() }
+            })
         }
 
         /// Take the start position of the list
