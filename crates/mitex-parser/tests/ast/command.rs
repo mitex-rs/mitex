@@ -281,7 +281,7 @@ fn right_greedy() {
     ||||space'(" ")
     ||||text(word'("a"),space'(" "),word'("b"))
     ||rbrace'("}")
-    ||space'(" ")
+    |space'(" ")
     |text(word'("c"))
     "###);
     // Description: doeesn't affect left side

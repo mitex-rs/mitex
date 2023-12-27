@@ -503,7 +503,7 @@ mod tests {
     fn test_convert_command() {
         assert_debug_snapshot!(convert_math(r#"$\int_1^2 x \mathrm{d} x$"#), @r###"
         Ok(
-            "integral _(1 )^(2 ) x  upright(d  zws )x ",
+            "integral _(1 )^(2 ) x  upright(d zws ) x ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\underline{T}$"#), @r###"
@@ -523,7 +523,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\frac 12_3$"#), @r###"
         Ok(
-            "frac( 1 ,2 )_(3 )",
+            "frac(1 ,2 )_(3 )",
         )
         "###
         );
@@ -541,7 +541,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$1 + {\displaystyle 23} + 4$"#), @r###"
         Ok(
-            "1  +  mitexdisplay( 2 3 ) zws +  4 ",
+            "1  +  mitexdisplay( 2 3 )zws  +  4 ",
         )
         "###
         );
@@ -673,12 +673,12 @@ mod tests {
     fn test_convert_sqrt() {
         assert_debug_snapshot!(convert_math(r#"$\sqrt 1$"#), @r###"
         Ok(
-            "mitexsqrt( 1 )",
+            "mitexsqrt(1 )",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\sqrt [1]2$"#), @r###"
         Ok(
-            "mitexsqrt( \\[1 \\],2 )",
+            "mitexsqrt(\\[1 \\],2 )",
         )
         "###
         );
@@ -791,7 +791,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r \n        zws ,1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "mitexarray(arg0: l c r zws ,\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );

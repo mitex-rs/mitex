@@ -12,19 +12,22 @@ mod ast {
     mod arg_match;
 
     #[cfg(test)]
+    mod attachment;
+
+    #[cfg(test)]
+    mod block_comment;
+
+    #[cfg(test)]
     mod command;
 
     #[cfg(test)]
     mod environment;
 
     #[cfg(test)]
-    mod attachment;
-
-    #[cfg(test)]
     mod left_right;
 
     #[cfg(test)]
-    mod block_comment;
+    mod trivia;
 
     /// Convenient function to launch/debug a test case
     #[test]
@@ -76,11 +79,9 @@ mod ast {
         ||args
         |||cmd
         ||||cmd-name("\\frac")
-        ||||space'(" ")
         ||||args(word'("1"))
-        ||||space'(" ")
         ||||args(word'("2"))
-        ||||space'(" ")
+        |||space'(" ")
         ||underscore'("_")
         ||word'("3")
         "###);
@@ -108,7 +109,7 @@ mod ast {
         ||||lbrace'("{")
         ||||text(word'("d"))
         ||||rbrace'("}")
-        ||||space'(" ")
+        |space'(" ")
         |text(word'("x"))
         "###);
     }

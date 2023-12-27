@@ -149,6 +149,8 @@ pub struct Parser<'a, S: BumpTokenStream<'a> = ()> {
     spec: CommandSpec,
     /// Argument matcher builder containing cached regexes
     arg_matchers: ArgMatcherBuilder,
+    /// trivia buffer
+    trivia_buffer: Vec<(Token, &'a str)>,
 
     /// State used by item_list/argument_list parser
     /// The current state
@@ -165,6 +167,7 @@ impl<'a> Parser<'a> {
             spec,
             arg_matchers: ArgMatcherBuilder::default(),
             list_state: Default::default(),
+            trivia_buffer: Vec::new(),
         }
     }
 
@@ -177,6 +180,7 @@ impl<'a> Parser<'a> {
             spec,
             arg_matchers: ArgMatcherBuilder::default(),
             list_state: Default::default(),
+            trivia_buffer: Vec::new(),
         }
     }
 }
@@ -243,7 +247,25 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     fn eat_if(&mut self, kind: Token) {
         if self.peek() == Some(kind) {
             self.eat();
-            self.trivia();
+        }
+    }
+
+    /// Lexer Interface
+    /// Hold the next trivia token
+    fn hold_trivia(&mut self) {
+        self.trivia_buffer.push(self.lexer.eat().unwrap());
+    }
+
+    /// Lexer Interface
+    fn ignore_holding_trivia(&mut self) {
+        self.trivia_buffer.clear();
+    }
+
+    /// Lexer Interface
+    fn extract_holding_trivia(&mut self) {
+        for (kind, text) in self.trivia_buffer.drain(..) {
+            let kind: SyntaxKind = kind.into();
+            self.builder.token(kind.into(), text);
         }
     }
 
@@ -512,6 +534,8 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
 
         self.builder.finish_node();
 
+        self.extract_holding_trivia();
+
         !is_greedy
     }
 
@@ -539,6 +563,8 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             }
 
             self.builder.finish_node();
+
+            self.extract_holding_trivia();
         }
 
         self.item_list(ParseScope::Environment);
@@ -632,6 +658,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             f: impl FnOnce(&mut Parser<'a, S>) -> T,
         ) -> T {
             if k_wrap_args!() {
+                this.ignore_holding_trivia();
                 this.builder.start_node(ClauseArgument.into());
                 let res = f(this);
                 this.builder.finish_node();
@@ -650,7 +677,13 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
         while let Some(kind) = self.peek() {
             match kind {
                 // trivials
-                Token::LineBreak | Token::Whitespace | Token::LineComment => self.eat(),
+                Token::LineBreak | Token::Whitespace | Token::LineComment => {
+                    if GREEDY {
+                        self.eat();
+                    } else {
+                        self.hold_trivia();
+                    }
+                }
                 // Argument matches is stopped on these tokens
                 // However, newline is also a command (with name `\`), hence this is different from
                 // mark and (`&`)
