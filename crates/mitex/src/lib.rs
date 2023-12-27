@@ -9,6 +9,7 @@ use mitex_parser::parse_without_macro;
 pub use mitex_parser::spec::*;
 use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
+use mitex_parser::syntax::FormulaItem;
 use mitex_parser::syntax::SyntaxNode;
 use rowan::ast::AstNode;
 use rowan::SyntaxToken;
@@ -53,6 +54,7 @@ struct Converter {
     env: LaTeXEnv,
     // indent for itemize and enumerate
     indent: usize,
+    // skip the space at the beginning of the line
     skip_next_space: bool,
 }
 
@@ -156,11 +158,26 @@ impl Converter {
                 }
             }
             ItemFormula => {
+                let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
+                if matches!(self.mode, LaTeXMode::Text) {
+                    if formula.is_inline() {
+                        f.write_char('$')?;
+                    } else {
+                        f.write_str("$ ")?;
+                    }
+                }
                 let prev = self.enter_mode(LaTeXMode::Math);
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
                 self.exit_mode(prev);
+                if matches!(self.mode, LaTeXMode::Text) {
+                    if formula.is_inline() {
+                        f.write_char('$')?;
+                    } else {
+                        f.write_str(" $")?;
+                    }
+                }
             }
             ItemCurly => {
                 // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`

@@ -20,7 +20,11 @@ We also support text mode (in development):
 #mitex(mode: "text", `
   \section{Title}
 
-  A \textbf{strong} text and a \emph{emph} text.
+  A \textbf{strong} text and a \emph{emph} text and inline equation $x + y$.
+
+  $$
+    \int_1^2 x dx
+  $$
   
   \begin{enumerate}
     \item This is the first item
