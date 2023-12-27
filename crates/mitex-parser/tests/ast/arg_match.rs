@@ -12,7 +12,7 @@ fn curly_group() {
     ||||lbrace'("{")
     ||||text(word'("strong"))
     ||||rbrace'("}")
-    ||||space'(" ")
+    |space'(" ")
     |text(word'("text"))
     "###);
 }

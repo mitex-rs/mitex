@@ -30,7 +30,7 @@ pub fn compile_spec(input: &[u8]) -> Result<Vec<u8>, String> {
     Result::Ok(res.to_bytes())
 }
 
-/// Converts the A LaTex math equation into a plain text
+/// Converts the A LaTeX math equation into a plain text
 ///
 /// # Errors
 /// Returns an error if the input is not a valid utf-8 string
@@ -48,13 +48,36 @@ pub fn convert_math(input: &[u8], spec: &[u8]) -> Result<Vec<u8>, String> {
     Result::Ok(res.into_bytes())
 }
 
+/// Converts the A LaTeX string into a plain text
+///
+/// # Errors
+/// Returns an error if the input is not a valid utf-8 string
+/// Returns an error if the input is not a valid LaTeX string
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn convert_text(input: &[u8], spec: &[u8]) -> Result<Vec<u8>, String> {
+    let input = std::str::from_utf8(input).map_err(|e| e.to_string())?;
+    let spec = if spec.is_empty() {
+        None
+    } else {
+        let spec = mitex_spec::CommandSpec::from_bytes(spec);
+        Some(spec)
+    };
+    let res = mitex::convert_text(input, spec)?;
+    Result::Ok(res.into_bytes())
+}
+
 // test with b"abc"
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_convert() {
+    fn test_convert_math() {
         assert_eq!(convert_math(b"$abc$", &[]).unwrap(), b"a b c ");
+    }
+
+    #[test]
+    fn test_convert_text() {
+        assert_eq!(convert_text(b"abc", &[]).unwrap(), b"abc");
     }
 }

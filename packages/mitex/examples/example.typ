@@ -14,3 +14,11 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
     \f\hat\xi\,e^{2 \pi i \xi x}
     \,d\xi
 `)
+
+We also support text mode (in development):
+
+#mitext(`
+  \section{Title}
+
+  A \textbf{strong} text and a \emph{emph} text.
+`)

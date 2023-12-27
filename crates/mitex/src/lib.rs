@@ -554,7 +554,7 @@ mod tests {
         "###);
         assert_debug_snapshot!(convert_text(r#"a \textbf{strong} text"#), @r###"
         Ok(
-            "a #strong[strong ]text",
+            "a #strong[strong] text",
         )
         "###);
     }
