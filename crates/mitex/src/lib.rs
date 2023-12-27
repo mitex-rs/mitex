@@ -525,13 +525,13 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 mod tests {
     use insta::{assert_debug_snapshot, assert_snapshot};
     use mitex_parser::spec::CommandSpec;
-    
+
     static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
         CommandSpec::from_bytes(include_bytes!(
             "../../../target/mitex-artifacts/spec/default.rkyv"
         ))
     });
-    
+
     fn convert_text(input: &str) -> Result<String, String> {
         crate::convert_text(input, Some(DEFAULT_SPEC.clone()))
     }
