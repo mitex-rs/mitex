@@ -207,7 +207,6 @@ fn test_attachment_may_weird() {
     ||args
     |||cmd
     ||||cmd-name("\\frac")
-    ||||space'(" ")
     ||||args(word'("a"))
     ||||args(word'("b"))
     ||underscore'("_")
@@ -219,7 +218,6 @@ fn test_attachment_may_weird() {
     ||args
     |||cmd
     ||||cmd-name("\\frac")
-    ||||space'(" ")
     ||||args(word'("a"))
     ||underscore'("_")
     ||word'("c")
@@ -230,7 +228,6 @@ fn test_attachment_may_weird() {
     root
     |cmd
     ||cmd-name("\\frac")
-    ||space'(" ")
     ||args
     |||curly
     ||||lbrace'("{")
@@ -240,7 +237,6 @@ fn test_attachment_may_weird() {
     |||||underscore'("_")
     |||||word'("c")
     ||||rbrace'("}")
-    ||||space'(" ")
     ||args(word'("b"))
     "###);
 }
