@@ -3,7 +3,7 @@ pub mod common;
 mod properties {
     use crate::common::*;
     use insta::{assert_debug_snapshot, assert_snapshot};
-    use mitex_parser::syntax::{CmdItem, EnvItem, LRItem, SyntaxKind, SyntaxToken};
+    use mitex_parser::syntax::{CmdItem, EnvItem, FormulaItem, LRItem, SyntaxKind, SyntaxToken};
     use rowan::ast::AstNode;
 
     #[test]
@@ -18,6 +18,21 @@ mod properties {
         }
 
         assert_debug_snapshot!(env_name(r#"\begin{equation}\end{equation}"#).unwrap(), @r###"sym'("equation")"###);
+    }
+
+    #[test]
+    fn test_formula_display() {
+        fn formula_item(input: &str) -> Option<FormulaItem> {
+            parse(input)
+                .descendants()
+                .find(|node| matches!(node.kind(), SyntaxKind::ItemFormula))
+                .and_then(FormulaItem::cast)
+        }
+
+        assert!(formula_item(r#"$$a$$"#).unwrap().is_display());
+        assert!(!formula_item(r#"$$a$$"#).unwrap().is_inline());
+        assert!(!formula_item(r#"$a$"#).unwrap().is_display());
+        assert!(formula_item(r#"$a$"#).unwrap().is_inline());
     }
 
     #[test]
