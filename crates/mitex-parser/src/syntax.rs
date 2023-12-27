@@ -170,6 +170,28 @@ macro_rules! syntax_tree_node {
 }
 
 syntax_tree_node!(
+    /// A inline or display formula
+    FormulaItem,
+    ItemFormula
+);
+
+impl FormulaItem {
+    /// Checks whether it is a display formula
+    pub fn is_display(&self) -> bool {
+        self.syntax().first_token().map_or(false, |node| {
+            node.kind() == TokenDollar && node.text() == "$$"
+        })
+    }
+
+    /// Checks whether it is an inline formula
+    pub fn is_inline(&self) -> bool {
+        self.syntax().first_token().map_or(false, |node| {
+            node.kind() == TokenDollar && node.text() == "$"
+        })
+    }
+}
+
+syntax_tree_node!(
     /// Command item in latex document
     ///
     /// In short it is in shape of
