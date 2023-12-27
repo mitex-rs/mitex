@@ -285,9 +285,7 @@ Spaces are not omitted. This is useful for processing `\text`.
 ```coffee
 Command(
   CommandName("frac"),
-  Space(" "),
   Argument(Word("1")),
-  Space("  ")
   Argument(Word("2")),
 ),
 Space(" "),
