@@ -43,11 +43,17 @@ enum LaTeXEnv {
     CurlyGroup,
     Matrix,
     Cases,
+    // Text mode
+    Itemize,
+    Enumerate,
 }
 
 struct Converter {
     mode: LaTeXMode,
     env: LaTeXEnv,
+    // indent for itemize and enumerate
+    indent: usize,
+    skip_next_space: bool,
 }
 
 impl Converter {
@@ -55,6 +61,8 @@ impl Converter {
         Self {
             mode,
             env: LaTeXEnv::default(),
+            indent: 0,
+            skip_next_space: true,
         }
     }
 
@@ -73,10 +81,16 @@ impl Converter {
     fn enter_env(&mut self, context: LaTeXEnv) -> LaTeXEnv {
         let prev = self.env;
         self.env = context;
+        if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            self.indent += 2;
+        }
         prev
     }
-
+    
     fn exit_env(&mut self, prev: LaTeXEnv) {
+        if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            self.indent -= 2;
+        }
         self.env = prev;
     }
 }
@@ -125,6 +139,12 @@ impl Converter {
     ) -> Result<(), ConvertError> {
         use LatexSyntaxKind::*;
 
+        match elem.kind() {
+            TokenWhiteSpace => {}
+            _ => {
+                self.skip_next_space = false;
+            }
+        }
         match elem.kind() {
             TokenError => Err(match elem {
                 LatexSyntaxElem::Node(node) => format!("error unexpected: {:?}", node.text()),
@@ -236,8 +256,20 @@ impl Converter {
             // do nothing
             TokenLBrace | TokenRBrace | TokenDollar | TokenComment | ItemBlockComment => {}
             // space identical
-            TokenLineBreak | TokenWhiteSpace => {
+            TokenWhiteSpace => {
+                if self.skip_next_space {
+                    self.skip_next_space = false;
+                    return Ok(());
+                }
                 write!(f, "{}", elem.as_token().unwrap().text())?;
+            }
+            TokenLineBreak => {
+                write!(f, "{}", elem.as_token().unwrap().text())?;
+                // indent for itemize and enumerate
+                for _ in 0..self.indent {
+                    f.write_char(' ')?;
+                }
+                self.skip_next_space = true;
             }
             // escape
             TokenComma => {
@@ -306,6 +338,23 @@ impl Converter {
                 let name = name.text();
                 // remove prefix \
                 let name = &name[1..];
+
+                // hack for itemize and enumerate
+                if name == "item" {
+                    if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+                        f.write_char('\n')?;
+                        for _ in 0..(self.indent - 2) {
+                            f.write_char(' ')?;
+                        }
+                        if matches!(self.env, LaTeXEnv::Itemize) {
+                            f.write_str("- ")?;
+                        } else {
+                            f.write_str("+ ")?;
+                        }
+                    }
+                    return Ok(());
+                }
+
                 let args = elem
                     .as_node()
                     .unwrap()
@@ -431,7 +480,27 @@ impl Converter {
                     ContextFeature::None => LaTeXEnv::None,
                     ContextFeature::IsMatrix => LaTeXEnv::Matrix,
                     ContextFeature::IsCases => LaTeXEnv::Cases,
+                    ContextFeature::IsItemize => LaTeXEnv::Itemize,
+                    ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
                 };
+
+
+                // hack for itemize and enumerate
+                if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+                    let prev = self.enter_env(env_kind);
+
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        if matches!(child.kind(), ItemBegin | ItemEnd) {
+                            continue;
+                        }
+    
+                        self.convert(f, child, spec)?;
+                    }
+    
+                    self.exit_env(prev);
+
+                    return Ok(());
+                }
 
                 // environment name
                 f.write_str(typst_name)?;
@@ -845,7 +914,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "matrix(\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "matrix(\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -857,7 +926,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "Vmatrix(\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "Vmatrix(\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -869,7 +938,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r zws ,\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "mitexarray(arg0: l c r zws ,\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -885,7 +954,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(\n        1  & 2  & 3 \\ \na  & b  & c \n)",
+            "aligned(\n1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -897,7 +966,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(\n        1  & 2  & 3 \\ \na  & b  & c \n)",
+            "aligned(\n1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -909,7 +978,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "cases(\n        1  & 2  & 3 ,\na  & b  & c \n)",
+            "cases(\n1  & 2  & 3 ,\na  & b  & c \n)",
         )
         "###
         );

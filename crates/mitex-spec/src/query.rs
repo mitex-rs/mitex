@@ -208,6 +208,10 @@ pub enum ContextFeature {
     IsMatrix,
     #[serde(rename = "is-cases")]
     IsCases,
+    #[serde(rename = "is-itemize")]
+    IsItemize,
+    #[serde(rename = "is-enumerate")]
+    IsEnumerate,
 }
 
 impl From<ContextFeature> for crate::ContextFeature {
@@ -216,6 +220,8 @@ impl From<ContextFeature> for crate::ContextFeature {
             ContextFeature::None => Self::None,
             ContextFeature::IsMatrix => Self::IsMatrix,
             ContextFeature::IsCases => Self::IsCases,
+            ContextFeature::IsItemize => Self::IsItemize,
+            ContextFeature::IsEnumerate => Self::IsEnumerate,
         }
     }
 }

@@ -17,8 +17,20 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 
 We also support text mode (in development):
 
-#mitext(`
+#mitex(mode: "text", `
   \section{Title}
 
   A \textbf{strong} text and a \emph{emph} text.
+  
+  \begin{enumerate}
+    \item This is the first item
+    \item This is the second item
+    \begin{itemize}
+      \item This is the first item
+      \item This is the second item
+      \item This is the third item
+    \end{itemize}
+  \end{enumerate}
+
+  Paragraph after itemize and enumerate.
 `)

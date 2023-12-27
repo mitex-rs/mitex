@@ -152,6 +152,32 @@
   ), if handle != none { (alias: alias, handle: handle) } else { none })
 }
 
+#let define-itemize-env(num, alias: none, handle: none) = {
+  ((
+    kind: "env",
+    args: if num != none {
+      ( kind: "fixed-len", len: num )
+    } else {
+      ( kind: "none" )
+    },
+    ctx_feature: ( kind: "is-itemize" ),
+    alias: alias,
+  ), if handle != none { (alias: alias, handle: handle) } else { none })
+}
+
+#let define-enumerate-env(num, alias: none, handle: none) = {
+  ((
+    kind: "env",
+    args: if num != none {
+      ( kind: "fixed-len", len: num )
+    } else {
+      ( kind: "none" )
+    },
+    ctx_feature: ( kind: "is-enumerate" ),
+    alias: alias,
+  ), if handle != none { (alias: alias, handle: handle) } else { none })
+}
+
 /// Define a symbol without alias and without handler function, like \alpha => alpha
 /// 
 /// Return: A spec item and no scope item (none for no scope item)

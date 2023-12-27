@@ -51,6 +51,9 @@
   textbf: define-cmd(1, alias: "#strong"),
   textit: define-cmd(1, alias: "#emph"),
   emph: define-cmd(1, alias: "#emph"),
+  item: ignore-sym,
+  itemize: define-itemize-env(none),
+  enumerate: define-enumerate-env(none),
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
   negthinspace: of-sym(h(-(3/18) * 1em)),
