@@ -18,6 +18,27 @@ fn curly_group() {
 }
 
 #[test]
+fn arguments() {
+    assert_debug_snapshot!(parse(r#"\frac { 1 } { 2 }"#), @r###"
+    root
+    |cmd
+    ||cmd-name("\\frac")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||space'(" ")
+    ||||text(word'("1"),space'(" "))
+    ||||rbrace'("}")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||space'(" ")
+    ||||text(word'("2"),space'(" "))
+    ||||rbrace'("}")
+    "###);
+}
+
+#[test]
 fn greedy_trivia() {
     assert_debug_snapshot!(parse(r#"a {\displaystyle text } b"#), @r###"
     root
