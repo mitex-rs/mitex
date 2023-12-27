@@ -14,23 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+        with: { submodules: recursive }
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - run: cargo build --workspace
+      - run: sh scripts/build.sh
       - run: cargo test --workspace --no-fail-fast
   checks:
     name: Check clippy, formatting, and documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+        with: { submodules: recursive }
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
       - uses: mozilla-actions/sccache-action@v0.0.3
+      - run: sh scripts/build.sh
       - run: cargo clippy --workspace --all-targets --all-features
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
