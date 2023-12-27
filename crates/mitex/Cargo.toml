@@ -24,3 +24,7 @@ insta.workspace = true
 divan.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+
+# todo: add lints in when we resolves all the warnings
+# [lints]
+# workspace = true

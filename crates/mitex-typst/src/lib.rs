@@ -1,5 +1,24 @@
+//! This is a WASM wrapper of the MiTeX library for Typst.
+//!
+//! # Usage
+//!
+//! For example, if you want to call [`convert_math`] function in Typst, you can
+//! write the following code in your Typst file:
+//!
+//! ```typ
+//! #let mitex-wasm = plugin("./mitex.wasm")
+//!
+//! #let mitex-convert(it: "", spec: bytes(())) = {
+//!   str(mitex-wasm.convert_math(bytes(it), spec))
+//! }
+//! ```
+
+#![warn(clippy::missing_docs_in_private_items)]
+
+#[cfg(target_arch = "wasm32")]
 use wasm_minimal_protocol::*;
 
+#[cfg(target_arch = "wasm32")]
 initiate_protocol!();
 
 #[cfg(feature = "spec-api")]
@@ -11,7 +30,12 @@ pub fn compile_spec(input: &[u8]) -> Result<Vec<u8>, String> {
     Result::Ok(res.to_bytes())
 }
 
-#[wasm_func]
+/// Converts the A LaTex math equation into a plain text
+///
+/// # Errors
+/// Returns an error if the input is not a valid utf-8 string
+/// Returns an error if the input is not a valid math equation
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
 pub fn convert_math(input: &[u8], spec: &[u8]) -> Result<Vec<u8>, String> {
     let input = std::str::from_utf8(input).map_err(|e| e.to_string())?;
     let spec = if spec.is_empty() {

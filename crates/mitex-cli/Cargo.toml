@@ -14,3 +14,6 @@ mitex-spec = { path = "../mitex-spec" }
 
 serde.workspace = true
 serde_json.workspace = true
+
+[lints]
+workspace = true

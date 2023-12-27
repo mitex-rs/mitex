@@ -4,7 +4,9 @@ use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
 use crate::spec::argument_kind::*;
 use crate::syntax::SyntaxKind::{self, *};
 use crate::{ArgPattern, ArgShape, CommandSpec};
-use mitex_lexer::{BraceKind, BumpTokenStream, CommandName, Lexer, MacroEngine, Token};
+use mitex_lexer::{
+    BraceKind, BumpTokenStream, CommandName, IfCommandName, Lexer, MacroEngine, Token,
+};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,13 +74,25 @@ mod list_state {
         /// The start position of the list
         #[inline]
         pub fn start(&self) -> Option<Checkpoint> {
-            self.has_start.then(|| unsafe { self.start.assume_init() })
+            self.has_start.then(|| {
+                // SAFETY:
+                // `has_start` is a private field.
+                // If `has_start` is false, then this is undefined
+                // Otherwise, this is a valid checkpoint
+                unsafe { self.start.assume_init() }
+            })
         }
 
         /// The last position of the list
         #[inline]
         pub fn last(&self) -> Option<Checkpoint> {
-            self.has_last.then(|| unsafe { self.last.assume_init() })
+            self.has_last.then(|| {
+                // SAFETY:
+                // `has_last` is a private field.
+                // If `has_last` is false, then this is undefined
+                // Otherwise, this is a valid checkpoint
+                unsafe { self.last.assume_init() }
+            })
         }
 
         /// Take the start position of the list
@@ -135,6 +149,8 @@ pub struct Parser<'a, S: BumpTokenStream<'a> = ()> {
     spec: CommandSpec,
     /// Argument matcher builder containing cached regexes
     arg_matchers: ArgMatcherBuilder,
+    /// trivia buffer
+    trivia_buffer: Vec<(Token, &'a str)>,
 
     /// State used by item_list/argument_list parser
     /// The current state
@@ -151,6 +167,7 @@ impl<'a> Parser<'a> {
             spec,
             arg_matchers: ArgMatcherBuilder::default(),
             list_state: Default::default(),
+            trivia_buffer: Vec::new(),
         }
     }
 
@@ -163,6 +180,7 @@ impl<'a> Parser<'a> {
             spec,
             arg_matchers: ArgMatcherBuilder::default(),
             list_state: Default::default(),
+            trivia_buffer: Vec::new(),
         }
     }
 }
@@ -211,6 +229,12 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     }
 
     /// Lexer Interface
+    /// Drop the next token
+    fn drop(&mut self) {
+        self.lexer.eat();
+    }
+
+    /// Lexer Interface
     /// Consume the next token and attach it to the syntax tree with another
     /// syntax kind
     fn eat_as(&mut self, kind: SyntaxKind) {
@@ -223,7 +247,25 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     fn eat_if(&mut self, kind: Token) {
         if self.peek() == Some(kind) {
             self.eat();
-            self.trivia();
+        }
+    }
+
+    /// Lexer Interface
+    /// Hold the next trivia token
+    fn hold_trivia(&mut self) {
+        self.trivia_buffer.push(self.lexer.eat().unwrap());
+    }
+
+    /// Lexer Interface
+    fn ignore_holding_trivia(&mut self) {
+        self.trivia_buffer.clear();
+    }
+
+    /// Lexer Interface
+    fn extract_holding_trivia(&mut self) {
+        for (kind, text) in self.trivia_buffer.drain(..) {
+            let kind: SyntaxKind = kind.into();
+            self.builder.token(kind.into(), text);
         }
     }
 
@@ -403,8 +445,11 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
-                CommandName::BeginBlockComment => self.block_comment(),
-                CommandName::EndBlockComment => return self.command(),
+                CommandName::If(IfCommandName::IfFalse) => self.block_comment(),
+                CommandName::If(IfCommandName::IfTypst) => self.typst_code(),
+                CommandName::If(..) | CommandName::Else | CommandName::EndIf => {
+                    return self.command()
+                }
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
@@ -489,6 +534,8 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
 
         self.builder.finish_node();
 
+        self.extract_holding_trivia();
+
         !is_greedy
     }
 
@@ -516,6 +563,8 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             }
 
             self.builder.finish_node();
+
+            self.extract_holding_trivia();
         }
 
         self.item_list(ParseScope::Environment);
@@ -549,24 +598,41 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
     /// Parse a block comment
     fn block_comment(&mut self) {
         self.builder.start_node(ItemBlockComment.into());
-        self.eat();
+        self.drop();
+        self.eat_body_of_ifs();
+        self.builder.finish_node();
+    }
 
+    fn typst_code(&mut self) {
+        self.builder.start_node(ItemTypstCode.into());
+        self.drop();
+        self.eat_body_of_ifs();
+        self.builder.finish_node();
+    }
+
+    fn eat_body_of_ifs(&mut self) {
+        let mut nested = 0;
         while let Some(kind) = self.peek() {
             match kind {
-                Token::CommandName(CommandName::BeginBlockComment) => {
-                    self.block_comment();
-                }
-                Token::CommandName(CommandName::EndBlockComment) => {
+                Token::CommandName(CommandName::If(..)) => {
+                    // todo: nest block comment
+                    // self.block_comment();
                     self.eat();
-                    break;
+                    nested += 1;
+                }
+                Token::CommandName(CommandName::EndIf) => {
+                    if nested == 0 {
+                        self.drop();
+                        break;
+                    }
+                    self.eat();
+                    nested -= 1;
                 }
                 _ => {
                     self.eat();
                 }
             }
         }
-
-        self.builder.finish_node();
     }
 
     /// Clause parsers
@@ -592,6 +658,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             f: impl FnOnce(&mut Parser<'a, S>) -> T,
         ) -> T {
             if k_wrap_args!() {
+                this.ignore_holding_trivia();
                 this.builder.start_node(ClauseArgument.into());
                 let res = f(this);
                 this.builder.finish_node();
@@ -610,7 +677,13 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
         while let Some(kind) = self.peek() {
             match kind {
                 // trivials
-                Token::LineBreak | Token::Whitespace | Token::LineComment => self.eat(),
+                Token::LineBreak | Token::Whitespace | Token::LineComment => {
+                    if GREEDY {
+                        self.eat();
+                    } else {
+                        self.hold_trivia();
+                    }
+                }
                 // Argument matches is stopped on these tokens
                 // However, newline is also a command (with name `\`), hence this is different from
                 // mark and (`&`)

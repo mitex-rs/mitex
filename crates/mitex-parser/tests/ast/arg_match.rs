@@ -23,7 +23,6 @@ fn split_char() {
     root
     |cmd
     ||cmd-name("\\frac")
-    ||space'(" ")
     ||args(word'("a"))
     ||args(word'("b"))
     |text(word'("cd"))
@@ -32,7 +31,6 @@ fn split_char() {
     root
     |cmd
     ||cmd-name("\\frac")
-    ||space'(" ")
     ||args(word'("a"))
     ||args(word'("b"))
     "###);
@@ -40,7 +38,6 @@ fn split_char() {
     root
     |cmd
     ||cmd-name("\\frac")
-    ||space'(" ")
     ||args(word'("a"))
     "###);
 }
@@ -69,7 +66,7 @@ fn eat_regular_brace() {
     ||cmd-name("\\mathrm")
     ||args
     |||cmd(cmd-name("\\lbrace"))
-    ||space'(" ")
+    |space'(" ")
     |text(word'("x"),space'(" "))
     |cmd(cmd-name("\\rbrace"))
     "###);
@@ -157,7 +154,7 @@ fn special_marks() {
     |||||lbrace'("{")
     |||||text(word'("1"))
     |||||rbrace'("}")
-    |||||space'(" ")
+    ||space'(" ")
     ||ampersand'("&")
     ||space'(" ")
     ||curly
@@ -183,9 +180,8 @@ fn special_marks() {
     |||||lbrace'("{")
     |||||text(word'("1"))
     |||||rbrace'("}")
-    |||||space'(" ")
     |||args(newline("\\\\"))
-    |||space'(" ")
+    ||space'(" ")
     ||curly
     |||lbrace'("{")
     |||text(word'("2"))
@@ -237,7 +233,7 @@ fn special_marks_in_env() {
     ||||||lbrace'("{")
     ||||||text(word'("2"))
     ||||||rbrace'("}")
-    ||||||space'(" ")
+    |||space'(" ")
     |||newline("\\\\")
     |||space'(" ")
     |||cmd
@@ -252,9 +248,9 @@ fn special_marks_in_env() {
     ||||||lbrace'("{")
     ||||||text(word'("2"))
     ||||||rbrace'("}")
-    ||||||space'(" ")
-    ||||||br'("\n")
-    ||||||space'("    ")
+    |||space'(" ")
+    |||br'("\n")
+    |||space'("    ")
     "###);
     assert_debug_snapshot!(parse(r#"
     \left. \displaystyle \frac{1}{2} \\ \frac{1}{2} \right.
@@ -281,7 +277,7 @@ fn special_marks_in_env() {
     |||||||lbrace'("{")
     |||||||text(word'("2"))
     |||||||rbrace'("}")
-    |||||||space'(" ")
+    ||||space'(" ")
     ||||newline("\\\\")
     ||||space'(" ")
     ||||cmd
@@ -296,7 +292,7 @@ fn special_marks_in_env() {
     |||||||lbrace'("{")
     |||||||text(word'("2"))
     |||||||rbrace'("}")
-    |||||||space'(" ")
+    ||||space'(" ")
     ||clause-lr(cmd-name("\\right"),word'("."))
     |br'("\n")
     |space'("    ")
@@ -328,7 +324,7 @@ fn special_marks_in_env() {
     |||||||||lbrace'("{")
     |||||||||text(word'("2"))
     |||||||||rbrace'("}")
-    |||||||||space'(" ")
+    ||||||space'(" ")
     ||||||newline("\\\\")
     ||||||space'(" ")
     ||||||cmd
@@ -343,10 +339,12 @@ fn special_marks_in_env() {
     |||||||||lbrace'("{")
     |||||||||text(word'("2"))
     |||||||||rbrace'("}")
-    |||||||||space'(" ")
+    ||||||space'(" ")
     ||||rbracket'("]")
     ||args
-    |||curly(lbrace'("{"),rbrace'("}"),br'("\n"),space'("    "))
+    |||curly(lbrace'("{"),rbrace'("}"))
+    |br'("\n")
+    |space'("    ")
     "###);
     assert_debug_snapshot!(parse(r#"
     \begin{matrix}a \over b \\ c\end{matrix}
@@ -378,7 +376,6 @@ fn sqrt_pattern() {
     root
     |cmd
     ||cmd-name("\\sqrt")
-    ||space'(" ")
     ||args(word'("1"))
     |text(word'("2"))
     "###);

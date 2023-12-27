@@ -69,7 +69,7 @@ c & d
     |||||lbrace'("{")
     |||||text(word'("lc"))
     |||||rbrace'("}")
-    |||||br'("\n")
+    ||br'("\n")
     ||text(word'("a"),space'(" "))
     ||ampersand'("&")
     ||space'(" ")
