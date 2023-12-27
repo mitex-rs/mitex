@@ -1,5 +1,7 @@
+#[cfg(target_arch = "wasm32")]
 use wasm_minimal_protocol::*;
 
+#[cfg(target_arch = "wasm32")]
 initiate_protocol!();
 
 #[cfg(feature = "spec-api")]
@@ -11,7 +13,7 @@ pub fn compile_spec(input: &[u8]) -> Result<Vec<u8>, String> {
     Result::Ok(res.to_bytes())
 }
 
-#[wasm_func]
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
 pub fn convert_math(input: &[u8], spec: &[u8]) -> Result<Vec<u8>, String> {
     let input = std::str::from_utf8(input).map_err(|e| e.to_string())?;
     let spec = if spec.is_empty() {

@@ -22,3 +22,4 @@ wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-p
 
 [features]
 rkyv = ["mitex-spec/rkyv", "mitex-spec/rkyv-validation"]
+default = ["rkyv"]
