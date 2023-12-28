@@ -768,12 +768,17 @@ impl<'a> MacroEngine<'a> {
         Some((name, action, m))
     }
 
+    // todo: insufficient macro arguments
     fn read_macro_args(
         ctx: &mut StreamContext<'a>,
         num_args: u8,
         opt: Option<Vec<Tok<'a>>>,
     ) -> Option<Vec<Vec<Tok<'a>>>> {
         let mut args = Vec::with_capacity(num_args as usize);
+
+        if num_args == 0 {
+            return Some(args);
+        }
 
         let mut num_of_read: u8 = 0;
         loop {
