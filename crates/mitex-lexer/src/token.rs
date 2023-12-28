@@ -6,7 +6,7 @@ use mitex_spec::CommandSpec;
 pub enum BraceKind {
     /// Curly braces: `{` or `}`
     Curly,
-    /// brackets: `[` or `]`
+    /// brackets (Square braces): `[` or `]`
     Bracket,
     /// Parenthesis: `(` or `)`
     Paren,
@@ -20,58 +20,86 @@ pub enum BraceKind {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Logos)]
 #[logos(extras = (CommandSpec, logos::Span))]
 pub enum Token {
+    /// A line break
+    /// Typically a `\r\n` or `\n`
     #[regex(r"[\r\n]+", priority = 2)]
     LineBreak,
 
+    /// A whitespace sequence that doesn't contain line breaks
+    /// Typically a space or a tab
     #[regex(r"[^\S\r\n]+", priority = 1)]
     Whitespace,
 
+    /// A comment that follows a line break
+    /// E.g.
+    ///
+    /// ```tex
+    /// % This is a comment
+    /// ```
     #[regex(r"%[^\r\n]*")]
     LineComment,
 
+    /// Left braces
+    /// E.g. `{`, `[`, `(`, etc.
+    /// See [`BraceKind`] for braces.
     #[token("{", bc)]
     #[token("[", bb)]
     #[token("(", bp)]
     Left(BraceKind),
 
+    /// Right braces
+    /// E.g. `}`, `]`, `)`, etc.
+    /// See [`BraceKind`] for braces.
     #[token("}", bc)]
     #[token("]", bb)]
     #[token(")", bp)]
     Right(BraceKind),
 
+    /// An ascii comma
     #[token(",")]
     Comma,
 
+    /// An ascii tilde
     #[token("~")]
     Tilde,
 
+    /// An ascii slash
     #[token("/")]
     Slash,
 
+    /// An ascii ampersand
     #[token("&")]
     Ampersand,
 
+    /// An ascii caret
     #[token("^")]
     Caret,
 
+    /// An ascii apostrophe
     #[token("'")]
     Apostrophe,
 
+    /// An ascii ditto
     #[token("\"")]
     Ditto,
 
+    /// An ascii semicolon
     #[token(";")]
     Semicolon,
 
+    /// An ascii hash
     #[token("#")]
     Hash,
 
+    /// An ascii underscore
     #[token("_", priority = 2)]
     Underscore,
 
+    /// A character sequence that doesn't contain any above tokens
     #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_'";&^#]+"#, priority = 1)]
     Word,
 
+    /// Special dollar signs
     #[regex(r"\$\$?")]
     Dollar,
 
@@ -81,16 +109,21 @@ pub enum Token {
     #[regex(r"\\\\", priority = 4)]
     NewLine,
 
+    /// A command start with a backslash
+    /// Note: backslash (`\`) is a command without name
+    /// Note: An escape sequence is a command with any single unicode char
     #[regex(r"\\", lex_command_name, priority = 3)]
     CommandName(CommandName),
 
     /// Macro error
     Error,
 
+    /// A macro argument
     MacroArg(u8),
 }
 
 impl Token {
+    /// Determine whether the token is trivia
     pub fn is_trivia(&self) -> bool {
         use Token::*;
         matches!(self, LineBreak | Whitespace | LineComment)

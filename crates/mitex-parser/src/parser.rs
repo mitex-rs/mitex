@@ -4,9 +4,7 @@ use crate::arg_match::{ArgMatcher, ArgMatcherBuilder};
 use crate::spec::argument_kind::*;
 use crate::syntax::SyntaxKind::{self, *};
 use crate::{ArgPattern, ArgShape, CommandSpec};
-use mitex_lexer::{
-    BraceKind, BumpTokenStream, CommandName, IfCommandName, Lexer, MacroEngine, Token,
-};
+use mitex_lexer::{BraceKind, CommandName, IfCommandName, Lexer, MacroEngine, Token, TokenStream};
 
 /// Stacked scope for parsing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,7 +137,7 @@ use list_state::ListState;
 
 /// The mutable parser that parse the input text into a syntax tree
 #[derive(Debug)]
-pub struct Parser<'a, S: BumpTokenStream<'a> = ()> {
+pub struct Parser<'a, S: TokenStream<'a> = ()> {
     /// Lexer level structure
     lexer: Lexer<'a, S>,
     /// Helper for building syntax tree
@@ -185,7 +183,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
+impl<'a, S: TokenStream<'a>> Parser<'a, S> {
     /// List State
     /// The start position of the list
     #[inline]
@@ -653,7 +651,7 @@ impl<'a, S: BumpTokenStream<'a>> Parser<'a, S> {
             };
         }
 
-        fn arg<'a, const GREEDY: bool, T, S: mitex_lexer::BumpTokenStream<'a>>(
+        fn arg<'a, const GREEDY: bool, T, S: TokenStream<'a>>(
             this: &mut Parser<'a, S>,
             f: impl FnOnce(&mut Parser<'a, S>) -> T,
         ) -> T {

@@ -1,3 +1,14 @@
+//! Simple benchmarks for construction of the spec.
+//!
+//! The result shows that the performance in order from high to low is:
+//! + `deserialize_trusted_*`
+//! + `deserialize_*`
+//! + `deserialize_json_*`
+//!
+//! The Json parsing is used for parsing the query result of `typst`.
+//! The Rkyv parsing is used for parsing the embedded spec in the binary.
+//! The trusted (unsafe) Rkyv parsing is not used yet.
+
 use divan::{AllocProfiler, Bencher};
 use mitex_spec::CommandSpec;
 

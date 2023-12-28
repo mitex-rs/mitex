@@ -1,3 +1,11 @@
+//! Upstream [rustc_data_structures::snapshot_map].
+//! Last checked commit: f4bb4500ddb4
+//! Last checked time:   2023-12-28
+//!
+//! [rustc_data_structures::snapshot_map]: https://github.com/rust-lang/rust/blob/master/compiler/rustc_data_structures/src/snapshot_map/mod.rs
+
+#![allow(missing_docs)]
+
 use ena::undo_log::{Rollback, Snapshots, UndoLogs, VecLog};
 use std::borrow::{Borrow, BorrowMut};
 use std::hash::Hash;

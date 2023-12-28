@@ -1,7 +1,10 @@
+//! Syntax kinds and typed syntax nodes
+
 use mitex_lexer::{BraceKind, CommandName, Token};
 use rowan::ast::AstNode;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
+#[allow(missing_docs)]
 #[repr(u16)]
 pub enum SyntaxKind {
     // Tokens
@@ -93,6 +96,7 @@ impl From<Token> for SyntaxKind {
 }
 
 impl SyntaxKind {
+    /// Checks whether the syntax kind is trivia
     pub fn is_trivia(self) -> bool {
         matches!(
             self,
@@ -112,10 +116,11 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
     }
 }
 
+/// Provides a TeX language for rowan
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum LatexLanguage {}
+pub enum TexLang {}
 
-impl rowan::Language for LatexLanguage {
+impl rowan::Language for TexLang {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
@@ -129,11 +134,12 @@ impl rowan::Language for LatexLanguage {
     }
 }
 
-pub type SyntaxNode = rowan::SyntaxNode<LatexLanguage>;
-
-pub type SyntaxToken = rowan::SyntaxToken<LatexLanguage>;
-
-pub type SyntaxElement = rowan::SyntaxElement<LatexLanguage>;
+/// exported tex syntax node
+pub type SyntaxNode = rowan::SyntaxNode<TexLang>;
+/// exported tex syntax token
+pub type SyntaxToken = rowan::SyntaxToken<TexLang>;
+/// exported tex syntax element
+pub type SyntaxElement = rowan::SyntaxElement<TexLang>;
 
 macro_rules! syntax_tree_node {
     ($(#[$attr:meta])* $name:ident, $($kind:pat),+) => {
@@ -143,7 +149,7 @@ macro_rules! syntax_tree_node {
         pub struct $name(SyntaxNode);
 
         impl AstNode for $name {
-            type Language = LatexLanguage;
+            type Language = TexLang;
 
             fn can_cast(kind: SyntaxKind) -> bool {
                 match kind {
@@ -170,7 +176,7 @@ macro_rules! syntax_tree_node {
 }
 
 syntax_tree_node!(
-    /// A inline or display formula
+    /// An inline formula or a display formula
     FormulaItem,
     ItemFormula
 );
@@ -280,14 +286,13 @@ impl EnvItem {
     pub fn arguments(&self) -> impl Iterator<Item = SyntaxNode> {
         self.begin().into_iter().flat_map(|begin| begin.arguments())
     }
-
-    /// Get the options of the environment
-    pub fn options(&self) -> Option<BracketItem> {
-        self.begin().and_then(|begin| begin.options())
-    }
 }
 
-syntax_tree_node!(LRItem, ItemLR);
+syntax_tree_node!(
+    /// A paired `\left` and `\right` command with nodes in between them.
+    LRItem,
+    ItemLR
+);
 
 impl LRItem {
     /// Get the left clause
@@ -310,7 +315,11 @@ impl LRItem {
     }
 }
 
-syntax_tree_node!(LRClause, ClauseLR);
+syntax_tree_node!(
+    /// A `\left` or `\right` command
+    LRClause,
+    ClauseLR
+);
 
 impl LRClause {
     /// Get the command kind
@@ -329,7 +338,11 @@ impl LRClause {
     }
 }
 
-syntax_tree_node!(BeginItem, ItemBegin);
+syntax_tree_node!(
+    /// A `\begin{name}` command with arguments
+    BeginItem,
+    ItemBegin
+);
 
 impl BeginItem {
     /// Get the name in the begin clause
@@ -337,11 +350,6 @@ impl BeginItem {
         self.syntax()
             .first_token()
             .filter(|node| node.kind() == TokenCommandSym)
-    }
-
-    /// Get the options of the environment
-    pub fn options(&self) -> Option<BracketItem> {
-        todo!()
     }
 
     /// Get the arguments of the environment
@@ -352,7 +360,11 @@ impl BeginItem {
     }
 }
 
-syntax_tree_node!(EndItem, ItemEnd);
+syntax_tree_node!(
+    /// A `\end{name}` command
+    EndItem,
+    ItemEnd
+);
 
 impl EndItem {
     /// Get the name in the end clause
@@ -362,7 +374,3 @@ impl EndItem {
             .filter(|node| node.kind() == TokenCommandSym)
     }
 }
-
-syntax_tree_node!(BracketItem, ItemBracket);
-
-impl BracketItem {}
