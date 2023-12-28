@@ -744,7 +744,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
         Ok(
-            "mitexoverbrace(a  +  b  +  c zws )^(text(\"This is an overbrace\")zws )",
+            "mitexoverbrace(a  +  b  +  c zws )^(textmath(\"This is an overbrace\")zws )",
         )
         "###
         );
@@ -1006,19 +1006,19 @@ a & b & c
     fn test_convert_ditto() {
         assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###);
         assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \\\"b \\\"c ""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""text(\"a\\\"b\\\"c\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""text(\"a \\\" b \\\" c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""textmath(\"a\\\"b\\\"c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""textmath(\"a \\\" b \\\" c\")""###);
     }
 
     #[test]
     fn test_convert_text() {
-        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""text(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""text(\" a b c \")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""text(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""text(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""text(\"ab c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""textmath(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""textmath(\" a b c \")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""textmath(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""textmath(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""textmath(\"ab c\")""###);
         // note: hack doesn't work in this case
-        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""text(\"ab\\colorredc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""textmath(\"ab\\colorredc\")""###);
     }
 
     #[test]
