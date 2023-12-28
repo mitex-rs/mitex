@@ -1035,7 +1035,7 @@
   "operatorname*": define-cmd(1, alias: "operatornamewithlimits", handle: operatornamewithlimits),
   vspace: define-cmd(1, handle: it => v(eval(get-tex-str(it)))),
   hspace: define-cmd(1, handle: it => h(eval(get-tex-str(it)))),
-  text: define-cmd(1, handle: it => it),
+  text: define-cmd(1, alias: "textmath", handle: it => it),
   textmd: define-cmd(1, handle: it => it),
   textnormal: define-cmd(1, handle: it => it),
   textrm: text-handle(math.upright),
