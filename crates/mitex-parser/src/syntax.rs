@@ -2,7 +2,6 @@ use mitex_lexer::{BraceKind, CommandName, Token};
 use rowan::ast::AstNode;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
-#[allow(non_camel_case_types)]
 #[repr(u16)]
 pub enum SyntaxKind {
     // Tokens
