@@ -184,7 +184,7 @@ impl Converter {
                 let mut prev = LaTeXEnv::None;
                 let mut enter_new_env = false;
                 // hack for \substack{abc \\ bcd}
-                if !matches!(self.env, LaTeXEnv::SubStack) {
+                if matches!(self.mode, LaTeXMode::Math) && !matches!(self.env, LaTeXEnv::SubStack) {
                     prev = self.enter_env(LaTeXEnv::CurlyGroup);
                     enter_new_env = true;
                 }
@@ -368,6 +368,8 @@ impl Converter {
                         } else {
                             f.write_str("+ ")?;
                         }
+                    } else {
+                        Err("item command outside of itemize or enumerate".to_owned())?;
                     }
                     return Ok(());
                 }
