@@ -1,3 +1,15 @@
+//! Given source strings, MiTeX Lexer provides a sequence of tokens
+//!
+//! The core of the lexer is [`Lexer<'a, S>`] which receives a string `&'a str`
+//! and a [`TokenStream`] trait object `S`, then it provides public methods to
+//! peek and bump the token stream.
+//!
+//! It has two main lexer implementations:
+//! - [`Lexer<()>`]: provides plain tokens
+//!   - See [`TokenStream`] for implementation
+//! - [`Lexer<MacroEngine>`]: provides tokens with macro expansion
+//!   - See [`MacroEngine`] for implementation
+
 mod macro_engine;
 pub mod snapshot_map;
 mod stream;
@@ -18,7 +30,7 @@ type Tok<'a> = (Token, &'a str);
 
 /// A trait for bumping the token stream
 /// Its bumping is less frequently called than token peeking
-pub trait BumpTokenStream<'a>: MacroifyStream<'a> {
+pub trait TokenStream<'a>: MacroifyStream<'a> {
     /// Bump the token stream with at least one token if possible
     ///
     /// By default, it fills the peek cache with a page of tokens at the same
@@ -41,7 +53,7 @@ pub trait MacroifyStream<'a> {
 /// The default implementation of [`BumpTokenStream`]
 ///
 /// See [`LexCache<'a>`] for implementation
-impl BumpTokenStream<'_> for () {}
+impl TokenStream<'_> for () {}
 
 /// The default implementation of [`MacroifyStream`]
 impl MacroifyStream<'_> for () {}
@@ -50,14 +62,14 @@ impl MacroifyStream<'_> for () {}
 ///
 /// It gets improved performance on x86_64 but not wasm through
 #[derive(Debug, Clone)]
-pub struct Lexer<'a, S: BumpTokenStream<'a> = ()> {
+pub struct Lexer<'a, S: TokenStream<'a> = ()> {
     /// A stream context shared with the bumper
     ctx: StreamContext<'a>,
     /// Implementations to bump the token stream into [`Self::ctx`]
     bumper: S,
 }
 
-impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
+impl<'a, S: TokenStream<'a>> Lexer<'a, S> {
     /// Create a new lexer on a main input source
     ///
     /// Note that since we have a bumper, the returning string is not always
@@ -134,6 +146,7 @@ impl<'a, S: BumpTokenStream<'a>> Lexer<'a, S> {
         Some(peeked)
     }
 
+    /// Find a **currently** defined macro by name
     pub fn get_macro(&mut self, name: &str) -> Option<Macro<'a>> {
         self.bumper.get_macro(name)
     }

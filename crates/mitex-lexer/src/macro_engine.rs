@@ -94,8 +94,7 @@ use std::{
 
 use crate::{
     snapshot_map::{self, SnapshotMap},
-    BraceKind, BumpTokenStream, CommandName, IfCommandName, MacroifyStream, StreamContext, Tok,
-    Token,
+    BraceKind, CommandName, IfCommandName, MacroifyStream, StreamContext, Tok, Token, TokenStream,
 };
 use mitex_spec::CommandSpec;
 
@@ -362,7 +361,7 @@ pub struct MacroEngine<'a> {
     pub scanned_tokens: Vec<Tok<'a>>,
 }
 
-impl<'a> BumpTokenStream<'a> for MacroEngine<'a> {
+impl<'a> TokenStream<'a> for MacroEngine<'a> {
     fn bump(&mut self, ctx: &mut StreamContext<'a>) {
         self.do_bump(ctx);
     }

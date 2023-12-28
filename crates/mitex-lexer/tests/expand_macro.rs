@@ -1,12 +1,12 @@
 mod common;
 
 use insta::assert_snapshot;
-use mitex_lexer::{BumpTokenStream, Lexer, MacroEngine};
+use mitex_lexer::{Lexer, MacroEngine, TokenStream};
 
 use common::*;
 
 // collect all tokens until eat() returns None
-fn tokens_bumper<'a>(input: &'a str, b: impl BumpTokenStream<'a>) -> String {
+fn tokens_bumper<'a>(input: &'a str, b: impl TokenStream<'a>) -> String {
     let mut lexer = Lexer::new_with_bumper(input, DEFAULT_SPEC.clone(), b);
 
     std::iter::from_fn(|| lexer.eat().map(|tok| format!("{:?}({:?})", tok.0, tok.1)))
