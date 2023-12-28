@@ -185,7 +185,7 @@ fn subst_macro() {
     // Description: environment with macro
     assert_snapshot!(tokens(r#"\newenvironment{f}{begin}{end}\begin{f}test\end{f}"#), @r###"
     Word("begin")
-    Word("st")
+    Word("test")
     Word("end")
     "###);
 }
