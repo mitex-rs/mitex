@@ -1,3 +1,8 @@
+//! Simple benchmarks for the parser.
+//! It has simple manual constructed inputs so doesn't really show the
+//! performance of the parser. Insteadly, it is for tracking performance changes
+//! for developers.
+
 use divan::{AllocProfiler, Bencher};
 use mitex_parser::{parse, parse_without_macro, CommandSpec};
 
