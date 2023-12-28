@@ -88,7 +88,7 @@ impl Converter {
         }
         prev
     }
-    
+
     fn exit_env(&mut self, prev: LaTeXEnv) {
         if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
             self.indent -= 2;
@@ -501,7 +501,6 @@ impl Converter {
                     ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
                 };
 
-
                 // hack for itemize and enumerate
                 if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
                     let prev = self.enter_env(env_kind);
@@ -510,10 +509,10 @@ impl Converter {
                         if matches!(child.kind(), ItemBegin | ItemEnd) {
                             continue;
                         }
-    
+
                         self.convert(f, child, spec)?;
                     }
-    
+
                     self.exit_env(prev);
 
                     return Ok(());
