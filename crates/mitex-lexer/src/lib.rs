@@ -50,7 +50,7 @@ pub trait MacroifyStream<'a> {
     }
 }
 
-/// The default implementation of [`BumpTokenStream`]
+/// The default implementation of [`TokenStream`]
 ///
 /// See [`LexCache<'a>`] for implementation
 impl TokenStream<'_> for () {}
