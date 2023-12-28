@@ -30,7 +30,11 @@ pub use query::CommandSpecRepr as JsonCommandSpec;
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum CommandSpecItem {
+    /// Specifies a TeX command
+    /// e.g. `\hat`, `\sum`, `\sqrt`
     Cmd(CmdShape),
+    /// Specifies a TeX environment
+    /// e.g. `equation`, `matrix`
     Env(EnvShape),
 }
 
@@ -67,6 +71,7 @@ impl CommandSpec {
         bytes.into_vec()
     }
 
+    /// Deserializes the command specification from bytes in rkyv format.
     #[cfg(feature = "rkyv-validation")]
     pub fn from_bytes(bytes: &[u8]) -> Self {
         let s = stream::BytesModuleStream::from_slice(bytes);
@@ -117,6 +122,7 @@ impl CommandSpec {
     }
 }
 
+/// Shape of a TeX command.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
@@ -128,6 +134,7 @@ pub struct CmdShape {
     pub alias: Option<String>,
 }
 
+/// Shape of a TeX envionment.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
@@ -245,6 +252,7 @@ pub enum ArgShape {
     InfixGreedy,
 }
 
+/// A feature that specifies how to process the content of an environment.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
