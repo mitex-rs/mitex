@@ -14,9 +14,12 @@ Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the
 
 - Use `mitex-convert` to convert LaTeX code into Typst code in string.
 - Use `mi` to embed an inline LaTeX equation into Typst.
-- Use `mitex` to embed a block LaTeX equation into Typst.
+- Use `mitex(numbering: none, supplement: auto, ..)` to embed a block LaTeX equation into Typst.
+- Use `mitext` to embed a LaTeX text into Typst.
 
-Following is a simple example of using MiTeX in Typst:
+PS: `#set math.equation(numbering: "(1)")` is also valid for MiTeX.
+
+Following is [a simple example](packages/mitex/examples/example.typ) of using MiTeX in Typst:
 
 ```typst
 #import "@preview/mitex:0.1.0": *
@@ -33,22 +36,55 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
     \f\hat\xi\,e^{2 \pi i \xi x}
     \,d\xi
 `)
+
+We also support text mode (in development):
+
+#mitext(`
+  \iftypst
+    #set math.equation(numbering: "(1)", supplement: "equation")
+  \fi
+
+  \section{Title}
+
+  A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
+  
+  Also block \eqref{eq:pythagoras}.
+
+  \begin{equation}
+    a^2 + b^2 = c^2 \label{eq:pythagoras}
+  \end{equation}
+  
+  \begin{enumerate}
+    \item This is the first item
+    \item This is the second item
+    \begin{itemize}
+      \item This is the first subitem
+      \item This is the second subitem
+    \end{itemize}
+  \end{enumerate}
+`)
+
 ```
 
 ![example](packages/mitex/examples/example.png)
 
 ## Implemented Features
 
-- [x] LaTeX equations support.
-- [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
-- [x] Support for various environments, such as aligned, matrix, cases.
 - [x] User-defined TeX (macro) commands, such as `\newcommand{\mysym}{\alpha}`.
+- [x] LaTeX equations support.
+  - [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
+  - [x] Support for various environments, such as aligned, matrix, cases.
+- [x] Basic text mode support, you can use it to write LaTeX drafts.
+  - [x] `\section`, `\textbf`, `\emph`.
+  - [x] Inline and block math equations.
+  - [x] `\ref`, `\eqref` and `\label`.
+  - [x] `itemize` and `enumerate` environments.
 
 ## Features to Implement
 
 - [ ] Pass command specification to MiTeX plugin dynamically. With that you can define a typst function `let myop(it) = op(upright(it))` and then use it by `\myop{it}`.
 - [ ] Package support, which means that you can change set of commands by telling MiTeX to use a list of packages.
-- [ ] Text mode support, enabling the rendering entire LaTeX documents in Typst!
+- [ ] More text mode support, enabling the rendering entire LaTeX documents in Typst!
 
 ## Differences between MiTeX and other solutions
 

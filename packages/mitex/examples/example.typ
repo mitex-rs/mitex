@@ -17,7 +17,7 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 
 We also support text mode (in development):
 
-#mitex(mode: "text", `
+#mitext(`
   \iftypst
     #set math.equation(numbering: "(1)", supplement: "equation")
   \fi
