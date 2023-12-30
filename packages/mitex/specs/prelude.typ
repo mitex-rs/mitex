@@ -105,6 +105,33 @@
   ), if handle != none { (alias: alias, handle: handle) } else { none })
 }
 
+/// Define an math environment with a fixed number of arguments, like \begin{alignedat}{2}
+/// 
+/// Arguments:
+/// - num (int): The number of arguments as environment options for the environment.
+/// - alias (str): Alias command for typst handler.
+///   For example, alias `\begin{alignedat}{2}` to typst's `alignedat`,
+///   and alias `\begin{aligned}` to typst's `aligned`, as the key in mitex-scope.
+/// - handle (function): The handler function, as the value of alias in mitex-scope.
+///   It receives fixed number of named arguments as environment options,
+///   for example `alignedat(arg0: ..)` or `alignedat(arg0: .., arg1: ..)`.
+///   And it receives variable length arguments as environment body,
+///   Therefore you need to use `(.. arg) = > {..}` to receive them.
+///
+/// Return: A spec item and a scope item (none for no scope item)
+#let define-math-env(num, alias: none, handle: none) = {
+  ((
+    kind: "env",
+    args: if num != none {
+      ( kind: "fixed-len", len: num )
+    } else {
+      ( kind: "none" )
+    },
+    ctx_feature: ( kind: "is-math" ),
+    alias: alias,
+  ), if handle != none { (alias: alias, handle: handle) } else { none })
+}
+
 /// Define a cases environment
 /// 
 /// Arguments:
@@ -217,16 +244,6 @@
 /// 
 /// Return: A matrix-env spec and a scope item (none for no scope item)
 #let matrix-env = ((kind: "matrix-env"), none)
-
-/// Define a normal environment with handler
-/// 
-/// Arguments:
-/// - handle (function): The handler function, as the value of alias in mitex-scope.
-///   For example, define how to handle `aligned(..)` in mitex-scope
-///
-/// Return: A normal-env spec and a scope item (none for no scope item)
-#let normal-env(handle) = ((kind: "normal-env"), (handle: handle))
-
 
 /// Receives a list of definitions composed of the above functions, and processes them to return a dictionary containing spec and scope.
 #let process-spec(definitions) = {

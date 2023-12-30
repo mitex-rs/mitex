@@ -39,14 +39,16 @@ enum LaTeXMode {
 #[derive(Debug, Clone, Copy, Default)]
 enum LaTeXEnv {
     #[default]
-    None,
-    SubStack,
-    CurlyGroup,
-    Matrix,
-    Cases,
     // Text mode
+    None,
     Itemize,
     Enumerate,
+    // Math mode
+    Math,
+    Matrix,
+    Cases,
+    SubStack,
+    MathCurlyGroup,
 }
 
 struct Converter {
@@ -185,7 +187,7 @@ impl Converter {
                 let mut enter_new_env = false;
                 // hack for \substack{abc \\ bcd}
                 if matches!(self.mode, LaTeXMode::Math) && !matches!(self.env, LaTeXEnv::SubStack) {
-                    prev = self.enter_env(LaTeXEnv::CurlyGroup);
+                    prev = self.enter_env(LaTeXEnv::MathCurlyGroup);
                     enter_new_env = true;
                 }
                 for child in elem.as_node().unwrap().children_with_tokens() {
@@ -332,7 +334,7 @@ impl Converter {
             ItemNewLine => match self.env {
                 LaTeXEnv::Matrix => f.write_str("zws ;")?,
                 LaTeXEnv::Cases => f.write_str(",")?,
-                LaTeXEnv::CurlyGroup => {}
+                LaTeXEnv::MathCurlyGroup => {}
                 _ => f.write_str("\\ ")?,
             },
             // for left/right
@@ -497,6 +499,7 @@ impl Converter {
 
                 let env_kind = match env_shape.ctx_feature {
                     ContextFeature::None => LaTeXEnv::None,
+                    ContextFeature::IsMath => LaTeXEnv::Math,
                     ContextFeature::IsMatrix => LaTeXEnv::Matrix,
                     ContextFeature::IsCases => LaTeXEnv::Cases,
                     ContextFeature::IsItemize => LaTeXEnv::Itemize,
@@ -520,6 +523,21 @@ impl Converter {
                     return Ok(());
                 }
 
+                // text mode to math mode with $ ... $
+                let is_need_dollar = matches!(
+                    self.env,
+                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+                ) && !matches!(
+                    env_kind,
+                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+                );
+                let prev = self.enter_env(env_kind);
+                let mut prev_mode = LaTeXMode::Text;
+                if is_need_dollar {
+                    f.write_str("$ ")?;
+                    prev_mode = self.enter_mode(LaTeXMode::Math);
+                }
+
                 // environment name
                 f.write_str(typst_name)?;
                 f.write_char('(')?;
@@ -529,8 +547,6 @@ impl Converter {
                     self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
                     f.write_char(',')?;
                 }
-
-                let prev = self.enter_env(env_kind);
 
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     if matches!(child.kind(), ItemBegin | ItemEnd) {
@@ -543,6 +559,11 @@ impl Converter {
                 f.write_char(')')?;
 
                 self.exit_env(prev);
+
+                if is_need_dollar {
+                    f.write_str(" $")?;
+                    self.exit_mode(prev_mode);
+                }
             }
             ItemTypstCode => {
                 write!(f, "{}", elem.as_node().unwrap().text())?;

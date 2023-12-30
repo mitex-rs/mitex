@@ -169,6 +169,28 @@ Define an environment with a fixed number of arguments, like `\begin{array}{lr}`
 **Return:** A opaque spec item and a scope item (none for no scope item)
 
 
+### `define-math-env`
+
+Define an math environment with a fixed number of arguments, like `\begin{array}{lr}`.
+
+```typst
+#let define-env(num, alias: none, handle: none) = { .. }
+```
+
+**Arguments:**
+- num (int): The number of arguments as environment options for the environment.
+- alias (str): Alias command for typst handler.
+  For example, alias `\begin{array}{lr}` to typst's `mitexarray`,
+  and alias `\begin{aligned}` to typst's `aligned`, as the key in mitex-scope.
+- handle (function): The handler function, as the value of alias in mitex-scope.
+  It receives fixed number of named arguments as environment options,
+  for example `array(arg0: ..)` or `array(arg0: .., arg1: ..)`.
+  And it receives variable length arguments as environment body,
+  Therefore you need to use `(.. arg) = > {..}` to receive them.
+
+**Return:** A opaque spec item and a scope item (none for no scope item)
+
+
 ### `define-cases-env`
 
 Define a cases environment.
@@ -286,20 +308,4 @@ Define a matrix environment without handler
 ```
 
 **Return:** A matrix-env spec and a scope item (none for no scope item)
-
-
-### `normal-env`
-
-Define a normal environment with handler
-
-```typst
-#let normal-env(handle) = ((kind: "normal-env"), (handle: handle))
-```
-
-**Arguments:**
-
-- handle (function): The handler function, as the value of alias in mitex-scope.
-  For example, define how to handle `aligned(..)` in mitex-scope
-
-**Return:** A normal-env spec and a scope item (none for no scope item)
 

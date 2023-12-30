@@ -204,6 +204,8 @@ pub enum ContextFeature {
     #[default]
     #[serde(rename = "none")]
     None,
+    #[serde(rename = "is-math")]
+    IsMath,
     #[serde(rename = "is-matrix")]
     IsMatrix,
     #[serde(rename = "is-cases")]
@@ -218,6 +220,7 @@ impl From<ContextFeature> for crate::ContextFeature {
     fn from(feature: ContextFeature) -> Self {
         match feature {
             ContextFeature::None => Self::None,
+            ContextFeature::IsMath => Self::IsMath,
             ContextFeature::IsMatrix => Self::IsMatrix,
             ContextFeature::IsCases => Self::IsCases,
             ContextFeature::IsItemize => Self::IsItemize,

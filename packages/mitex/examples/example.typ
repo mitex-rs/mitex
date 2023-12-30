@@ -22,9 +22,9 @@ We also support text mode (in development):
 
   A \textbf{strong} text and a \emph{emph} text and inline equation $x + y$.
 
-  $$
+  \begin{equation}
     \int_1^2 x dx
-  $$
+  \end{equation}
   
   \begin{enumerate}
     \item This is the first item
