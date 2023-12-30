@@ -23,11 +23,15 @@
   "olive": rgb(128, 128, 0),
 )
 #let get-tex-str-from-arr(arr) = arr.filter(it => it != [ ] and it != [#math.zws]).map(it => it.text).sum()
-#let get-tex-str(tex) = get-tex-str-from-arr(tex.children)
+#let get-tex-str(tex) = if tex.has("children") { get-tex-str-from-arr(tex.children) } else { tex.text }
 #let get-tex-color-from-arr(arr) = {
     mitex-color-map.at(lower(get-tex-str-from-arr(arr)), default: none)
 }
-#let get-tex-color(texcolor) = get-tex-color-from-arr(texcolor.children)
+#let get-tex-color(texcolor) = if tex.has("children") {
+  get-tex-color-from-arr(texcolor.children)
+} else {
+  texcolor.text
+} 
 #let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
 // 1. functions created to make it easier to define a spec
@@ -54,6 +58,10 @@
   item: ignore-sym,
   itemize: define-itemize-env(none),
   enumerate: define-enumerate-env(none),
+  label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
+  tag: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
+  ref: define-cmd(1, alias: "#mitexref", handle: it => ref(label(get-tex-str(it)))),
+  eqref: define-cmd(1, alias: "#mitexref"),
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
   negthinspace: of-sym(h(-(3/18) * 1em)),
@@ -1011,9 +1019,6 @@
   cases: define-cases-env(alias: "cases"),
   rcases: define-cases-env(alias: "rcases", handle: math.cases.with(reverse: true)),
   // Specials
-  label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
-  tag: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
-  ref: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   notag: ignore-sym,
   relax: ignore-sym,
   cr: ignore-sym,

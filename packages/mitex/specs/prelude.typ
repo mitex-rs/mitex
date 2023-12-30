@@ -236,7 +236,12 @@
     spec.insert(key, value.at(0))
     if value.at(1) != none {
       if "alias" in value.at(1) and type(value.at(1).alias) == str {
-        scope.insert(value.at(1).alias, value.at(1).handle)
+        let key = if value.at(1).alias.starts-with("#") {
+          value.at(1).alias.slice(1)
+        } else {
+          value.at(1).alias
+        }
+        scope.insert(key, value.at(1).handle)
       } else {
         scope.insert(key, value.at(1).handle)
       }
