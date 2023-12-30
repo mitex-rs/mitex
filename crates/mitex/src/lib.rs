@@ -572,13 +572,18 @@ impl Converter {
     }
 }
 
-struct TypstRepr(LatexSyntaxElem, LaTeXMode, CommandSpec, Rc<RefCell<String>>);
+struct TypstRepr {
+    elem: LatexSyntaxElem,
+    mode: LaTeXMode,
+    spec: CommandSpec,
+    error: Rc<RefCell<String>>,
+}
 
 impl fmt::Display for TypstRepr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut ctx = Converter::new(self.1);
-        if let Err(e) = ctx.convert(f, self.0.clone(), &self.2) {
-            self.3.borrow_mut().push_str(&e.to_string());
+        let mut ctx = Converter::new(self.mode);
+        if let Err(e) = ctx.convert(f, self.elem.clone(), &self.spec) {
+            self.error.borrow_mut().push_str(&e.to_string());
             return Err(fmt::Error);
         }
         Ok(())
@@ -598,12 +603,12 @@ fn convert_inner(
     let mut output = String::new();
     let err = String::new();
     let err = Rc::new(RefCell::new(err));
-    let repr = TypstRepr(
-        LatexSyntaxElem::Node(node),
+    let repr = TypstRepr {
+        elem: LatexSyntaxElem::Node(node),
         mode,
-        DEFAULT_SPEC.clone(),
-        err.clone(),
-    );
+        spec: DEFAULT_SPEC.clone(),
+        error: err.clone(),
+    };
     core::fmt::write(&mut output, format_args!("{}", repr)).map_err(|_| err.borrow().to_owned())?;
     Ok(output)
 }
