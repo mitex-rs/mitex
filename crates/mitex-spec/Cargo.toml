@@ -9,7 +9,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [[bench]]
-name = "constructions"
+name = "spec_constructions"
 harness = false
 
 [dependencies]

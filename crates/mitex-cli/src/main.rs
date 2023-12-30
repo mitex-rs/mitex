@@ -1,3 +1,14 @@
+//! This is A command line interface for MiTeX. Available commands are (not yet
+//! implemented):
+//! - `compile`: transpiles a TeX document into a Typst document.
+//!
+//! # Usage
+//! ```bash
+//! mitex compile main.tex
+//! # or (same output as above)
+//! mitex compile main.tex main.typ
+//! ```
+
 use serde::{Deserialize, Serialize};
 
 fn main() {

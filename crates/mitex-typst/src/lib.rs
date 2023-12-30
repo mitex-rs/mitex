@@ -13,7 +13,10 @@
 //! }
 //! ```
 
-#![warn(clippy::missing_docs_in_private_items)]
+// todo: maybe a bug of wasm_minimal_protocol.
+// #[cfg_attr(target_arch = "wasm32", wasm_func)]
+// |                                  ^^^^^^^^^
+#![allow(missing_docs)]
 
 #[cfg(target_arch = "wasm32")]
 use wasm_minimal_protocol::*;

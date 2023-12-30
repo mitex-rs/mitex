@@ -1,12 +1,12 @@
 mod common;
 
 use insta::assert_snapshot;
-use mitex_lexer::{BumpTokenStream, Lexer, MacroEngine};
+use mitex_lexer::{Lexer, MacroEngine, TokenStream};
 
 use common::*;
 
 // collect all tokens until eat() returns None
-fn tokens_bumper<'a>(input: &'a str, b: impl BumpTokenStream<'a>) -> String {
+fn tokens_bumper<'a>(input: &'a str, b: impl TokenStream<'a>) -> String {
     let mut lexer = Lexer::new_with_bumper(input, DEFAULT_SPEC.clone(), b);
 
     std::iter::from_fn(|| lexer.eat().map(|tok| format!("{:?}({:?})", tok.0, tok.1)))
@@ -85,7 +85,12 @@ fn get_macro(input: &str, macro_name: &str) -> String {
 
 #[test]
 fn ignoring_unimplemented() {
-    assert_snapshot!(r#"\AtEndOfClass{code}"#, @r###"\AtEndOfClass{code}"###);
+    assert_snapshot!(tokens(r#"\AtEndOfClass{code}"#), @r###"
+    CommandName(Generic)("\\AtEndOfClass")
+    Left(Curly)("{")
+    Word("code")
+    Right(Curly)("}")
+    "###);
 }
 
 #[test]
@@ -166,6 +171,9 @@ fn declare_macro() {
 
 #[test]
 fn subst_macro() {
+    // Description: zero arguments
+    assert_snapshot!(tokens(r#"\newcommand{\f}{f}\f"#), @r###"Word("f")"###);
+    // Description: reversed order of tokens
     assert_snapshot!(tokens(r#"\newcommand{\f}[2]{#1f(#2)}\f\hat xy"#), @r###"
     CommandName(Generic)("\\hat")
     Word("f")
@@ -174,9 +182,10 @@ fn subst_macro() {
     Right(Paren)(")")
     Word("y")
     "###);
-    assert_snapshot!(tokens(r#"\newenvironment{f}[2]{begin}{end}\begin{f}test\end{f}"#), @r###"
+    // Description: environment with macro
+    assert_snapshot!(tokens(r#"\newenvironment{f}{begin}{end}\begin{f}test\end{f}"#), @r###"
     Word("begin")
-    Word("st")
+    Word("test")
     Word("end")
     "###);
 }

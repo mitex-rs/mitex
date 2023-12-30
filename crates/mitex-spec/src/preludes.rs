@@ -1,3 +1,6 @@
+// todo: remove me
+#![allow(missing_docs)]
+
 pub mod command {
     use crate::{ArgShape, CommandSpecItem};
 
