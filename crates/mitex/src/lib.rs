@@ -418,7 +418,14 @@ impl Converter {
                     .ok_or_else(|| format!("unknown command: \\{}", name))?;
                 let arg_shape = &cmd_shape.args;
                 // typst alias name
-                let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
+                let mut typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
+
+                // hack for textbf and textit
+                if name == "textbf" && matches!(self.mode, LaTeXMode::Text) {
+                    typst_name = "#strong";
+                } else if name == "textit" && matches!(self.mode, LaTeXMode::Text) {
+                    typst_name = "#emph";
+                }
 
                 if typst_name.starts_with("text") {
                     f.write_str(typst_name)?;
