@@ -39,7 +39,7 @@
 #let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: #arrow-sym, it))$)
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: fn)
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
-#let matrix-handle(delim: none, handle: none) = define-matrix-env(none, alias: none, handle: math.mat.with(delim: delim))
+#let matrix-handle(delim: none, handle: none) = define-env(none, kind: "is-matrix", alias: none, handle: math.mat.with(delim: delim))
 #let text-handle(wrap) = define-cmd(1, handle: it => $wrap(it)$ + text-end-space(it),)
 #let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 { fn(..args) } else { math.zws }
 #let ignore-me = it => {}
@@ -54,8 +54,8 @@
   subsubsection: define-cmd(1, alias: "#heading(level: 3)"),
   emph: define-cmd(1, alias: "#emph"),
   item: ignore-sym,
-  itemize: define-itemize-env(none),
-  enumerate: define-enumerate-env(none),
+  itemize: define-env(none, kind: "is-itemize"),
+  enumerate: define-env(none, kind: "is-enumerate"),
   label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   tag: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   ref: define-cmd(1, alias: "#mitexref", handle: it => ref(label(get-tex-str(it)))),
@@ -974,7 +974,7 @@
   vmatrix: matrix-handle(delim: "|"),
   Vmatrix: matrix-handle(delim: "||"),
   smallmatrix: matrix-handle(handle: (..args) => math.inline(math.mat.with(delim: none, ..args))),
-  array: define-matrix-env(1, alias: "mitexarray", handle: (arg0: ("l",), ..args) => {
+  array: define-env(1, kind: "is-matrix", alias: "mitexarray", handle: (arg0: ("l",), ..args) => {
     if args.pos().len() == 0 {
       return
     }
@@ -1003,19 +1003,19 @@
       ..matrix.flatten().map(it => $it$)
     ))
   }),
-  subarray: define-matrix-env(1, alias: "mitexarray"),
+  subarray: define-env(1, kind: "is-matrix", alias: "mitexarray"),
   // Environments
-  aligned: define-math-env(none, alias: "aligned", handle: call-or-ignore(it => pad(y: 0.2em, block(math.op(math.display(it)))))),
-  alignedat: define-math-env(1, alias: "alignedat", handle: (arg0: none, it) => pad(y: 0.2em, block(math.op(it)))),
-  align: define-math-env(none, alias: "aligned"),
-  "align*": define-math-env(none, alias: "aligned"),
-  equation: define-math-env(none, alias: "aligned"),
-  "equation*": define-math-env(none, alias: "aligned"),
-  split: define-math-env(none, alias: "aligned"),
-  gather: define-math-env(none, alias: "aligned"),
-  gathered: define-math-env(none, alias: "aligned"),
-  cases: define-cases-env(alias: "cases"),
-  rcases: define-cases-env(alias: "rcases", handle: math.cases.with(reverse: true)),
+  aligned: define-env(none, kind: "is-math", alias: "aligned", handle: call-or-ignore(it => pad(y: 0.2em, block(math.op(math.display(it)))))),
+  alignedat: define-env(1, kind: "is-math", alias: "alignedat", handle: (arg0: none, it) => pad(y: 0.2em, block(math.op(it)))),
+  align: define-env(none, kind: "is-math", alias: "aligned"),
+  "align*": define-env(none, kind: "is-math", alias: "aligned"),
+  equation: define-env(none, kind: "is-math", alias: "aligned"),
+  "equation*": define-env(none, kind: "is-math", alias: "aligned"),
+  split: define-env(none, kind: "is-math", alias: "aligned"),
+  gather: define-env(none, kind: "is-math", alias: "aligned"),
+  gathered: define-env(none, kind: "is-math", alias: "aligned"),
+  cases: define-env(none, kind: "is-cases", alias: "cases"),
+  rcases: define-env(none, kind: "is-cases", alias: "rcases", handle: math.cases.with(reverse: true)),
   // Specials
   notag: ignore-sym,
   relax: ignore-sym,

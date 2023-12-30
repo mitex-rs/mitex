@@ -85,6 +85,8 @@
 /// - alias (str): Alias command for typst handler.
 ///   For example, alias `\begin{alignedat}{2}` to typst's `alignedat`,
 ///   and alias `\begin{aligned}` to typst's `aligned`, as the key in mitex-scope.
+/// - kind (str): environment kind, it could be "is-math", "is-cases", "is-matrix",
+///   "is-itemize", "is-enumerate"
 /// - handle (function): The handler function, as the value of alias in mitex-scope.
 ///   It receives fixed number of named arguments as environment options,
 ///   for example `alignedat(arg0: ..)` or `alignedat(arg0: .., arg1: ..)`.
@@ -92,7 +94,7 @@
 ///   Therefore you need to use `(.. arg) = > {..}` to receive them.
 ///
 /// Return: A spec item and a scope item (none for no scope item)
-#let define-env(num, alias: none, handle: none) = {
+#let define-env(num, kind: "none", alias: none, handle: none) = {
   ((
     kind: "env",
     args: if num != none {
@@ -100,107 +102,7 @@
     } else {
       ( kind: "none" )
     },
-    ctx_feature: ( kind: "none" ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
-}
-
-/// Define an math environment with a fixed number of arguments, like \begin{alignedat}{2}
-/// 
-/// Arguments:
-/// - num (int): The number of arguments as environment options for the environment.
-/// - alias (str): Alias command for typst handler.
-///   For example, alias `\begin{alignedat}{2}` to typst's `alignedat`,
-///   and alias `\begin{aligned}` to typst's `aligned`, as the key in mitex-scope.
-/// - handle (function): The handler function, as the value of alias in mitex-scope.
-///   It receives fixed number of named arguments as environment options,
-///   for example `alignedat(arg0: ..)` or `alignedat(arg0: .., arg1: ..)`.
-///   And it receives variable length arguments as environment body,
-///   Therefore you need to use `(.. arg) = > {..}` to receive them.
-///
-/// Return: A spec item and a scope item (none for no scope item)
-#let define-math-env(num, alias: none, handle: none) = {
-  ((
-    kind: "env",
-    args: if num != none {
-      ( kind: "fixed-len", len: num )
-    } else {
-      ( kind: "none" )
-    },
-    ctx_feature: ( kind: "is-math" ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
-}
-
-/// Define a cases environment
-/// 
-/// Arguments:
-/// - alias (str): Alias command for typst handler.
-///   For example, alias `\begin{rcases}` to typst's `rcases`,
-/// - handle (function): The handler function, as the value of alias in mitex-scope.
-///   For example, define `math.cases.with(reverse: true)` for `rcases` in mitex-scope.
-///
-/// Return: A spec item and a scope item (none for no scope item)
-#let define-cases-env(alias: none, handle: none) = {
-  ((
-    kind: "env",
-    args: ( kind: "none" ),
-    ctx_feature: ( kind: "is-cases" ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
-}
-
-/// Define an matrix environment with a fixed number of arguments, like \begin{pmatrix}
-/// 
-/// Arguments:
-/// - num (int): The number of arguments as environment options for the environment.
-/// - alias (str): Alias command for typst handler.
-///   For example, alias `\begin{pmatrix}` to typst's `pmatrix`, as the key in mitex-scope.
-/// - handle (function): The handler function, as the value of alias in mitex-scope.
-///   It receives fixed number of named arguments as environment options,
-///   for example `pmatrix(arg0: ..)` or `pmatrix(arg0: .., arg1: ..)`.
-///   And it receives variable length arguments as environment body,
-///   for matrix environment, it just like the arguments for `mat(1,2; 3, 4)` in equation mode,
-///   That is, to receive a two-dimensional array,
-///   like `pmatrtix((1, 2,), (3, 4,))` in script mode.
-///   Therefore you need to use `(.. arg) = > {..}` to receive them.
-///
-/// Return: A spec item and a scope item (none for no scope item)
-#let define-matrix-env(num, alias: none, handle: none) = {
-  ((
-    kind: "env",
-    args: if num != none {
-      ( kind: "fixed-len", len: num )
-    } else {
-      ( kind: "none" )
-    },
-    ctx_feature: ( kind: "is-matrix" ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
-}
-
-#let define-itemize-env(num, alias: none, handle: none) = {
-  ((
-    kind: "env",
-    args: if num != none {
-      ( kind: "fixed-len", len: num )
-    } else {
-      ( kind: "none" )
-    },
-    ctx_feature: ( kind: "is-itemize" ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
-}
-
-#let define-enumerate-env(num, alias: none, handle: none) = {
-  ((
-    kind: "env",
-    args: if num != none {
-      ( kind: "fixed-len", len: num )
-    } else {
-      ( kind: "none" )
-    },
-    ctx_feature: ( kind: "is-enumerate" ),
+    ctx_feature: ( kind: kind ),
     alias: alias,
   ), if handle != none { (alias: alias, handle: handle) } else { none })
 }
@@ -250,17 +152,19 @@
   let spec = (:)
   let scope = (:)
   for (key, value) in definitions.pairs() {
-    spec.insert(key, value.at(0))
-    if value.at(1) != none {
-      if "alias" in value.at(1) and type(value.at(1).alias) == str {
-        let key = if value.at(1).alias.starts-with("#") {
-          value.at(1).alias.slice(1)
+    let spec-item = value.at(0)
+    let scope-item = value.at(1)
+    spec.insert(key, spec-item)
+    if scope-item != none {
+      if "alias" in scope-item and type(scope-item.alias) == str {
+        let key = if scope-item.alias.starts-with("#") {
+          scope-item.alias.slice(1)
         } else {
-          value.at(1).alias
+          scope-item.alias
         }
-        scope.insert(key, value.at(1).handle)
+        scope.insert(key, scope-item.handle)
       } else {
-        scope.insert(key, value.at(1).handle)
+        scope.insert(key, scope-item.handle)
       }
     }
   }
