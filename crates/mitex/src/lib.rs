@@ -524,13 +524,11 @@ impl Converter {
                 }
 
                 // text mode to math mode with $ ... $
-                let is_need_dollar = matches!(
-                    self.env,
-                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-                ) && !matches!(
-                    env_kind,
-                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-                );
+                let is_need_dollar = matches!(self.mode, LaTeXMode::Text)
+                    && !matches!(
+                        env_kind,
+                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+                    );
                 let prev = self.enter_env(env_kind);
                 let mut prev_mode = LaTeXMode::Text;
                 if is_need_dollar {
@@ -631,14 +629,8 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 
 #[cfg(test)]
 mod tests {
+    use crate::DEFAULT_SPEC;
     use insta::{assert_debug_snapshot, assert_snapshot};
-    use mitex_parser::spec::CommandSpec;
-
-    static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
-        CommandSpec::from_bytes(include_bytes!(
-            "../../../target/mitex-artifacts/spec/default.rkyv"
-        ))
-    });
 
     fn convert_text(input: &str) -> Result<String, String> {
         crate::convert_text(input, Some(DEFAULT_SPEC.clone()))
