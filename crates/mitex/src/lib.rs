@@ -391,9 +391,11 @@ impl Converter {
                     let label = label.trim();
                     match self.env {
                         LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate => {
-                            f.write_char('<')?;
-                            f.write_str(label)?;
-                            f.write_char('>')?;
+                            if matches!(self.mode, LaTeXMode::Text) {
+                                f.write_char('<')?;
+                                f.write_str(label)?;
+                                f.write_char('>')?;
+                            }
                         }
                         _ => {
                             self.label = Some(label.to_string());
