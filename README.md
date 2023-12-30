@@ -63,7 +63,6 @@ We also support text mode (in development):
     \end{itemize}
   \end{enumerate}
 `)
-
 ```
 
 ![example](packages/mitex/examples/example.png)
