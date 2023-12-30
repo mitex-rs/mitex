@@ -56,6 +56,8 @@ struct Converter {
     env: LaTeXEnv,
     // indent for itemize and enumerate
     indent: usize,
+    // label for block equation
+    label: Option<String>,
     // skip the space at the beginning of the line
     skip_next_space: bool,
 }
@@ -66,6 +68,7 @@ impl Converter {
             mode,
             env: LaTeXEnv::default(),
             indent: 0,
+            label: None,
             skip_next_space: true,
         }
     }
@@ -358,7 +361,7 @@ impl Converter {
                 // remove prefix \
                 let name = &name[1..];
 
-                // hack for itemize and enumerate
+                // hack for \item in itemize and enumerate
                 if name == "item" {
                     if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
                         f.write_char('\n')?;
@@ -372,6 +375,29 @@ impl Converter {
                         }
                     } else {
                         Err("item command outside of itemize or enumerate".to_owned())?;
+                    }
+                    return Ok(());
+                }
+
+                // hack for \label
+                if name == "label" {
+                    let arg = cmd
+                        .arguments()
+                        .next()
+                        .expect("\\label command must have one argument");
+                    // remove { and } then trim
+                    let label = arg.text().to_string();
+                    let label = &label[1..(label.len() - 1)];
+                    let label = label.trim();
+                    match self.env {
+                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate => {
+                            f.write_char('<')?;
+                            f.write_str(label)?;
+                            f.write_char('>')?;
+                        }
+                        _ => {
+                            self.label = Some(label.to_string());
+                        }
                     }
                     return Ok(());
                 }
@@ -561,6 +587,19 @@ impl Converter {
                 if is_need_dollar {
                     f.write_str(" $")?;
                     self.exit_mode(prev_mode);
+                }
+
+                // handle label
+                if matches!(
+                    self.env,
+                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+                ) {
+                    if let Some(label) = self.label.take() {
+                        f.write_char('<')?;
+                        f.write_str(label.as_str())?;
+                        f.write_char('>')?;
+                        self.label = None;
+                    }
                 }
             }
             ItemTypstCode => {

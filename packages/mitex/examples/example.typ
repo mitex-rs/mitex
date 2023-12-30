@@ -18,23 +18,26 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 We also support text mode (in development):
 
 #mitex(mode: "text", `
+  \iftypst
+    #set math.equation(numbering: "(1)", supplement: "equation")
+  \fi
+
   \section{Title}
 
-  A \textbf{strong} text and a \emph{emph} text and inline equation $x + y$.
+  A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
+  
+  Also block \eqref{eq:pythagoras}.
 
   \begin{equation}
-    \int_1^2 x dx
+    a^2 + b^2 = c^2 \label{eq:pythagoras}
   \end{equation}
   
   \begin{enumerate}
     \item This is the first item
     \item This is the second item
     \begin{itemize}
-      \item This is the first item
-      \item This is the second item
-      \item This is the third item
+      \item This is the first subitem
+      \item This is the second subitem
     \end{itemize}
   \end{enumerate}
-
-  Paragraph after itemize and enumerate.
 `)
