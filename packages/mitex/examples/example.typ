@@ -31,13 +31,4 @@ We also support text mode (in development):
   \begin{equation}
     a^2 + b^2 = c^2 \label{eq:pythagoras}
   \end{equation}
-  
-  \begin{enumerate}
-    \item This is the first item
-    \item This is the second item
-    \begin{itemize}
-      \item This is the first subitem
-      \item This is the second subitem
-    \end{itemize}
-  \end{enumerate}
 `)

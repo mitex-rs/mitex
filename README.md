@@ -53,15 +53,6 @@ We also support text mode (in development):
   \begin{equation}
     a^2 + b^2 = c^2 \label{eq:pythagoras}
   \end{equation}
-  
-  \begin{enumerate}
-    \item This is the first item
-    \item This is the second item
-    \begin{itemize}
-      \item This is the first subitem
-      \item This is the second subitem
-    \end{itemize}
-  \end{enumerate}
 `)
 ```
 
@@ -83,7 +74,7 @@ We also support text mode (in development):
 
 - [ ] Pass command specification to MiTeX plugin dynamically. With that you can define a typst function `let myop(it) = op(upright(it))` and then use it by `\myop{it}`.
 - [ ] Package support, which means that you can change set of commands by telling MiTeX to use a list of packages.
-- [ ] More text mode support, enabling the rendering entire LaTeX documents in Typst!
+- [ ] Better text mode support, such as figure and description environments.
 
 ## Differences between MiTeX and other solutions
 
