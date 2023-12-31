@@ -362,7 +362,6 @@ dependencies = [
  "insta",
  "mitex-parser",
  "mitex-spec-gen",
- "once_cell",
  "rowan",
  "serde",
  "serde_json",
@@ -428,6 +427,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "mitex-spec",
+ "once_cell",
  "serde",
  "serde_json",
  "which",
