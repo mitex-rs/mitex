@@ -9,6 +9,7 @@ use mitex_parser::parse_without_macro;
 pub use mitex_parser::spec::*;
 use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
+use mitex_parser::syntax::FormulaItem;
 use mitex_parser::syntax::SyntaxNode;
 use rowan::ast::AstNode;
 use rowan::SyntaxToken;
@@ -29,34 +30,74 @@ use rowan::SyntaxToken;
 // }
 
 #[derive(Debug, Clone, Copy, Default)]
+enum LaTeXMode {
+    #[default]
+    Text,
+    Math,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
 enum LaTeXEnv {
     #[default]
+    // Text mode
     None,
-    SubStack,
-    CurlyGroup,
+    Itemize,
+    Enumerate,
+    // Math mode
+    Math,
     Matrix,
     Cases,
+    SubStack,
+    MathCurlyGroup,
 }
 
-struct MathConverter {
+struct Converter {
+    mode: LaTeXMode,
     env: LaTeXEnv,
+    // indent for itemize and enumerate
+    indent: usize,
+    // label for block equation
+    label: Option<String>,
+    // skip the space at the beginning of the line
+    skip_next_space: bool,
 }
 
-impl MathConverter {
-    fn new() -> Self {
+impl Converter {
+    fn new(mode: LaTeXMode) -> Self {
         Self {
+            mode,
             env: LaTeXEnv::default(),
+            indent: 0,
+            label: None,
+            skip_next_space: true,
         }
+    }
+
+    #[must_use]
+    fn enter_mode(&mut self, context: LaTeXMode) -> LaTeXMode {
+        let prev = self.mode;
+        self.mode = context;
+        prev
+    }
+
+    fn exit_mode(&mut self, prev: LaTeXMode) {
+        self.mode = prev;
     }
 
     #[must_use]
     fn enter_env(&mut self, context: LaTeXEnv) -> LaTeXEnv {
         let prev = self.env;
         self.env = context;
+        if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            self.indent += 2;
+        }
         prev
     }
 
     fn exit_env(&mut self, prev: LaTeXEnv) {
+        if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            self.indent -= 2;
+        }
         self.env = prev;
     }
 }
@@ -96,7 +137,7 @@ impl From<String> for ConvertError {
     }
 }
 
-impl MathConverter {
+impl Converter {
     fn convert(
         &mut self,
         f: &mut fmt::Formatter<'_>,
@@ -106,14 +147,41 @@ impl MathConverter {
         use LatexSyntaxKind::*;
 
         match elem.kind() {
+            TokenWhiteSpace => {}
+            _ => {
+                self.skip_next_space = false;
+            }
+        }
+        match elem.kind() {
             TokenError => Err(match elem {
                 LatexSyntaxElem::Node(node) => format!("error unexpected: {:?}", node.text()),
                 LatexSyntaxElem::Token(token) => format!("error unexpected: {:?}", token.text()),
             })?,
-            ItemLR | ClauseArgument | ScopeRoot | ItemFormula | ItemText | ItemBracket
-            | ItemParen => {
+            ItemLR | ClauseArgument | ScopeRoot | ItemText | ItemBracket | ItemParen => {
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
+                }
+            }
+            ItemFormula => {
+                let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
+                if matches!(self.mode, LaTeXMode::Text) {
+                    if formula.is_inline() {
+                        f.write_char('$')?;
+                    } else {
+                        f.write_str("$ ")?;
+                    }
+                }
+                let prev = self.enter_mode(LaTeXMode::Math);
+                for child in elem.as_node().unwrap().children_with_tokens() {
+                    self.convert(f, child, spec)?;
+                }
+                self.exit_mode(prev);
+                if matches!(self.mode, LaTeXMode::Text) {
+                    if formula.is_inline() {
+                        f.write_char('$')?;
+                    } else {
+                        f.write_str(" $")?;
+                    }
                 }
             }
             ItemCurly => {
@@ -121,17 +189,19 @@ impl MathConverter {
                 let mut prev = LaTeXEnv::None;
                 let mut enter_new_env = false;
                 // hack for \substack{abc \\ bcd}
-                if !matches!(self.env, LaTeXEnv::SubStack) {
-                    prev = self.enter_env(LaTeXEnv::CurlyGroup);
+                if matches!(self.mode, LaTeXMode::Math) && !matches!(self.env, LaTeXEnv::SubStack) {
+                    prev = self.enter_env(LaTeXEnv::MathCurlyGroup);
                     enter_new_env = true;
                 }
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     self.convert(f, child, spec)?;
                 }
-                // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`
-                f.write_str("zws ")?;
-                if enter_new_env {
-                    self.exit_env(prev);
+                if matches!(self.mode, LaTeXMode::Math) {
+                    // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`
+                    f.write_str("zws ")?;
+                    if enter_new_env {
+                        self.exit_env(prev);
+                    }
                 }
             }
             // handle lr
@@ -194,18 +264,34 @@ impl MathConverter {
             ClauseCommandName => Err("command name outside of command".to_owned())?,
             ItemBegin | ItemEnd => Err("clauses outside of environment".to_owned())?,
             TokenWord => {
-                // break up words into individual characters and add a space
-                let text = elem.as_token().unwrap().text().to_string();
-                for prev in text.chars() {
-                    f.write_char(prev)?;
-                    f.write_char(' ')?;
+                if matches!(self.mode, LaTeXMode::Math) {
+                    // break up words into individual characters and add a space
+                    let text = elem.as_token().unwrap().text().to_string();
+                    for prev in text.chars() {
+                        f.write_char(prev)?;
+                        f.write_char(' ')?;
+                    }
+                } else {
+                    f.write_str(elem.as_token().unwrap().text())?;
                 }
             }
             // do nothing
             TokenLBrace | TokenRBrace | TokenDollar | TokenComment | ItemBlockComment => {}
             // space identical
-            TokenLineBreak | TokenWhiteSpace => {
+            TokenWhiteSpace => {
+                if self.skip_next_space {
+                    self.skip_next_space = false;
+                    return Ok(());
+                }
                 write!(f, "{}", elem.as_token().unwrap().text())?;
+            }
+            TokenLineBreak => {
+                write!(f, "{}", elem.as_token().unwrap().text())?;
+                // indent for itemize and enumerate
+                for _ in 0..self.indent {
+                    f.write_char(' ')?;
+                }
+                self.skip_next_space = true;
             }
             // escape
             TokenComma => {
@@ -251,7 +337,7 @@ impl MathConverter {
             ItemNewLine => match self.env {
                 LaTeXEnv::Matrix => f.write_str("zws ;")?,
                 LaTeXEnv::Cases => f.write_str(",")?,
-                LaTeXEnv::CurlyGroup => {}
+                LaTeXEnv::MathCurlyGroup => {}
                 _ => f.write_str("\\ ")?,
             },
             // for left/right
@@ -274,6 +360,50 @@ impl MathConverter {
                 let name = name.text();
                 // remove prefix \
                 let name = &name[1..];
+
+                // hack for \item in itemize and enumerate
+                if name == "item" {
+                    if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+                        f.write_char('\n')?;
+                        for _ in 0..(self.indent - 2) {
+                            f.write_char(' ')?;
+                        }
+                        if matches!(self.env, LaTeXEnv::Itemize) {
+                            f.write_str("- ")?;
+                        } else {
+                            f.write_str("+ ")?;
+                        }
+                    } else {
+                        Err("item command outside of itemize or enumerate".to_owned())?;
+                    }
+                    return Ok(());
+                }
+
+                // hack for \label
+                if name == "label" {
+                    let arg = cmd
+                        .arguments()
+                        .next()
+                        .expect("\\label command must have one argument");
+                    // remove { and } then trim
+                    let label = arg.text().to_string();
+                    let label = &label[1..(label.len() - 1)];
+                    let label = label.trim();
+                    match self.env {
+                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate => {
+                            if matches!(self.mode, LaTeXMode::Text) {
+                                f.write_char('<')?;
+                                f.write_str(label)?;
+                                f.write_char('>')?;
+                            }
+                        }
+                        _ => {
+                            self.label = Some(label.to_string());
+                        }
+                    }
+                    return Ok(());
+                }
+
                 let args = elem
                     .as_node()
                     .unwrap()
@@ -288,7 +418,14 @@ impl MathConverter {
                     .ok_or_else(|| format!("unknown command: \\{}", name))?;
                 let arg_shape = &cmd_shape.args;
                 // typst alias name
-                let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
+                let mut typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
+
+                // hack for textbf and textit
+                if name == "textbf" && matches!(self.mode, LaTeXMode::Text) {
+                    typst_name = "#strong";
+                } else if name == "textit" && matches!(self.mode, LaTeXMode::Text) {
+                    typst_name = "#emph";
+                }
 
                 if typst_name.starts_with("text") {
                     f.write_str(typst_name)?;
@@ -347,7 +484,7 @@ impl MathConverter {
 
                 if let ArgShape::Right(ArgPattern::None) = arg_shape {
                     f.write_char(' ')?
-                } else {
+                } else if matches!(self.mode, LaTeXMode::Math) {
                     f.write_char('(')?;
 
                     let mut cnt = 0;
@@ -362,6 +499,16 @@ impl MathConverter {
                     }
 
                     f.write_char(')')?;
+                } else {
+                    // Text mode
+                    for arg in args {
+                        let kind = arg.kind();
+                        if matches!(kind, ClauseArgument) {
+                            f.write_char('[')?;
+                            self.convert(f, arg, spec)?;
+                            f.write_char(']')?;
+                        }
+                    }
                 }
 
                 // hack for \substack{abc \\ bcd}
@@ -387,9 +534,42 @@ impl MathConverter {
 
                 let env_kind = match env_shape.ctx_feature {
                     ContextFeature::None => LaTeXEnv::None,
+                    ContextFeature::IsMath => LaTeXEnv::Math,
                     ContextFeature::IsMatrix => LaTeXEnv::Matrix,
                     ContextFeature::IsCases => LaTeXEnv::Cases,
+                    ContextFeature::IsItemize => LaTeXEnv::Itemize,
+                    ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
                 };
+
+                // hack for itemize and enumerate
+                if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+                    let prev = self.enter_env(env_kind);
+
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        if matches!(child.kind(), ItemBegin | ItemEnd) {
+                            continue;
+                        }
+
+                        self.convert(f, child, spec)?;
+                    }
+
+                    self.exit_env(prev);
+
+                    return Ok(());
+                }
+
+                // text mode to math mode with $ ... $
+                let is_need_dollar = matches!(self.mode, LaTeXMode::Text)
+                    && !matches!(
+                        env_kind,
+                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+                    );
+                let prev = self.enter_env(env_kind);
+                let mut prev_mode = LaTeXMode::Text;
+                if is_need_dollar {
+                    f.write_str("$ ")?;
+                    prev_mode = self.enter_mode(LaTeXMode::Math);
+                }
 
                 // environment name
                 f.write_str(typst_name)?;
@@ -400,8 +580,6 @@ impl MathConverter {
                     self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
                     f.write_char(',')?;
                 }
-
-                let prev = self.enter_env(env_kind);
 
                 for child in elem.as_node().unwrap().children_with_tokens() {
                     if matches!(child.kind(), ItemBegin | ItemEnd) {
@@ -414,6 +592,24 @@ impl MathConverter {
                 f.write_char(')')?;
 
                 self.exit_env(prev);
+
+                if is_need_dollar {
+                    f.write_str(" $")?;
+                    self.exit_mode(prev_mode);
+                }
+
+                // handle label
+                if matches!(
+                    self.env,
+                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+                ) {
+                    if let Some(label) = self.label.take() {
+                        f.write_char('<')?;
+                        f.write_str(label.as_str())?;
+                        f.write_char('>')?;
+                        self.label = None;
+                    }
+                }
             }
             ItemTypstCode => {
                 write!(f, "{}", elem.as_node().unwrap().text())?;
@@ -424,13 +620,18 @@ impl MathConverter {
     }
 }
 
-struct TypstMathRepr(LatexSyntaxElem, CommandSpec, Rc<RefCell<String>>);
+struct TypstRepr {
+    elem: LatexSyntaxElem,
+    mode: LaTeXMode,
+    spec: CommandSpec,
+    error: Rc<RefCell<String>>,
+}
 
-impl fmt::Display for TypstMathRepr {
+impl fmt::Display for TypstRepr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut ctx = MathConverter::new();
-        if let Err(e) = ctx.convert(f, self.0.clone(), &self.1) {
-            self.2.borrow_mut().push_str(&e.to_string());
+        let mut ctx = Converter::new(self.mode);
+        if let Err(e) = ctx.convert(f, self.elem.clone(), &self.spec) {
+            self.error.borrow_mut().push_str(&e.to_string());
             return Err(fmt::Error);
         }
         Ok(())
@@ -438,8 +639,9 @@ impl fmt::Display for TypstMathRepr {
 }
 
 #[inline(always)]
-fn convert_math_inner(
+fn convert_inner(
     input: &str,
+    mode: LaTeXMode,
     spec: Option<CommandSpec>,
     do_parse: fn(input: &str, spec: CommandSpec) -> SyntaxNode,
 ) -> Result<String, String> {
@@ -449,22 +651,27 @@ fn convert_math_inner(
     let mut output = String::new();
     let err = String::new();
     let err = Rc::new(RefCell::new(err));
-    let repr = TypstMathRepr(
-        LatexSyntaxElem::Node(node),
-        DEFAULT_SPEC.clone(),
-        err.clone(),
-    );
+    let repr = TypstRepr {
+        elem: LatexSyntaxElem::Node(node),
+        mode,
+        spec: DEFAULT_SPEC.clone(),
+        error: err.clone(),
+    };
     core::fmt::write(&mut output, format_args!("{}", repr)).map_err(|_| err.borrow().to_owned())?;
     Ok(output)
 }
 
+pub fn convert_text(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
+    convert_inner(input, LaTeXMode::Text, spec, parse)
+}
+
 pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
-    convert_math_inner(input, spec, parse)
+    convert_inner(input, LaTeXMode::Math, spec, parse)
 }
 
 /// For internal testing
 pub fn convert_math_no_macro(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
-    convert_math_inner(input, spec, parse_without_macro)
+    convert_inner(input, LaTeXMode::Math, spec, parse_without_macro)
 }
 
 static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
@@ -475,10 +682,34 @@ static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy:
 
 #[cfg(test)]
 mod tests {
+    use crate::DEFAULT_SPEC;
     use insta::{assert_debug_snapshot, assert_snapshot};
 
+    fn convert_text(input: &str) -> Result<String, String> {
+        crate::convert_text(input, Some(DEFAULT_SPEC.clone()))
+    }
+
     fn convert_math(input: &str) -> Result<String, String> {
-        crate::convert_math(input, None)
+        crate::convert_math(input, Some(DEFAULT_SPEC.clone()))
+    }
+
+    #[test]
+    fn test_convert_text_mode() {
+        assert_debug_snapshot!(convert_text(r#"abc"#), @r###"
+        Ok(
+            "abc",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\section{Title}"#), @r###"
+        Ok(
+            "#heading(level: 1)[Title]",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"a \textbf{strong} text"#), @r###"
+        Ok(
+            "a #strong[strong] text",
+        )
+        "###);
     }
 
     #[test]
@@ -579,7 +810,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
         Ok(
-            "mitexoverbrace(a  +  b  +  c zws )^(text(\"This is an overbrace\")zws )",
+            "mitexoverbrace(a  +  b  +  c zws )^(textmath(\"This is an overbrace\")zws )",
         )
         "###
         );
@@ -767,7 +998,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "matrix(\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "matrix(\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -779,7 +1010,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "Vmatrix(\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "Vmatrix(\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -791,7 +1022,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r zws ,\n        1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "mitexarray(arg0: l c r zws ,\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );
@@ -807,7 +1038,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(\n        1  & 2  & 3 \\ \na  & b  & c \n)",
+            "aligned(\n1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -819,7 +1050,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "aligned(\n        1  & 2  & 3 \\ \na  & b  & c \n)",
+            "aligned(\n1  & 2  & 3 \\ \na  & b  & c \n)",
         )
         "###
         );
@@ -831,7 +1062,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "cases(\n        1  & 2  & 3 ,\na  & b  & c \n)",
+            "cases(\n1  & 2  & 3 ,\na  & b  & c \n)",
         )
         "###
         );
@@ -841,19 +1072,19 @@ a & b & c
     fn test_convert_ditto() {
         assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###);
         assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \\\"b \\\"c ""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""text(\"a\\\"b\\\"c\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""text(\"a \\\" b \\\" c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""textmath(\"a\\\"b\\\"c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""textmath(\"a \\\" b \\\" c\")""###);
     }
 
     #[test]
     fn test_convert_text() {
-        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""text(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""text(\" a b c \")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""text(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""text(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""text(\"ab c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""textmath(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""textmath(\" a b c \")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""textmath(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""textmath(\"abc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""textmath(\"ab c\")""###);
         // note: hack doesn't work in this case
-        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""text(\"ab\\colorredc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""textmath(\"ab\\colorredc\")""###);
     }
 
     #[test]

@@ -14,3 +14,21 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
     \f\hat\xi\,e^{2 \pi i \xi x}
     \,d\xi
 `)
+
+We also support text mode (in development):
+
+#mitext(`
+  \iftypst
+    #set math.equation(numbering: "(1)", supplement: "equation")
+  \fi
+
+  \section{Title}
+
+  A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
+  
+  Also block \eqref{eq:pythagoras}.
+
+  \begin{equation}
+    a^2 + b^2 = c^2 \label{eq:pythagoras}
+  \end{equation}
+`)

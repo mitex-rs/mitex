@@ -160,51 +160,12 @@ Define an environment with a fixed number of arguments, like `\begin{array}{lr}`
 - alias (str): Alias command for typst handler.
   For example, alias `\begin{array}{lr}` to typst's `mitexarray`,
   and alias `\begin{aligned}` to typst's `aligned`, as the key in mitex-scope.
+- kind (str): environment kind, it could be "is-math", "is-cases", "is-matrix",
+  "is-itemize", "is-enumerate"
 - handle (function): The handler function, as the value of alias in mitex-scope.
   It receives fixed number of named arguments as environment options,
   for example `array(arg0: ..)` or `array(arg0: .., arg1: ..)`.
   And it receives variable length arguments as environment body,
-  Therefore you need to use `(.. arg) = > {..}` to receive them.
-
-**Return:** A opaque spec item and a scope item (none for no scope item)
-
-
-### `define-cases-env`
-
-Define a cases environment.
-
-```typst
-#let define-cases-env(alias: none, handle: none) = { .. }
-```
-
-**Arguments:**
-- alias (str): Alias command for typst handler.
-  For example, alias `\begin{rcases}` to typst's `rcases`,
-- handle (function): The handler function, as the value of alias in mitex-scope.
-  For example, define `math.cases.with(reverse: true)` for `rcases` in mitex-scope.
-
-**Return:** A opaque spec item and a scope item (none for no scope item)
-
-
-### `define-matrix-env`
-
-Define an matrix environment with a fixed number of arguments, like \begin{pmatrix}
-
-```typst
-#let define-matrix-env(num, alias: none, handle: none) = { .. }
-```
-
-**Arguments:**
-- num (int): The number of arguments as environment options for the environment.
-- alias (str): Alias command for typst handler.
-  For example, alias `\begin{pmatrix}` to typst's `pmatrix`, as the key in mitex-scope.
-- handle (function): The handler function, as the value of alias in mitex-scope.
-  It receives fixed number of named arguments as environment options,
-  for example `pmatrix(arg0: ..)` or `pmatrix(arg0: .., arg1: ..)`.
-  And it receives variable length arguments as environment body,
-  for matrix environment, it just like the arguments for `mat(1,2; 3, 4)` in equation mode,
-  That is, to receive a two-dimensional array,
-  like `pmatrtix((1, 2,), (3, 4,))` in script mode.
   Therefore you need to use `(.. arg) = > {..}` to receive them.
 
 **Return:** A opaque spec item and a scope item (none for no scope item)
@@ -286,20 +247,4 @@ Define a matrix environment without handler
 ```
 
 **Return:** A matrix-env spec and a scope item (none for no scope item)
-
-
-### `normal-env`
-
-Define a normal environment with handler
-
-```typst
-#let normal-env(handle) = ((kind: "normal-env"), (handle: handle))
-```
-
-**Arguments:**
-
-- handle (function): The handler function, as the value of alias in mitex-scope.
-  For example, define how to handle `aligned(..)` in mitex-scope
-
-**Return:** A normal-env spec and a scope item (none for no scope item)
 
