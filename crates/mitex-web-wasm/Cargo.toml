@@ -1,0 +1,29 @@
+[package]
+name = "mitex-wasm-web"
+description = "mitex wasm for web browser"
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+
+mitex = { path = "../mitex" }
+mitex-spec = { path = "../mitex-spec" }
+wasm-bindgen = "0.2.74"
+
+serde.workspace = true
+serde_json.workspace = true
+wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-protocol" }
+
+[features]
+rkyv = ["mitex-spec/rkyv", "mitex-spec/rkyv-validation"]
+default = ["rkyv"]
+
+[lints]
+workspace = true
