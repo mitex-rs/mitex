@@ -42,6 +42,7 @@ fn copy_prebuilt() -> anyhow::Result<()> {
 
     let prebuilt_spec = project_root.join("assets/artifacts/spec/default.rkyv");
     let target_spec = project_root.join("target/mitex-artifacts/spec/default.rkyv");
+    println!("cargo:warning=Use prebuilt spec binaries at {prebuilt_spec:?}");
 
     std::fs::copy(prebuilt_spec, target_spec).with_context(|| {
         "failed to copy prebuilt spec, \
