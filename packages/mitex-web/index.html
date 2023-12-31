@@ -1,15 +1,38 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mitex Online Converter</title>
+    <script>
+      let $typst$scriptResolved = false;
+      window.$typst$script = new Promise((resolve) => {
+        if ($typst$scriptResolved) {
+          resolve();
+        } else {
+          window.$typst$scriptResolve = resolve;
+        }
+      }).then(() => {
+        $typst.setCompilerInitOptions({
+          getModule: () =>
+            "https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm",
+        });
+        $typst.setRendererInitOptions({
+          getModule: () =>
+            "https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm",
+        });
+      });
+    </script>
+    <script
+      type="module"
+      onload="$typst$scriptResolved = true; $typst$scriptResolve && $typst$scriptResolve();"
+      src="https://cdn.jsdelivr.net/npm/@myriaddreamin/typst.ts/dist/esm/contrib/all-in-one-lite.bundle.js"
+      id="typst"
+    ></script>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mitex Online Converter</title>
-</head>
-
-<body>
-  <div id="app"></div>
-  <script type="module" src="/src/main.ts"></script>
-</body>
-
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

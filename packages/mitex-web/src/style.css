@@ -22,10 +22,16 @@ body {
 }
 
 #app {
-  max-width: 1280px;
+  max-width: 1920px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+}
+
+.mitex-preview {
+  border-radius: 8px;
+  border: 1px solid #000;
+  min-height: 1em;
 }
 
 button {
@@ -80,4 +86,20 @@ textarea {
 div.error {
   color: #ff0000;
   font-family: "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.mitex-main {
+  max-width: 1920px;
+  display: flex;
+  flex-direction: column;
 }
