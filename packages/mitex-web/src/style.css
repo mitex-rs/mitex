@@ -76,3 +76,8 @@ textarea {
   background-color: #ffffff;
   transition: border-color 0.25s;
 }
+
+div.error {
+  color: #ff0000;
+  font-family: "Roboto Mono", Menlo, Consolas, monospace;
+}
