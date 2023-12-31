@@ -19,6 +19,8 @@ fxhash.workspace = true
 once_cell.workspace = true
 
 [dev-dependencies]
+mitex-spec-gen = { path = "../mitex-spec-gen" }
+
 insta.workspace = true
 divan.workspace = true
 

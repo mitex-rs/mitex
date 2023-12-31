@@ -1,0 +1,25 @@
+[package]
+name = "mitex-spec-gen"
+description = "Guard to geneate specification files for dependent crates"
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[build-dependencies]
+mitex-spec = { path = "../mitex-spec" }
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+which.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# use prebuilt spec data
+prebuilt = []
+# generate spec data
+generate = []
