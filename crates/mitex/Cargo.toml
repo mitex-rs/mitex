@@ -15,6 +15,7 @@ harness = false
 [dependencies]
 
 mitex-parser = { path = "../mitex-parser" }
+mitex-spec-gen = { path = "../mitex-spec-gen" }
 rowan.workspace = true
 bitflags = "2.4.1"
 once_cell.workspace = true

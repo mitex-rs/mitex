@@ -21,7 +21,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - run: sh scripts/build.sh
       - run: cargo test --workspace --no-fail-fast
   checks:
     name: Check clippy, formatting, and documentation
@@ -35,7 +34,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - run: sh scripts/build.sh
       - run: cargo clippy --workspace --all-targets --all-features
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
+  build-wasm-plugin:
+    name: Build WASM plugin for Typst
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: typst-community/setup-typst@v3
+        with: { typst-version: "0.10.0" }
+      - uses: rui314/setup-mold@v1
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
+      - uses: mozilla-actions/sccache-action@v0.0.3
+      - run: sh scripts/build.sh

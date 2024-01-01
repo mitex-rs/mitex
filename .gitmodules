@@ -1,0 +1,4 @@
+[submodule "assets/artifacts"]
+	path = assets/artifacts
+	url = https://github.com/mitex-rs/artifacts
+	branch = v0.1.1
