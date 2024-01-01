@@ -38,7 +38,7 @@ jobs:
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
   build-wasm-plugin:
-    name: Build WASM plugin for Typst
+    name: Build Wasm modules
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,5 +48,8 @@ jobs:
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "v0.12.1"
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - run: sh scripts/build.sh
+      - run: scripts/build.sh

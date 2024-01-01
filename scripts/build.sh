@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
-cargo build --release --target wasm32-unknown-unknown -p mitex-typst
-rm -f packages/mitex/mitex.wasm
-mv target/wasm32-unknown-unknown/release/mitex_typst.wasm packages/mitex/mitex.wasm
+set -euxo pipefail
+cargo build --release --target wasm32-unknown-unknown --manifest-path ./crates/mitex-wasm/Cargo.toml --features typst-plugin
+cp target/wasm32-unknown-unknown/release/mitex_wasm.wasm packages/mitex/mitex.wasm
+
+pushd crates/mitex-wasm
+wasm-pack build --release --features web
+popd

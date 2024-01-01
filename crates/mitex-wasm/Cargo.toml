@@ -1,6 +1,6 @@
 [package]
-name = "mitex-typst"
-description = "Typst Plugin which uses mitex"
+name = "mitex-wasm"
+description = "Wasm module which uses mitex, running in browsers and Typst"
 authors.workspace = true
 version.workspace = true
 license.workspace = true
@@ -18,10 +18,15 @@ mitex-spec = { path = "../mitex-spec" }
 
 serde.workspace = true
 serde_json.workspace = true
-wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-protocol" }
+
+wasm-bindgen = { version = "0.2.74", optional = true }
+wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-protocol", optional = true }
 
 [features]
 rkyv = ["mitex-spec/rkyv", "mitex-spec/rkyv-validation"]
+web = ["wasm-bindgen"]
+typst-plugin = ["wasm-minimal-protocol"]
+
 default = ["rkyv"]
 
 [lints]
