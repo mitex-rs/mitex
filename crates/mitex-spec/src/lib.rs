@@ -259,8 +259,14 @@ pub enum ArgShape {
 pub enum ContextFeature {
     /// No special feature
     None,
+    /// Parse content like math environments
+    IsMath,
     /// Parse content like mat arguments
     IsMatrix,
     /// Parse content like cases
     IsCases,
+    /// Parse content like itemize
+    IsItemize,
+    /// Parse content like enumerate
+    IsEnumerate,
 }

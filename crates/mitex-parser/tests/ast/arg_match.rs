@@ -1,6 +1,23 @@
 use super::prelude::*;
 
 #[test]
+fn curly_group() {
+    assert_debug_snapshot!(parse(r#"a \textbf{strong} text"#), @r###"
+    root
+    |text(word'("a"),space'(" "))
+    |cmd
+    ||cmd-name("\\textbf")
+    ||args
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("strong"))
+    ||||rbrace'("}")
+    |space'(" ")
+    |text(word'("text"))
+    "###);
+}
+
+#[test]
 fn split_char() {
     assert_debug_snapshot!(parse(r#"\frac abcd"#), @r###"
     root
