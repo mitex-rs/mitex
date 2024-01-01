@@ -1,9 +1,9 @@
 mod common;
 
 use insta::assert_snapshot;
-use mitex_lexer::{Lexer, MacroEngine, TokenStream};
 
-use common::*;
+use mitex_lexer::{Lexer, MacroEngine, TokenStream};
+use mitex_spec_gen::DEFAULT_SPEC;
 
 // collect all tokens until eat() returns None
 fn tokens_bumper<'a>(input: &'a str, b: impl TokenStream<'a>) -> String {
