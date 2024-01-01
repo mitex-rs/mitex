@@ -16,7 +16,7 @@ For Linux:
 
 ```sh
 git clone https://github.com/mitex-rs/mitex.git
-sh scripts/build.sh
+scripts/build.sh
 ```
 
 For Windows:
