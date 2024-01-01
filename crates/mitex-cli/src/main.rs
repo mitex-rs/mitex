@@ -89,9 +89,9 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
 
     // Insert preludes
     // todo: better way?
-    let mut prelude_strs = vec![];
+    let mut builtin_set = std::collections::HashSet::<&'static str>::new();
+    builtin_set.extend(["and", "or", "in", "not"]);
     let mut alias_set = std::collections::HashSet::<Box<str>>::new();
-    alias_set.extend(["and", "or", "in", "not"].iter().copied().map(From::from));
     for (_, cmd) in spec.items() {
         let alias = match cmd {
             CommandSpecItem::Cmd(CmdShape {
@@ -105,17 +105,19 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
         if alias.is_empty() || !alias.chars().all(|c| c.is_ascii_alphanumeric()) {
             continue;
         }
-        if alias_set.contains(alias) {
+        if builtin_set.contains(alias) || alias_set.contains(alias) {
             continue;
         }
         alias_set.insert(alias.into());
-
-        prelude_strs.push(format!(
-            r#"#let {alias} = mitex-scope.at("{alias}", default: none);"#,
-        ));
     }
 
-    let preludes_str = prelude_strs.join("\n");
+    let mut alias_set = alias_set.into_iter().collect::<Vec<_>>();
+    alias_set.sort();
+    let preludes_str = alias_set
+        .into_iter()
+        .map(|alias| format!(r#"#let {alias} = mitex-scope.at("{alias}", default: none);"#))
+        .collect::<Vec<_>>()
+        .join("\n");
     std::fs::write(
         output_path,
         format!(
