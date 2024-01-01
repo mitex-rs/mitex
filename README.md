@@ -10,7 +10,7 @@ In addition, MiTeX is not only **SMALL** but also **FAST**! MiTeX has a size of 
 
 Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the most complex development work: developing the parser for generating AST.
 
-## Usage
+## MiTeX as a Typst Package
 
 - Use `mitex-convert` to convert LaTeX code into Typst code in string.
 - Use `mi` to render an inline LaTeX equation in Typst.
@@ -47,7 +47,7 @@ We also support text mode (in development):
   \section{Title}
 
   A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
-  
+
   Also block \eqref{eq:pythagoras}.
 
   \begin{equation}
@@ -57,6 +57,20 @@ We also support text mode (in development):
 ```
 
 ![example](packages/mitex/examples/example.png)
+
+## MiTeX as a CLI Tool
+
+### Installation
+
+Install it by `cargo install mitex-cli` or install latest nightly version by `cargo install --git https://github.com/mitex-rs/mitex mitex-cli`.
+
+### Usage
+
+```bash
+mitex compile main.tex
+# or (same as above)
+mitex compile main.tex mitex.typ
+```
 
 ## Implemented Features
 
