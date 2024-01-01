@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: sh scripts/build.sh
+      - run: scripts/build.sh
       - run: | # Run tests
           cd packages/mitex-web
           yarn
