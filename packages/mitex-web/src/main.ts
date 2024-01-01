@@ -5,12 +5,6 @@ const { div, textarea, button } = van.tags;
 
 let $typst = window.$typst;
 
-const previewTmpl = (out: string) => `#import "@preview/mitex:0.1.0": *
-#set page(width: auto, height: auto, margin: 1em);
-#set text(size: 24pt);
-#math.equation(eval("$" + \`${out}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)
-`;
-
 const App = () => {
   /// Default source code
   const srcDefault = `\\newcommand{\\f}[2]{#1f(#2)}
@@ -27,97 +21,106 @@ const App = () => {
     fontLoaded.val = true;
   });
 
-  /// The source code state
-  const src = van.state(
-    previewTmpl(convert_math(srcDefault, new Uint8Array()))
-  );
+  /// The latex code input
+  const input = van.state(srcDefault),
+    /// The converted Typst code
+    output = van.state(""),
+    /// The source code state
+    error = van.state("");
 
-  const error = div({ class: "error" });
-  const updateOutput = () => {
+  /// Drive src, output and error from input
+  van.derive(() => {
     try {
-      let convert_res = convert_math(input_area.value, new Uint8Array());
-      src.val = previewTmpl(convert_res);
-      output.value = convert_res;
-      error.textContent = "";
+      let convert_res = convert_math(input.val, new Uint8Array());
+      output.val = convert_res;
+      error.val = "";
     } catch (e) {
-      output.value = "";
-      error.textContent = e as string;
+      output.val = "";
+      error.val = e as string;
     }
-  };
-  /// Create DOM elements
-  const input_area = textarea({
-    class: "mitex-input",
-    placeholder: "Type LaTeX math equations here",
-    value: srcDefault,
-    autofocus: true,
-    rows: 10,
-    oninput: updateOutput,
-  });
-  const copy_template_button = button({
-    onclick: () => {
-      updateOutput();
-      const res = `#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
-      navigator.clipboard.writeText(res);
-    }
-  }, "Copy with template");
-  const copy_template_with_imports_button = button({
-    onclick: () => {
-      updateOutput();
-      const res = `#import "@preview/mitex:0.1.0": *
-
-#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
-      navigator.clipboard.writeText(res);
-    }
-  },
-    "Copy with template and imports"
-  );
-  const output = textarea({
-    class: "mitex-output",
-    readOnly: true,
-    placeholder: "Output",
-    rows: 10,
-    onfocus: () => output.select(),
   });
 
   /// The preview component
-  const Preview = (sourceCode: State<string>) => {
+  const Preview = (output: State<string>) => {
     const svgData = van.state("");
-    console.log(sourceCode);
     van.derive(async () => {
       if (fontLoaded.val) {
-        svgData.val = await $typst.svg({ mainContent: sourceCode.val });
+        svgData.val = await $typst.svg({
+          mainContent: `#import "@preview/mitex:0.1.0": *
+        #set page(width: auto, height: auto, margin: 1em);
+        #set text(size: 24pt);
+        #math.equation(eval("$" + \`${output.val}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)
+        `,
+        });
       } else {
         svgData.val = "";
       }
     });
 
-    const content = van.derive(() => {
-      if (!compilerLoaded.val) {
-        return "Loading compiler from CDN...";
-      } else if (!fontLoaded.val) {
-        return "Loading fonts from CDN...";
-      } else {
-        return svgData.val;
-      }
-    });
-
-    console.log(compilerLoaded);
     return div(
       { class: "mitex-preview" },
       div({
-        innerHTML: content,
+        innerHTML: van.derive(() => {
+          if (!compilerLoaded.val) {
+            return "Loading compiler from CDN...";
+          } else if (!fontLoaded.val) {
+            return "Loading fonts from CDN...";
+          } else {
+            return svgData.val;
+          }
+        }),
       })
     );
   };
 
-  updateOutput();
+  /// Copy a a derived string to clipboard
+  const CopyButton = (title: string, content: State<string>) =>
+    button({
+      onclick: () => navigator.clipboard.writeText(content.val),
+      textContent: title,
+    });
+
   return div(
     { class: "mitex-main flex-column" },
-    div({ class: "mitex-edit-row flex-row" }, input_area, output),
-    copy_template_button,
-    copy_template_with_imports_button,
-    Preview(src),
-    error
+    div(
+      { class: "mitex-edit-row flex-row" },
+      textarea({
+        class: "mitex-input",
+        placeholder: "Type LaTeX math equations here",
+        value: srcDefault,
+        autofocus: true,
+        rows: 10,
+        oninput(event: Event) {
+          input.val = (event.target! as HTMLInputElement).value;
+        },
+      }),
+      textarea({
+        class: "mitex-output",
+        value: output,
+        readOnly: true,
+        placeholder: "Output",
+        rows: 10,
+        onfocus: (event: Event) =>
+          (event.target! as HTMLTextAreaElement).select(),
+      })
+    ),
+    /// Create DOM elements
+    CopyButton(
+      "Copy with template",
+      van.derive(
+        () =>
+          `#math.equation(eval("$" + \`${output.val}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`
+      )
+    ),
+    CopyButton(
+      "Copy with template and imports",
+      van.derive(
+        () => `#import "@preview/mitex:0.1.0": *\n
+#math.equation(eval("$" + \`${output.val}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`
+      )
+    ),
+    Preview(output),
+    div({ class: "error", textContent: error })
   );
 };
 
