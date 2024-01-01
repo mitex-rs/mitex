@@ -5,6 +5,9 @@ const { div, textarea, button } = van.tags;
 
 let $typst = window.$typst;
 
+const isDarkMode = () =>
+  window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+
 const App = () => {
   /// Default source code
   const srcDefault = `\\newcommand{\\f}[2]{#1f(#2)}
@@ -26,7 +29,15 @@ const App = () => {
     /// The converted Typst code
     output = van.state(""),
     /// The source code state
-    error = van.state("");
+    error = van.state(""),
+    /// The dark mode style
+    darkModeStyle = van.derive(() => {
+      if (isDarkMode()) {
+        return `#set text(fill: rgb("#fff"));`;
+      } else {
+        return `#set text(fill: rgb("#000"));`;
+      }
+    });
 
   /// Drive src, output and error from input
   van.derive(() => {
@@ -49,6 +60,7 @@ const App = () => {
           mainContent: `#import "@preview/mitex:0.1.0": *
         #set page(width: auto, height: auto, margin: 1em);
         #set text(size: 24pt);
+        ${darkModeStyle.val}
         #math.equation(eval("$" + \`${output.val}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)
         `,
         });
