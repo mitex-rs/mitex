@@ -32,6 +32,8 @@ body {
   border-radius: 8px;
   border: 1px solid #000;
   min-height: 1em;
+  overflow: auto;
+  max-width: 80vw;
 }
 
 button {
@@ -96,6 +98,7 @@ div.error {
 .flex-row {
   display: flex;
   flex-direction: row;
+  justify-content: center;
 }
 
 .mitex-main {

@@ -1,7 +1,7 @@
 import "./style.css";
 import van, { State } from "vanjs-core";
 import { convert_math } from "mitex-web-wasm";
-const { div, textarea, input } = van.tags;
+const { div, textarea, input, button } = van.tags;
 
 let $typst = window.$typst;
 
@@ -29,19 +29,11 @@ const App = () => {
     autofocus: true,
     rows: 10,
   });
-  const template_checkbox = input({
-    class: "mitex-cbox",
-    type: "checkbox",
-    name: "With typst templates",
-  });
-  const import_checkbox = input({
-    class: "mitex-cbox",
-    type: "checkbox",
-    name: "With mitex imports",
-  });
-  const checkbox_container = div(
-    div(template_checkbox, "With typst templates"),
-    div(import_checkbox, "With mitex imports")
+  const copy_template_button = button(
+    "Copy with template"
+  );
+  const copy_template_with_imports_button = button(
+    "Copy with template and imports"
   );
   const output = textarea({
     class: "mitex-output",
@@ -82,8 +74,9 @@ const App = () => {
   };
 
   const previewTmpl = (out: string) => `#import "@preview/mitex:0.1.0": *
-#set page(width: auto, height: auto);
-#math.equation(eval("$" + \`${out}\`.text + "$", mode: "markup", scope: mitex-scope))
+#set page(width: auto, height: auto, margin: 1em);
+#set text(size: 24pt);
+#math.equation(eval("$" + \`${out}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)
 `;
 
   /// The source code state
@@ -96,14 +89,6 @@ const App = () => {
     try {
       let convert_res = convert_math(input_area.value, new Uint8Array());
       src.val = previewTmpl(convert_res);
-      console.log(src);
-      if (template_checkbox.checked) {
-        convert_res = `#math.equation(eval("$" + "${convert_res}" + "$", scope: mitex-scope))`;
-      }
-      if (import_checkbox.checked) {
-        convert_res =
-          `#import "@preview/mitex:0.1.0": *` + "\n\n" + convert_res;
-      }
       output.value = convert_res;
       error.textContent = "";
     } catch (e) {
@@ -113,13 +98,25 @@ const App = () => {
   };
   output.onfocus = () => output.select();
   input_area.oninput = update_output;
-  template_checkbox.onchange = update_output;
-  import_checkbox.onchange = update_output;
+  copy_template_button.onclick = () => {
+    update_output();
+    const res = `#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
+    navigator.clipboard.writeText(res);
+  }
+  copy_template_with_imports_button.onclick = () => {
+    update_output();
+    const res = `#import "@preview/mitex:0.1.0": *
+
+#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
+    navigator.clipboard.writeText(res);
+  }
+  update_output();
   return div(
     { class: "mitex-main flex-column" },
     div({ class: "mitex-edit-row flex-row" }, input_area, output),
+    copy_template_button,
+    copy_template_with_imports_button,
     Preview(src),
-    checkbox_container,
     error
   );
 };
