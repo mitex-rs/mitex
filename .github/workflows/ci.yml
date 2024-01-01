@@ -20,9 +20,6 @@ jobs:
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
-      - uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: 'latest'
       - uses: mozilla-actions/sccache-action@v0.0.3
       - run: cargo test --workspace --no-fail-fast
   checks:
@@ -36,15 +33,12 @@ jobs:
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
-      - uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: 'latest'
       - uses: mozilla-actions/sccache-action@v0.0.3
       - run: cargo clippy --workspace --all-targets --all-features
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
   build-wasm-plugin:
-    name: Build WASM plugin for Typst
+    name: Build Wasm modules
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,5 +48,8 @@ jobs:
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
       - uses: mozilla-actions/sccache-action@v0.0.3
       - run: sh scripts/build.sh
