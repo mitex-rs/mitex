@@ -52,4 +52,4 @@ jobs:
         with:
           version: "latest"
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - run: sh scripts/build.sh
+      - run: scripts/build.sh

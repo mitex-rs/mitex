@@ -34,7 +34,6 @@ jobs:
         with:
           version: 'latest'
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - run: sh scripts/build.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 18
