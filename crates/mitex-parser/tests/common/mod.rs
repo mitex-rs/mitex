@@ -1,6 +1,6 @@
 pub mod parser {
     use mitex_parser::syntax::SyntaxNode;
-    use mitex_spec::CommandSpec;
+    use mitex_spec_gen::DEFAULT_SPEC;
 
     use super::SnapNode;
 
@@ -11,12 +11,6 @@ pub mod parser {
     pub fn parse_snap(input: &str) -> SnapNode {
         super::ast_snapshot::SnapNode(parse(input))
     }
-
-    static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
-        CommandSpec::from_bytes(include_bytes!(
-            "../../../../target/mitex-artifacts/spec/default.rkyv"
-        ))
-    });
 }
 
 pub use ast_snapshot::{SnapNode, SnapToken};

@@ -11,6 +11,7 @@ use mitex_parser::syntax::CmdItem;
 use mitex_parser::syntax::EnvItem;
 use mitex_parser::syntax::FormulaItem;
 use mitex_parser::syntax::SyntaxNode;
+use mitex_spec_gen::DEFAULT_SPEC;
 use rowan::ast::AstNode;
 use rowan::SyntaxToken;
 
@@ -673,12 +674,6 @@ pub fn convert_math(input: &str, spec: Option<CommandSpec>) -> Result<String, St
 pub fn convert_math_no_macro(input: &str, spec: Option<CommandSpec>) -> Result<String, String> {
     convert_inner(input, LaTeXMode::Math, spec, parse_without_macro)
 }
-
-static DEFAULT_SPEC: once_cell::sync::Lazy<CommandSpec> = once_cell::sync::Lazy::new(|| {
-    CommandSpec::from_bytes(include_bytes!(
-        "../../../target/mitex-artifacts/spec/default.rkyv"
-    ))
-});
 
 #[cfg(test)]
 mod tests {

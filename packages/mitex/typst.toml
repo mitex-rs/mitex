@@ -6,7 +6,7 @@ authors = ["Myriad-Dreamin", "OrangeX4"]
 license = "Apache-2.0"
 description = "LaTeX support for Typst, powered by Rust and WASM."
 
-homepage = "https://github.com/OrangeX4/mitex"
-repository = "https://github.com/OrangeX4/mitex"
+homepage = "https://github.com/mitex-rs/mitex"
+repository = "https://github.com/mitex-rs/mitex"
 keywords = ["wasm", "rust", "LaTeX", "equation"]
 exclude = ["examples"]

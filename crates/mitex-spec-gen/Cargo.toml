@@ -8,9 +8,14 @@ edition.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[dependencies]
+mitex-spec = { path = "../mitex-spec" }
+
+once_cell.workspace = true
+
 [build-dependencies]
 mitex-spec = { path = "../mitex-spec" }
-serde.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 anyhow.workspace = true
 which.workspace = true
