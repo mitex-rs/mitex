@@ -5,6 +5,12 @@ const { div, textarea, button } = van.tags;
 
 let $typst = window.$typst;
 
+const previewTmpl = (out: string) => `#import "@preview/mitex:0.1.0": *
+#set page(width: auto, height: auto, margin: 1em);
+#set text(size: 24pt);
+#math.equation(eval("$" + \`${out}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)
+`;
+
 const App = () => {
   /// Default source code
   const srcDefault = `\\newcommand{\\f}[2]{#1f(#2)}
@@ -21,6 +27,23 @@ const App = () => {
     fontLoaded.val = true;
   });
 
+  /// The source code state
+  const src = van.state(
+    previewTmpl(convert_math(srcDefault, new Uint8Array()))
+  );
+
+  const error = div({ class: "error" });
+  const updateOutput = () => {
+    try {
+      let convert_res = convert_math(input_area.value, new Uint8Array());
+      src.val = previewTmpl(convert_res);
+      output.value = convert_res;
+      error.textContent = "";
+    } catch (e) {
+      output.value = "";
+      error.textContent = e as string;
+    }
+  };
   /// Create DOM elements
   const input_area = textarea({
     class: "mitex-input",
@@ -28,9 +51,24 @@ const App = () => {
     value: srcDefault,
     autofocus: true,
     rows: 10,
+    oninput: updateOutput,
   });
-  const copy_template_button = button("Copy with template");
-  const copy_template_with_imports_button = button(
+  const copy_template_button = button({
+    onclick: () => {
+      updateOutput();
+      const res = `#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
+      navigator.clipboard.writeText(res);
+    }
+  }, "Copy with template");
+  const copy_template_with_imports_button = button({
+    onclick: () => {
+      updateOutput();
+      const res = `#import "@preview/mitex:0.1.0": *
+
+#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
+      navigator.clipboard.writeText(res);
+    }
+  },
     "Copy with template and imports"
   );
   const output = textarea({
@@ -72,42 +110,6 @@ const App = () => {
     );
   };
 
-  const previewTmpl = (out: string) => `#import "@preview/mitex:0.1.0": *
-#set page(width: auto, height: auto, margin: 1em);
-#set text(size: 24pt);
-#math.equation(eval("$" + \`${out}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)
-`;
-
-  /// The source code state
-  const src = van.state(
-    previewTmpl(convert_math(srcDefault, new Uint8Array()))
-  );
-
-  const error = div({ class: "error" });
-  const updateOutput = () => {
-    try {
-      let convert_res = convert_math(input_area.value, new Uint8Array());
-      src.val = previewTmpl(convert_res);
-      output.value = convert_res;
-      error.textContent = "";
-    } catch (e) {
-      output.value = "";
-      error.textContent = e as string;
-    }
-  };
-  input_area.oninput = updateOutput;
-  copy_template_button.onclick = () => {
-    updateOutput();
-    const res = `#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
-    navigator.clipboard.writeText(res);
-  };
-  copy_template_with_imports_button.onclick = () => {
-    updateOutput();
-    const res = `#import "@preview/mitex:0.1.0": *
-
-#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
-    navigator.clipboard.writeText(res);
-  };
   updateOutput();
   return div(
     { class: "mitex-main flex-column" },
