@@ -15,7 +15,7 @@
     "vite-plugin-wasm": "^3.3.0"
   },
   "dependencies": {
-    "mitex-web-wasm": "file:../../crates/mitex-web-wasm/pkg",
+    "mitex-wasm": "file:../../crates/mitex-wasm/pkg",
     "vanjs-core": "^1.2.7"
   }
 }

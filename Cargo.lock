@@ -405,18 +405,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mitex-typst"
-version = "0.1.0"
-dependencies = [
- "mitex",
- "mitex-spec",
- "serde",
- "serde_json",
- "wasm-minimal-protocol",
-]
-
-[[package]]
-name = "mitex-wasm-web"
+name = "mitex-wasm"
 version = "0.1.0"
 dependencies = [
  "mitex",

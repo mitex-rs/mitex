@@ -1,6 +1,6 @@
 import "./style.css";
 import van, { State } from "vanjs-core";
-import { convert_math } from "mitex-web-wasm";
+import { convert_math } from "mitex-wasm";
 const { div, textarea, button } = van.tags;
 
 let $typst = window.$typst;
@@ -29,9 +29,7 @@ const App = () => {
     autofocus: true,
     rows: 10,
   });
-  const copy_template_button = button(
-    "Copy with template"
-  );
+  const copy_template_button = button("Copy with template");
   const copy_template_with_imports_button = button(
     "Copy with template and imports"
   );
@@ -102,14 +100,14 @@ const App = () => {
     update_output();
     const res = `#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
     navigator.clipboard.writeText(res);
-  }
+  };
   copy_template_with_imports_button.onclick = () => {
     update_output();
     const res = `#import "@preview/mitex:0.1.0": *
 
 #math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
     navigator.clipboard.writeText(res);
-  }
+  };
   update_output();
   return div(
     { class: "mitex-main flex-column" },
