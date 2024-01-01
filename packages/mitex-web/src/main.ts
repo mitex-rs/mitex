@@ -83,7 +83,7 @@ const App = () => {
   );
 
   const error = div({ class: "error" });
-  const update_output = () => {
+  const updateOutput = () => {
     try {
       let convert_res = convert_math(input_area.value, new Uint8Array());
       src.val = previewTmpl(convert_res);
@@ -95,20 +95,20 @@ const App = () => {
     }
   };
   output.onfocus = () => output.select();
-  input_area.oninput = update_output;
+  input_area.oninput = updateOutput;
   copy_template_button.onclick = () => {
-    update_output();
+    updateOutput();
     const res = `#math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
     navigator.clipboard.writeText(res);
   };
   copy_template_with_imports_button.onclick = () => {
-    update_output();
+    updateOutput();
     const res = `#import "@preview/mitex:0.1.0": *
 
 #math.equation(eval("$" + \`${output.value}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`;
     navigator.clipboard.writeText(res);
   };
-  update_output();
+  updateOutput();
   return div(
     { class: "mitex-main flex-column" },
     div({ class: "mitex-edit-row flex-row" }, input_area, output),
