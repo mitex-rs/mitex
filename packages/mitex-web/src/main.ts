@@ -1,7 +1,7 @@
 import "./style.css";
 import van, { State } from "vanjs-core";
 import { convert_math } from "mitex-web-wasm";
-const { div, textarea, input, button } = van.tags;
+const { div, textarea, button } = van.tags;
 
 let $typst = window.$typst;
 
