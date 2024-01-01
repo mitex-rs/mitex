@@ -23,9 +23,12 @@ mitex-spec = { path = "../mitex-spec" }
 rowan.workspace = true
 
 [dev-dependencies]
-once_cell = "1"
-insta = "1.34"
-divan = "0.1.7"
+
+mitex-spec-gen = { path = "../mitex-spec-gen" }
+
+once_cell.workspace = true
+insta.workspace = true
+divan.workspace = true
 
 [lints]
 workspace = true
