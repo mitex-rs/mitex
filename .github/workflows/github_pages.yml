@@ -4,7 +4,7 @@ on:
     branches:
       - main
   workflow_dispatch:
-    
+
 permissions:
   pages: write
   id-token: write
@@ -13,7 +13,7 @@ permissions:
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
@@ -32,12 +32,12 @@ jobs:
         with: { targets: wasm32-unknown-unknown }
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
-          version: 'v0.12.1'
+          version: "v0.12.1"
       - uses: mozilla-actions/sccache-action@v0.0.3
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: sh scripts/build.sh
+      - run: scripts/build.sh
       - run: | # Run tests
           cd packages/mitex-web
           yarn
@@ -48,8 +48,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload `/github-pages` sub directory
-          path: './packages/mitex-web/dist'
+          path: "./packages/mitex-web/dist"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
-  
