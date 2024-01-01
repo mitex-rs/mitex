@@ -38,6 +38,7 @@ const App = () => {
     readOnly: true,
     placeholder: "Output",
     rows: 10,
+    onfocus: () => output.select(),
   });
 
   /// The preview component
@@ -94,7 +95,6 @@ const App = () => {
       error.textContent = e as string;
     }
   };
-  output.onfocus = () => output.select();
   input_area.oninput = updateOutput;
   copy_template_button.onclick = () => {
     updateOutput();
