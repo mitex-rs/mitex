@@ -74,7 +74,7 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
         .with_context(|| format!("failed to read input file: {input_path}"))?;
 
     let output = if !is_ast {
-        mitex::convert_math(&input, None).map_err(|e| anyhow::anyhow!("{}", e))
+        mitex::convert_text(&input, None).map_err(|e| anyhow::anyhow!("{}", e))
     } else {
         Ok(format!(
             "{:#?}",
