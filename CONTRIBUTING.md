@@ -15,14 +15,14 @@ rustup target add wasm32-unknown-unknown
 For Linux:
 
 ```sh
-git clone https://github.com/OrangeX4/mitex.git
+git clone https://github.com/mitex-rs/mitex.git
 sh scripts/build.sh
 ```
 
 For Windows:
 
 ```sh
-git clone https://github.com/OrangeX4/mitex.git
+git clone https://github.com/mitex-rs/mitex.git
 .\scripts\build.ps1
 ```
 
