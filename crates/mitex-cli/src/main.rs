@@ -15,6 +15,7 @@ use std::process::exit;
 use std::sync::Arc;
 
 use anyhow::Context;
+use mitex_spec::{CmdShape, CommandSpecItem, EnvShape};
 use serde::{Deserialize, Serialize};
 
 use mitex_cli::utils::{Error, UnwrapOrExit};
@@ -73,8 +74,10 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
     let input = std::fs::read_to_string(input_path)
         .with_context(|| format!("failed to read input file: {input_path}"))?;
 
+    let spec = DEFAULT_SPEC.clone();
+
     let output = if !is_ast {
-        mitex::convert_text(&input, None).map_err(|e| anyhow::anyhow!("{}", e))
+        mitex::convert_text(&input, Some(spec.clone())).map_err(|e| anyhow::anyhow!("{}", e))
     } else {
         Ok(format!(
             "{:#?}",
@@ -84,7 +87,45 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
 
     let output = output.with_context(|| format!("failed to convert input file: {input_path}"))?;
 
-    std::fs::write(output_path, output)?;
+    // Insert preludes
+    // todo: better way?
+    let mut prelude_strs = vec![];
+    let mut alias_set = std::collections::HashSet::<Box<str>>::new();
+    alias_set.extend(["and", "or", "in", "not"].iter().copied().map(From::from));
+    for (_, cmd) in spec.items() {
+        let alias = match cmd {
+            CommandSpecItem::Cmd(CmdShape {
+                alias: Some(alias), ..
+            }) => alias.as_str(),
+            CommandSpecItem::Env(EnvShape {
+                alias: Some(alias), ..
+            }) => alias.as_str(),
+            _ => continue,
+        };
+        if alias.is_empty() || !alias.chars().all(|c| c.is_ascii_alphanumeric()) {
+            continue;
+        }
+        if alias_set.contains(alias) {
+            continue;
+        }
+        alias_set.insert(alias.into());
+
+        prelude_strs.push(format!(
+            r#"#let {alias} = mitex-scope.at("{alias}", default: none);"#,
+        ));
+    }
+
+    let preludes_str = prelude_strs.join("\n");
+    std::fs::write(
+        output_path,
+        format!(
+            r#"
+#import "@preview/mitex:0.1.0": *
+{preludes_str}
+
+{output}"#
+        ),
+    )?;
 
     Ok(())
 }
