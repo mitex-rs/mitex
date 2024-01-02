@@ -13,13 +13,16 @@ Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the
 ## Usage
 
 - Use `mitex-convert` to convert LaTeX code into Typst code in string.
-- Use `mi` to embed an inline LaTeX equation into Typst.
-- Use `mitex` to embed a block LaTeX equation into Typst.
+- Use `mi` to render an inline LaTeX equation in Typst.
+- Use `mitex(numbering: none, supplement: auto, ..)` or `mimath` to render a block LaTeX equation in Typst.
+- Use `mitext` to render a LaTeX text in Typst.
 
-Following is a simple example of using MiTeX in Typst:
+PS: `#set math.equation(numbering: "(1)")` is also valid for MiTeX.
+
+Following is [a simple example](examples/example.typ) of using MiTeX in Typst:
 
 ```typst
-#import "@preview/mitex:0.1.0": *
+#import "@preview/mitex:0.2.0": *
 
 #assert.eq(mitex-convert("\alpha x"), "alpha  x ")
 
@@ -28,9 +31,28 @@ Write inline equations like #mi("x") or #mi[y].
 Also block equations (this case is from #text(blue.lighten(20%), link("https://katex.org/")[katex.org])):
 
 #mitex(`
-  f(x) = \int_{-\infty}^\infty
-    \hat f(\xi)\,e^{2 \pi i \xi x}
+  \newcommand{\f}[2]{#1f(#2)}
+  \f\relax{x} = \int_{-\infty}^\infty
+    \f\hat\xi\,e^{2 \pi i \xi x}
     \,d\xi
+`)
+
+We also support text mode (in development):
+
+#mitext(`
+  \iftypst
+    #set math.equation(numbering: "(1)", supplement: "equation")
+  \fi
+
+  \section{Title}
+
+  A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
+  
+  Also block \eqref{eq:pythagoras}.
+
+  \begin{equation}
+    a^2 + b^2 = c^2 \label{eq:pythagoras}
+  \end{equation}
 `)
 ```
 
@@ -38,15 +60,21 @@ Also block equations (this case is from #text(blue.lighten(20%), link("https://k
 
 ## Implemented Features
 
+- [x] User-defined TeX (macro) commands, such as `\newcommand{\mysym}{\alpha}`.
 - [x] LaTeX equations support.
-- [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
-- [x] Support for various environments, such as aligned, matrix, cases.
+  - [x] Coloring commands (`\color{red} text`, `\textcolor{red}{text}`).
+  - [x] Support for various environments, such as aligned, matrix, cases.
+- [x] Basic text mode support, you can use it to write LaTeX drafts.
+  - [x] `\section`, `\textbf`, `\emph`.
+  - [x] Inline and block math equations.
+  - [x] `\ref`, `\eqref` and `\label`.
+  - [x] `itemize` and `enumerate` environments.
 
 ## Features to Implement
 
-- [ ] User-defined commands (specification), such as `\newcommand{\mysym}{\alpha}` or bind `\newcommand{\myop}[1]{\operatorname{#1}}` to a typst's native function `let myop(it) = op(upright(it))`.
-- [ ] "usepackage" support, which means that you can change set of commands by telling MiTeX to use a list of packages.
-- [ ] Text mode support, enabling the rendering entire LaTeX documents in Typst!
+- [ ] Pass command specification to MiTeX plugin dynamically. With that you can define a typst function `let myop(it) = op(upright(it))` and then use it by `\myop{it}`.
+- [ ] Package support, which means that you can change set of commands by telling MiTeX to use a list of packages.
+- [ ] Better text mode support, such as figure and description environments.
 
 ## Differences between MiTeX and other solutions
 
@@ -87,7 +115,7 @@ You can use the `#mitex-convert()` function to get the Typst Code generated from
 
 ### Add missing TeX commands
 
-Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifing [specification files](https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
+Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifying [specification files](https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
 
 In the future, we will provide the ability to customize TeX commands, which will make it easier for you to use the commands you create for yourself.
 
