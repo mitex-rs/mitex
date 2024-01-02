@@ -1,6 +1,6 @@
 [workspace.package]
 description = "Minimal TeX Equations Support."
-authors = ["Myriad-Dreamin <camiyoru@gmail.com>", "OrangeX4 <orangex4@qq.com>"]
+authors = ["Myriad-Dreamin <camiyoru@gmail.com>", "OrangeX4 <orangex4@qq.com>", "mgt <mgt@oi-wiki.org>"]
 version = "0.1.0"
 edition = "2021"
 readme = "README.md"

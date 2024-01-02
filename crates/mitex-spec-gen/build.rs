@@ -55,11 +55,14 @@ fn copy_prebuilt() -> anyhow::Result<()> {
 fn generate() -> anyhow::Result<()> {
     // println!("cargo:warning=generate");
 
-    // require rustc 1.70.0
-    println!("cargo:rerun-if-changed=ALWAYS_RUN_ME");
-
     // typst query --root . ./packages/latex-spec/mod.typ "<mitex-packages>"
     let project_root = get_project_root()?;
+
+    let spec_root = project_root.join("packages/mitex/specs/");
+    println!(
+        "cargo:rerun-if-changed={spec_root}",
+        spec_root = spec_root.display()
+    );
 
     let target_dir = project_root.join("target/mitex-artifacts");
 

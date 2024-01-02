@@ -99,6 +99,11 @@ impl CommandSpec {
         self.0.commands.get(name)
     }
 
+    /// Iterate all items
+    pub fn items(&self) -> impl Iterator<Item = (&str, &CommandSpecItem)> {
+        self.0.commands.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
     /// Get an item by name in kind of _command_
     pub fn get_cmd(&self, name: &str) -> Option<&CmdShape> {
         self.get(name).and_then(|item| {
