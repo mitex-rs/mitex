@@ -72,7 +72,6 @@ const FsItem =
 class FsState {
   private constructor(
     public pathSet: Map<string, FsItemState>,
-    public reloadBell: State<boolean>,
     public fsList: FsItemState[]
   ) {}
 
@@ -84,7 +83,7 @@ class FsState {
     );
   }
 
-  static readonly load = async (reloadBell: State<boolean>) => {
+  static readonly load = async () => {
     const x = new Map<string, FsItemState>();
     const y = (
       await Promise.all(
@@ -104,7 +103,7 @@ class FsState {
         )
       )
     ).filter((t) => t);
-    return new FsState(x, reloadBell, y);
+    return new FsState(x, y);
   };
 
   add(path: string, data: Uint8Array) {
@@ -116,7 +115,8 @@ class FsState {
     const state = new FsItemState(path, van.state(data), van.state(false));
     this.fsList.push(state);
     this.fsList.sort((a, b) => a.path.localeCompare(b.path));
-    return new FsState(this.pathSet, this.reloadBell, this.fsList);
+    this.pathSet.set(path, state);
+    return new FsState(this.pathSet, this.fsList);
   }
 }
 
@@ -165,7 +165,7 @@ export const DirectoryView = ({
 
   /// Task: load localstorage data to fs state
   (async () => {
-    fsState.val = await FsState.load(reloadBell);
+    fsState.val = await FsState.load();
   })();
   van.derive(async () => {
     if (
@@ -222,7 +222,7 @@ export const DirectoryView = ({
       const data = (await fs.promises.readFile(filePath)) as Uint8Array;
       // const decoder = new TextDecoder("utf-8");
       // console.log(filePath, decoder.decode(data));
-      fsState.val.add(filePath, data);
+      fsState.val = fsState.val.add(filePath, data);
     }
 
     reloadAll(fsState.val);
