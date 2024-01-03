@@ -53,6 +53,9 @@ const App = () => {
 
   /// Checks compiler status
   window.$typst$script.then(async () => {
+    $typst = window.$typst;
+
+    await $typst.getCompiler();
     compilerLoaded.val = true;
     await $typst.svg({ mainContent: "" });
     fontLoaded.val = true;
