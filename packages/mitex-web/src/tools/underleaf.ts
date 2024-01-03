@@ -1,6 +1,7 @@
 import "./underleaf.css";
 import "./typst.css";
 import "./typst.ts";
+import "../loader.mjs";
 import van from "vanjs-core";
 const { div, button } = van.tags;
 

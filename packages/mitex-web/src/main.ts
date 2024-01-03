@@ -1,4 +1,5 @@
 import "./style.css";
+import "./loader.mjs";
 import van, { State } from "vanjs-core";
 import { convert_math } from "mitex-wasm";
 const { div, textarea, button } = van.tags;
