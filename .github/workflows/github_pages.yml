@@ -39,6 +39,10 @@ jobs:
           node-version: 18
       - run: scripts/build.sh
       - run: | # Run tests
+          cd packages/typst-dom
+          yarn
+          yarn build
+      - run: | # Run tests
           cd packages/mitex-web
           yarn
           yarn build --base=/mitex
