@@ -193,7 +193,7 @@ export const DirectoryView = ({
       url: "https://github.com/mitex-rs/mitex",
       ref: "underleaf",
       singleBranch: true,
-      // corsProxy: "https://cors.isomorphic-git.org",
+      corsProxy: "https://cors.isomorphic-git.org",
     };
     try {
       await fs.promises.readFile("/repo/.git/config");
