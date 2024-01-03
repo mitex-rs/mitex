@@ -160,7 +160,7 @@ export const DirectoryView = ({
     focusFile.val = state.fsList.find(
       (t) => t.path === "/repo/fixtures/underleaf/ieee/main.tex"
     );
-    changeFocusFile.val = focusFile.val!.clone();
+    changeFocusFile.val = focusFile.val?.clone();
   };
 
   /// Task: load localstorage data to fs state
