@@ -98,13 +98,7 @@ const App = () => {
       ) {
         console.log("recompilation");
 
-        let styling = darkMode.val
-          ? `#let prefer-theme = "dark";`
-          : `#let prefer-theme = "light";`;
-        await $typst.addSource(
-          "/repo/fixtures/underleaf/ieee/styling.typ",
-          styling
-        );
+        setTypstTheme(darkMode.val);
 
         const v = await (
           await $typst.getCompiler()
@@ -147,6 +141,7 @@ const App = () => {
   };
 
   const exportPdf = () => {
+    setTypstTheme(false);
     const pdfData = $typst.pdf({ mainFilePath });
     return pdfData.then((pdfData: string) =>
       exportAs(pdfData, "application/pdf")
@@ -154,6 +149,7 @@ const App = () => {
   };
 
   const exportHtml = () => {
+    setTypstTheme(false);
     const svgData = $typst.svg({
       mainFilePath,
       data_selection: { body: true, defs: true, css: true },
@@ -200,6 +196,16 @@ const App = () => {
       Preview({ darkMode, compilerLoaded, fontLoaded, typstDoc })
     )
   );
+
+  async function setTypstTheme(darkMode: boolean) {
+    let styling = darkMode
+      ? `#let prefer-theme = "dark";`
+      : `#let prefer-theme = "light";`;
+    await $typst.addSource(
+      "/repo/fixtures/underleaf/ieee/styling.typ",
+      styling
+    );
+  }
 };
 
 van.add(document.querySelector("#app")!, App());
