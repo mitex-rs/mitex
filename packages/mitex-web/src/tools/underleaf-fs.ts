@@ -195,7 +195,12 @@ export const DirectoryView = ({
       singleBranch: true,
       // corsProxy: "https://cors.isomorphic-git.org",
     };
-    await git.fetch(g);
+    try {
+      await fs.promises.readFile("/repo/.git/config");
+      await git.fetch(g);
+    } catch (e) {
+      await git.clone(g);
+    }
     await git.setConfig({ ...g, path: "user.name", value: "mitex" });
     await git.setConfig({ ...g, path: "user.email", value: "me@mitex.com" });
     await git.checkout({ ...g, force: true });
