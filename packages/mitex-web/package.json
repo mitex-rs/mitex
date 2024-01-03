@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build && tsc",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -15,7 +15,16 @@
     "vite-plugin-wasm": "^3.3.0"
   },
   "dependencies": {
+    "@codemirror/legacy-modes": "^6.3.3",
+    "@grammarly/editor-sdk": "^2.5.5",
+    "@isomorphic-git/lightning-fs": "^4.6.0",
+    "codemirror": "^6.0.1",
+    "isomorphic-git": "^1.25.2",
+    "lang-tex": "^0.0.3",
+    "@myriaddreamin/typst-ts-renderer": "0.4.2-rc4",
+    "@myriaddreamin/typst.ts": "0.4.2-rc4",
     "mitex-wasm": "file:../../crates/mitex-wasm/pkg",
+    "typst-dom": "file:../typst-dom",
     "vanjs-core": "^1.2.7"
   }
 }
