@@ -1,0 +1,162 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 1vw;
+  height: 100%;
+}
+
+.mitex-main {
+  height: calc(100% - 2vw);
+  max-width: 1920px;
+}
+
+.mitex-dir-view {
+  flex: 8;
+  min-width: 150px;
+  border-radius: 4px;
+  border: 1px solid #000;
+  padding: 5px;
+}
+
+.mitex-dir-view-icon path {
+  stroke: #fff;
+}
+
+.mitex-input {
+  flex: 46;
+  border-radius: 4px;
+  border: 1px solid #000;
+}
+
+#mitex-preview {
+  flex: 46;
+  border-radius: 4px;
+  border: 1px solid #000;
+  min-height: 1em;
+  overflow: auto;
+  max-width: 80vw;
+  text-align: center;
+}
+
+.mitex-dir-view {
+  word-wrap: break-word;
+}
+
+.mitex-toolbar-row {
+  justify-content: flex-end;
+  height: 30px;
+}
+
+.mitex-edit-row {
+  height: calc(100% - 30px);
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.3em 0.6em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+button:hover {
+  border-color: #646cff;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+
+  .mitex-dir-view-icon path {
+    stroke: #000;
+  }
+
+  a:hover {
+    color: #747bff;
+  }
+
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+textarea {
+  font-family: "Roboto Mono", Menlo, Consolas, monospace;
+  font-size: 1em;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 0.6em 1.2em;
+  margin: 1em;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  transition: border-color 0.25s;
+}
+
+div.error {
+  color: #ff0000;
+  font-size: 10px;
+  font-family: "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.text-layer {
+  position: relative;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0.2;
+  line-height: 1;
+  text-align: left;
+}
+
+.text-layer > div {
+  /* color: transparent; */
+  /* position: absolute; */
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
