@@ -1,7 +1,7 @@
 export * from "./typst-doc.mjs";
 import { provideSvgDoc } from "./typst-doc.svg.mjs";
 import { provideCanvasDoc } from "./typst-doc.canvas.mjs";
-import { TypstDocumentContext, provideDoc } from "./typst-doc.mjs";
+import { TypstDocumentContext, composeDoc, provideDoc } from "./typst-doc.mjs";
 
 // export class TypstDocument extends provideDoc(
 //   provideCanvasDoc(TypstDocumentContext)
@@ -21,5 +21,5 @@ import { TypstDocumentContext, provideDoc } from "./typst-doc.mjs";
  * ) {}
  */
 export class TypstDocument extends provideDoc(
-  provideSvgDoc(provideCanvasDoc(TypstDocumentContext))
+  composeDoc(TypstDocumentContext, provideCanvasDoc, provideSvgDoc)
 ) {}

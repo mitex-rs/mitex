@@ -448,8 +448,8 @@ export class TypstDocumentContext<O = any> {
   }
 }
 
-export interface TypstDocument {
-  impl: unknown;
+export interface TypstDocument<T> {
+  impl: T;
   kModule: RenderSession;
   dispose(): void;
   reset(): void;
@@ -463,10 +463,9 @@ export interface TypstDocument {
   setOutineData(outline: any): void;
 }
 
-export function provideDoc<
-  T extends TypstDocumentContext,
-  TBase extends GConstructor<T>
->(Base: TBase): new (options: Options) => TypstDocument {
+export function provideDoc<T extends TypstDocumentContext>(
+  Base: GConstructor<T>
+): new (options: Options) => TypstDocument<T> {
   return class TypstDocument {
     public impl: T;
     public kModule: RenderSession;
@@ -537,4 +536,113 @@ export function provideDoc<
       this.addViewportChange();
     }
   };
+}
+
+export function composeDoc<TBase extends GConstructor, F1>(
+  Base: TBase,
+  f1: (base: TBase) => F1
+): TBase & F1;
+export function composeDoc<TBase extends GConstructor, F1, F2>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2
+): TBase & F1 & F2;
+export function composeDoc<TBase extends GConstructor, F1, F2, F3>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3
+): TBase & F1 & F2 & F3;
+export function composeDoc<TBase extends GConstructor, F1, F2, F3, F4>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3,
+  f4: (base: F3) => F4
+): TBase & F1 & F2 & F3 & F4;
+export function composeDoc<TBase extends GConstructor, F1, F2, F3, F4, F5>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3,
+  f4: (base: F3) => F4,
+  f5: (base: F4) => F5
+): TBase & F1 & F2 & F3 & F4 & F5;
+export function composeDoc<TBase extends GConstructor, F1, F2, F3, F4, F5, F6>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3,
+  f4: (base: F3) => F4,
+  f5: (base: F4) => F5,
+  f6: (base: F5) => F6
+): TBase & F1 & F2 & F3 & F4 & F5 & F6;
+export function composeDoc<
+  TBase extends GConstructor,
+  F1,
+  F2,
+  F3,
+  F4,
+  F5,
+  F6,
+  F7
+>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3,
+  f4: (base: F3) => F4,
+  f5: (base: F4) => F5,
+  f6: (base: F5) => F6,
+  f7: (base: F6) => F7
+): TBase & F1 & F2 & F3 & F4 & F5 & F6 & F7;
+export function composeDoc<
+  TBase extends GConstructor,
+  F1,
+  F2,
+  F3,
+  F4,
+  F5,
+  F6,
+  F7,
+  F8
+>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3,
+  f4: (base: F3) => F4,
+  f5: (base: F4) => F5,
+  f6: (base: F5) => F6,
+  f7: (base: F6) => F7,
+  f8: (base: F7) => F8
+): TBase & F1 & F2 & F3 & F4 & F5 & F6 & F7 & F8;
+export function composeDoc<
+  TBase extends GConstructor,
+  F1,
+  F2,
+  F3,
+  F4,
+  F5,
+  F6,
+  F7,
+  F8,
+  F9
+>(
+  Base: TBase,
+  f1: (base: TBase) => F1,
+  f2: (base: F1) => F2,
+  f3: (base: F2) => F3,
+  f4: (base: F3) => F4,
+  f5: (base: F4) => F5,
+  f6: (base: F5) => F6,
+  f7: (base: F6) => F7,
+  f8: (base: F7) => F8,
+  f9: (base: F8) => F9
+): TBase & F1 & F2 & F3 & F4 & F5 & F6 & F7 & F8 & F9;
+export function composeDoc<TBase extends GConstructor>(
+  Base: TBase,
+  ...mixins: any[]
+): TBase {
+  return mixins.reduce((acc, mixin) => mixin(acc), Base);
 }
