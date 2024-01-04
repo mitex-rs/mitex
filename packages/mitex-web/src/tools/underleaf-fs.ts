@@ -2,6 +2,7 @@ import van, { State } from "vanjs-core";
 const { div, span } = van.tags;
 
 import LightningFS from "@isomorphic-git/lightning-fs";
+import { GitHttpRequest } from "isomorphic-git/http/web";
 
 const dirJoin = (...args: string[]) => args.join("/");
 
@@ -188,12 +189,15 @@ export const DirectoryView = ({
     const http = await import("isomorphic-git/http/web");
     const g = {
       fs,
-      http,
+      http: {
+        request(h: GitHttpRequest) {
+          h.url = `https://underleaf.mgt.workers.dev/?${h.url}`;
+          return http.request(h);
+        },
+      },
       dir: gitRepoDir,
       url: "https://github.com/mitex-rs/underleaf",
       ref: "main",
-      // corsProxy: "https://underleafmgt.workers.dev/",
-      corsProxy: "https://cors.isomorphic-git.org",
     };
     try {
       await fs.promises.readFile("/repo/.git/config");
