@@ -84,6 +84,8 @@ We made a proof of concept online tex editor to show our conversion speed in tex
 
 https://mitex-rs.github.io/mitex/tools/underleaf.html
 
+https://github.com/mitex-rs/mitex/assets/34951714/0ce77a2c-0a7d-445f-b26d-e139f3038f83
+
 ## Implemented Features
 
 - [x] User-defined TeX (macro) commands, such as `\newcommand{\mysym}{\alpha}`.
