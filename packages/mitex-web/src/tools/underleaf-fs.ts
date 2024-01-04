@@ -141,7 +141,7 @@ export const DirectoryView = ({
   const fsState = van.state<FsState | undefined>(undefined);
 
   /// Internal fields
-  const fs = new LightningFS("fs");
+  const fs = new LightningFS("fs", { wipe: true, db: undefined! });
   const gitRepoDir = "/repo";
   const projectDir = "/repo/fixtures/underleaf/ieee";
 
@@ -190,9 +190,9 @@ export const DirectoryView = ({
       fs,
       http,
       dir: gitRepoDir,
-      url: "https://github.com/mitex-rs/mitex",
-      ref: "underleaf",
-      singleBranch: true,
+      url: "https://github.com/mitex-rs/underleaf",
+      ref: "main",
+      // corsProxy: "https://underleafmgt.workers.dev/",
       corsProxy: "https://cors.isomorphic-git.org",
     };
     try {
