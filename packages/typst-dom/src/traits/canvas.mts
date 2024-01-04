@@ -1,8 +1,21 @@
-import { CanvasPage, PreviewMode } from "../typst-doc.mjs";
+import { PreviewMode } from "../typst-doc.mjs";
 import { TypstCancellationToken } from "./cancel.mjs";
 import { patchOutlineEntry } from "../typst-outline.mjs";
 import { TypstPatchAttrs } from "../typst-patch.mjs";
 import { GConstructor, TypstDocumentContext } from "./base.mjs";
+
+export interface CanvasPage {
+  tag: "canvas";
+  index: number;
+  width: number;
+  height: number;
+  container: HTMLElement;
+  elem: HTMLElement;
+
+  // extra properties for patching
+  inserter?: (t: CanvasPage) => void;
+  stub?: HTMLElement;
+}
 
 export interface CreateCanvasOptions {
   defaultInserter?: (page: CanvasPage) => void;
@@ -20,7 +33,7 @@ export interface TypstCanvasDocument {
 export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
   Base: TBase
 ): TBase & GConstructor<TypstCanvasDocument> {
-  return class extends Base {
+  return class CanvasDocument extends Base {
     constructor(...args: any[]) {
       super(...args);
       this.registerMode("canvas");

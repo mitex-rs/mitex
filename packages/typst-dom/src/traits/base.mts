@@ -1,15 +1,10 @@
 import type { RenderSession } from "@myriaddreamin/typst.ts/dist/esm/renderer.mjs";
 import { ContainerDOMState, PreviewMode, RenderMode } from "../typst-doc.mjs";
 import { TypstCancellationToken } from "./cancel.mjs";
-import {
-  installEditorJumpToHandler,
-  removeSourceMappingHandler,
-} from "../typst-debug-info.mjs";
 
 export type GConstructor<T = {}> = new (...args: any[]) => T;
 
 interface TypstDocumentFacade {
-  mode: RenderMode;
   rescale(): void;
   rerender(): Promise<void>;
   postRender(): void;
@@ -25,18 +20,19 @@ interface Options {
   retrieveDOMState?: () => ContainerDOMState;
 }
 
-export class TypstDocumentContext {
+export class TypstDocumentContext<O = any> {
   public hookedElem: HTMLElement;
   public kModule: RenderSession;
-  public opts: any;
-  public modes: [string, TypstDocumentFacade][] = [];
+  public opts: O;
+  modes: [string, TypstDocumentFacade][] = [];
 
   /// Configuration fields
 
   /// enable partial rendering
   partialRendering: boolean = true;
   /// underlying renderer
-  r: TypstDocumentFacade;
+  modeDesc: string;
+  r: TypstDocumentFacade = undefined!;
   /// preview mode
   previewMode: PreviewMode = PreviewMode.Doc;
   /// whether this is a content preview
@@ -61,7 +57,7 @@ export class TypstDocumentContext {
   /// patch queue for updating data.
   patchQueue: [string, string][] = [];
   /// resources to dispose
-  private disposeList: (() => void)[] = [];
+  disposeList: (() => void)[] = [];
   /// canvas render ctoken
   canvasRenderCToken?: TypstCancellationToken;
 
@@ -99,10 +95,10 @@ export class TypstDocumentContext {
     },
   };
 
-  constructor(opts: Options) {
+  constructor(opts: Options & O) {
     this.hookedElem = opts.hookedElem;
     this.kModule = opts.kModule;
-    this.opts = opts;
+    this.opts = opts || {};
 
     // todo
     // if (this.isContentPreview) {
@@ -118,18 +114,12 @@ export class TypstDocumentContext {
       const { renderMode, previewMode, isContentPreview, retrieveDOMState } =
         opts || {};
       this.partialRendering = false;
-      const modeStr = RenderMode[renderMode || RenderMode.Svg].toLowerCase();
-      this.r = this.modes.find((x) => x[0] === modeStr)?.[1]!;
-      if (!this.r) {
-        throw new Error(`unknown render mode ${modeStr}`);
-      }
+      this.modeDesc = RenderMode[renderMode ?? RenderMode.Svg].toLowerCase();
 
-      if (previewMode !== undefined) {
-        this.previewMode = previewMode;
-      }
+      this.previewMode = previewMode ?? this.previewMode;
       this.isContentPreview = isContentPreview || false;
       this.retrieveDOMState =
-        retrieveDOMState ||
+        retrieveDOMState ??
         (() => {
           return {
             width: this.hookedElem.offsetWidth,
@@ -152,14 +142,15 @@ export class TypstDocumentContext {
       this.hookedElem.parentElement?.classList.add("hide-scrollbar-y");
     }
 
-    if (this.r.mode === RenderMode.Svg && opts?.sourceMapping !== false) {
-      installEditorJumpToHandler(this.kModule, this.hookedElem);
-      this.disposeList.push(() => {
-        if (this.hookedElem) {
-          removeSourceMappingHandler(this.hookedElem);
-        }
-      });
-    }
+    // removed
+    // if (opts?.sourceMapping !== false) {
+    //   installEditorJumpToHandler(this.kModule, this.hookedElem);
+    //   this.disposeList.push(() => {
+    //     if (this.hookedElem) {
+    //       removeSourceMappingHandler(this.hookedElem);
+    //     }
+    //   });
+    // }
     this.installCtrlWheelHandler();
   }
 
@@ -177,7 +168,7 @@ export class TypstDocumentContext {
   static derive(ctx: any, mode: string) {
     return ["rescale", "rerender", "postRender"].reduce(
       (acc: any, x: string) => {
-        acc[x] = ctx[`${x}$${mode}`];
+        acc[x] = ctx[`${x}$${mode}`].bind(ctx);
         console.assert(acc[x] !== undefined, `${x}$${mode} is undefined`);
         return acc;
       },
@@ -186,7 +177,11 @@ export class TypstDocumentContext {
   }
 
   registerMode(mode: any) {
-    this.modes.push([mode, TypstDocumentContext.derive(this, mode)]);
+    const facade = TypstDocumentContext.derive(this, mode);
+    this.modes.push([mode, facade]);
+    if (mode === this.modeDesc) {
+      this.r = facade;
+    }
   }
 
   private installCtrlWheelHandler() {

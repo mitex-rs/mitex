@@ -1,30 +1,25 @@
-import { CanvasPage, PreviewMode } from "../typst-doc.mjs";
+import { PreviewMode } from "../typst-doc.mjs";
 import { TypstCancellationToken } from "./cancel.mjs";
-import {
-  TypstPatchAttrs,
-  isDummyPatchElem,
-  patchSvgToContainer,
-} from "../typst-patch.mjs";
+import { TypstPatchAttrs, isDummyPatchElem } from "../typst-patch.mjs";
 import { GConstructor, TypstDocumentContext } from "./base.mjs";
-import { TypstCanvasDocument } from "./canvas.mjs";
-
-export interface CreateCanvasOptions {
-  defaultInserter?: (page: CanvasPage) => void;
-}
-
-export interface UpdateCanvasOptions {
-  cancel?: TypstCancellationToken;
-}
+import type { CanvasPage, TypstCanvasDocument } from "./canvas.mjs";
+import { patchSvgToContainer } from "../typst-patch.svg.mjs";
 
 export interface TypstSvgDocument {}
 
-export function provideCanvas<
-  TBase extends GConstructor<TypstDocumentContext & TypstCanvasDocument>
+export function provideSvg<
+  TBase extends GConstructor<
+    TypstDocumentContext & Partial<TypstCanvasDocument>
+  >
 >(Base: TBase): TBase & GConstructor<TypstSvgDocument> {
-  return class extends Base {
+  return class SvgDocument extends Base {
     constructor(...args: any[]) {
       super(...args);
       this.registerMode("svg");
+    }
+
+    shouldMixinCanvas(): this is TypstCanvasDocument {
+      return true;
     }
 
     postRender$svg() {
@@ -200,7 +195,10 @@ export function provideCanvas<
     // Note: one should retrieve dom state before rescale
     rescale$svg() {
       // get dom state from cache, so we are free from layout reflowing
-      const svg = this.hookedElem.firstElementChild! as SVGElement;
+      const svg = this.hookedElem.firstElementChild as SVGElement;
+      if (!svg) {
+        return;
+      }
 
       const scale = this.getSvgScaleRatio();
       if (scale === 0) {
@@ -239,7 +237,8 @@ export function provideCanvas<
 
     private decorateSvgElement(svg: SVGElement, mode: PreviewMode) {
       const container = this.cachedDOMState;
-      const kShouldMixinCanvas = this.previewMode === PreviewMode.Doc;
+      const kShouldMixinCanvas =
+        this.previewMode === PreviewMode.Doc && this.shouldMixinCanvas();
 
       // the <rect> could only have integer width and height
       // so we scale it by 100 to make it more accurate

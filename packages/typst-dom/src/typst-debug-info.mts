@@ -78,8 +78,6 @@ function findIndexOfChild(elem: Element, child: Element) {
 }
 
 export function installEditorJumpToHandler(svgDoc: any, docRoot: HTMLElement) {
-  void castChildrenToSourceMappingElement;
-
   const findSourceLocation = (elem: Element) => {
     const visitChain: [SourceMappingType, Element][] = [];
     while (elem) {
