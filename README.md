@@ -19,7 +19,7 @@ Thanks to [@Myriad-Dreamin](https://github.com/Myriad-Dreamin), he completed the
 
 PS: `#set math.equation(numbering: "(1)")` is also valid for MiTeX.
 
-Following is [a simple example](packages/mitex/examples/example.typ) of using MiTeX in Typst:
+Following is [a simple example](https://github.com/mitex-rs/mitex/blob/main/packages/mitex/examples/example.typ) of using MiTeX in Typst:
 
 ```typst
 #import "@preview/mitex:0.2.0": *
@@ -62,7 +62,7 @@ We also support text mode (in development):
 
 ### Installation
 
-Install it by `cargo install mitex-cli` or install latest nightly version by `cargo install --git https://github.com/mitex-rs/mitex mitex-cli`.
+Install latest nightly version by `cargo install --git https://github.com/mitex-rs/mitex mitex-cli`.
 
 ### Usage
 
@@ -71,6 +71,20 @@ mitex compile main.tex
 # or (same as above)
 mitex compile main.tex mitex.typ
 ```
+
+## MiTeX as a Web App
+
+### MiTeX Online Math Converter
+
+We can convert LaTeX equations to Typst equations in web by wasm. https://mitex-rs.github.io/mitex/
+
+### Underleaf
+
+We made a proof of concept online tex editor to show our conversion speed in text mode. The PoC loads files from a git repository and then runs typst compile in browser. As you see, each keystroking get response in preview quickly.
+
+https://mitex-rs.github.io/mitex/tools/underleaf.html
+
+https://github.com/mitex-rs/mitex/assets/34951714/0ce77a2c-0a7d-445f-b26d-e139f3038f83
 
 ## Implemented Features
 
@@ -88,7 +102,9 @@ mitex compile main.tex mitex.typ
 
 - [ ] Pass command specification to MiTeX plugin dynamically. With that you can define a typst function `let myop(it) = op(upright(it))` and then use it by `\myop{it}`.
 - [ ] Package support, which means that you can change set of commands by telling MiTeX to use a list of packages.
-- [ ] Better text mode support, such as figure and description environments.
+- [ ] Better text mode support, such as figure, algorithm and description environments.
+
+To achieve the latter two goals, we need a well-structured architecture for the text mode, along with intricate work. Currently, we don't have very clear ideas yet. If you are willing to contribute by discussing in the issues or even submitting pull requests, your contribution is highly welcome.
 
 ## Differences between MiTeX and other solutions
 
