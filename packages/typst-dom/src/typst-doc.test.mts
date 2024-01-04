@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GConstructor } from "./base.mjs";
+import type { GConstructor } from "./typst-doc.mjs";
 
 class TypstDocument {
   doc = 1;

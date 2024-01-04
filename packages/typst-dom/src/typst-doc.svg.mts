@@ -1,13 +1,13 @@
-import { PreviewMode } from "../typst-doc.mjs";
-import { TypstCancellationToken } from "./cancel.mjs";
-import { TypstPatchAttrs, isDummyPatchElem } from "../typst-patch.mjs";
-import { GConstructor, TypstDocumentContext } from "./base.mjs";
-import type { CanvasPage, TypstCanvasDocument } from "./canvas.mjs";
-import { patchSvgToContainer } from "../typst-patch.svg.mjs";
+import { PreviewMode } from "./typst-doc.mjs";
+import { TypstCancellationToken } from "./typst-cancel.mjs";
+import { TypstPatchAttrs, isDummyPatchElem } from "./typst-patch.mjs";
+import type { GConstructor, TypstDocumentContext } from "./typst-doc.mjs";
+import type { CanvasPage, TypstCanvasDocument } from "./typst-doc.canvas.mjs";
+import { patchSvgToContainer } from "./typst-patch.svg.mjs";
 
 export interface TypstSvgDocument {}
 
-export function provideSvg<
+export function provideSvgDoc<
   TBase extends GConstructor<
     TypstDocumentContext & Partial<TypstCanvasDocument>
   >
@@ -19,7 +19,7 @@ export function provideSvg<
     }
 
     shouldMixinCanvas(): this is TypstCanvasDocument {
-      return true;
+      return !!this.feat$canvas;
     }
 
     postRender$svg() {

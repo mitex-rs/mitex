@@ -25,6 +25,7 @@
     "vitest": "^0.32.2"
   },
   "exports": {
+    ".": "./dist/esm/index.mjs",
     "./*": "./dist/esm/*"
   }
 }

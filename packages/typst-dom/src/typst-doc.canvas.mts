@@ -1,8 +1,9 @@
-import { PreviewMode } from "../typst-doc.mjs";
-import { TypstCancellationToken } from "./cancel.mjs";
-import { patchOutlineEntry } from "../typst-outline.mjs";
-import { TypstPatchAttrs } from "../typst-patch.mjs";
-import { GConstructor, TypstDocumentContext } from "./base.mjs";
+import { PreviewMode } from "./typst-doc.mjs";
+import { TypstCancellationToken } from "./typst-cancel.mjs";
+// import { patchOutlineEntry } from "./typst-outline.mjs";
+import { TypstPatchAttrs } from "./typst-patch.mjs";
+import type { GConstructor, TypstDocumentContext } from "./typst-doc.mjs";
+import type { TypstOutlineDocument } from "./typst-outline.mjs";
 
 export interface CanvasPage {
   tag: "canvas";
@@ -26,17 +27,27 @@ export interface UpdateCanvasOptions {
 }
 
 export interface TypstCanvasDocument {
+  feat$canvas: boolean;
+
   createCanvas(pages: CanvasPage[], opts?: CreateCanvasOptions): void;
   updateCanvas(pages: CanvasPage[], opts?: UpdateCanvasOptions): Promise<void>;
 }
 
-export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
-  Base: TBase
-): TBase & GConstructor<TypstCanvasDocument> {
+export function provideCanvasDoc<
+  TBase extends GConstructor<
+    TypstDocumentContext & Partial<TypstOutlineDocument>
+  >
+>(Base: TBase): TBase & GConstructor<TypstCanvasDocument> {
   return class CanvasDocument extends Base {
+    feat$canvas = true;
+
     constructor(...args: any[]) {
       super(...args);
       this.registerMode("canvas");
+    }
+
+    private shouldMixinOutline(): this is TypstOutlineDocument {
+      return this.isMixinOutline;
     }
 
     createCanvas(pages: CanvasPage[], opts?: CreateCanvasOptions): void {
@@ -269,7 +280,7 @@ export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
 
     async rerender$canvas() {
       // console.log('toggleCanvasViewportChange!!!!!!', this.id, this.isRendering);
-      const pagesInfo: CanvasPage[] = this.kModule
+      const pages: CanvasPage[] = this.kModule
         .retrievePagesInfo()
         .map((x, index) => {
           return {
@@ -287,9 +298,9 @@ export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
       }
       const docDiv = this.hookedElem.firstElementChild! as HTMLDivElement;
 
-      if (this.isMixinOutline && this.outline) {
+      if (this.shouldMixinOutline() && this.outline) {
         console.log("render with outline", this.outline);
-        patchOutlineEntry(docDiv as any, pagesInfo, this.outline.items);
+        this.patchOutlineEntry(docDiv as any, pages, this.outline.items);
         for (const ch of docDiv.children) {
           if (!ch.classList.contains("typst-page")) {
             continue;
@@ -297,13 +308,13 @@ export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
           const pageNumber = Number.parseInt(
             ch.getAttribute("data-page-number")!
           );
-          if (pageNumber >= pagesInfo.length) {
+          if (pageNumber >= pages.length) {
             // todo: cache key shifted
             docDiv.removeChild(ch);
             continue;
           }
-          pagesInfo[pageNumber].container = ch as HTMLDivElement;
-          pagesInfo[pageNumber].elem = ch.firstElementChild as HTMLDivElement;
+          pages[pageNumber].container = ch as HTMLDivElement;
+          pages[pageNumber].elem = ch.firstElementChild as HTMLDivElement;
         }
       } else {
         for (const ch of docDiv.children) {
@@ -313,22 +324,22 @@ export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
           const pageNumber = Number.parseInt(
             ch.getAttribute("data-page-number")!
           );
-          if (pageNumber >= pagesInfo.length) {
+          if (pageNumber >= pages.length) {
             // todo: cache key shifted
             docDiv.removeChild(ch);
             continue;
           }
-          pagesInfo[pageNumber].container = ch as HTMLDivElement;
-          pagesInfo[pageNumber].elem = ch.firstElementChild as HTMLDivElement;
+          pages[pageNumber].container = ch as HTMLDivElement;
+          pages[pageNumber].elem = ch.firstElementChild as HTMLDivElement;
         }
       }
 
-      this.createCanvas(pagesInfo, {
+      this.createCanvas(pages, {
         defaultInserter: (page) => {
           if (page.index === 0) {
             docDiv.prepend(page.container);
           } else {
-            pagesInfo[page.index - 1].container.after(page.container);
+            pages[page.index - 1].container.after(page.container);
           }
         },
       });
@@ -339,7 +350,7 @@ export function provideCanvas<TBase extends GConstructor<TypstDocumentContext>>(
         throw new Error("rendering in progress, possibly a race condition");
       }
       docDiv.setAttribute("data-rendering", "true");
-      await this.updateCanvas(pagesInfo);
+      await this.updateCanvas(pages);
       docDiv.removeAttribute("data-rendering");
       // }));
 

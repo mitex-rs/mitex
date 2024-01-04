@@ -1,5 +1,6 @@
 import van, { State } from "vanjs-core";
-import { PreviewMode, TypstDocument } from "typst-dom/typst-doc.mjs";
+import { PreviewMode } from "typst-dom";
+import { TypstPreviewDocument } from "typst-dom/index.preview.mjs";
 import type { RenderSession } from "@myriaddreamin/typst.ts/dist/esm/renderer.mjs";
 
 const { div } = van.tags;
@@ -8,7 +9,7 @@ export interface PreviewViewState {
   darkMode: State<boolean>;
   compilerLoaded: State<boolean>;
   fontLoaded: State<boolean>;
-  typstDoc: State<TypstDocument | undefined>;
+  typstDoc: State<TypstPreviewDocument | undefined>;
 }
 
 /// The preview component
@@ -52,7 +53,9 @@ export const Preview = ({
     }
     const resizeTarget = document.getElementById("mitex-preview")!;
 
-    const doc = (typstDoc.val = new TypstDocument(hookedElem, kModule.val!, {
+    const doc = (typstDoc.val = new TypstPreviewDocument({
+      hookedElem,
+      kModule: kModule.val!,
       previewMode: PreviewMode.Doc,
       isContentPreview: false,
       sourceMapping: false,

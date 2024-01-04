@@ -1,3 +1,4 @@
+import type { GConstructor, TypstDocumentContext } from "./typst-doc.mjs";
 import {
   OriginViewInstruction,
   TypstPatchAttrs,
@@ -316,4 +317,26 @@ function runOriginViewInstructionsOnOutline(
         throw new Error("unknown op " + op);
     }
   }
+}
+
+export interface TypstOutlineDocument {
+  patchOutlineEntry(
+    prev: HTMLDivElement,
+    pages: CanvasPage[],
+    items: OutlineItemData[]
+  ): void;
+}
+
+export function provideOutlineDoc<
+  TBase extends GConstructor<TypstDocumentContext>
+>(Base: TBase): TBase & GConstructor<TypstOutlineDocument> {
+  return class DebugJumpDocument extends Base {
+    patchOutlineEntry(
+      prev: HTMLDivElement,
+      pages: CanvasPage[],
+      items: OutlineItemData[]
+    ) {
+      patchOutlineEntry(prev, pages, items);
+    }
+  };
 }
