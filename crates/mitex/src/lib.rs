@@ -194,12 +194,21 @@ impl Converter {
                     prev = self.enter_env(LaTeXEnv::MathCurlyGroup);
                     enter_new_env = true;
                 }
+                let mut zws = true;
                 for child in elem.as_node().unwrap().children_with_tokens() {
+                    match &child.kind() {
+                        TokenWhiteSpace | TokenLineBreak | TokenLBrace | TokenRBrace => {}
+                        _ => {
+                            zws = false;
+                        }
+                    }
                     self.convert(f, child, spec)?;
                 }
                 if matches!(self.mode, LaTeXMode::Math) {
-                    // here is hack for case like `\color{red} xxx` and `{}_1^2x_3^4`
-                    f.write_str("zws ")?;
+                    if zws {
+                        // deal with case like `{}_1^2x_3^4`
+                        f.write_str("zws ")?;
+                    }
                     if enter_new_env {
                         self.exit_env(prev);
                     }
@@ -475,6 +484,8 @@ impl Converter {
                     return Ok(());
                 }
 
+                // normal command
+
                 write!(f, "{}", typst_name)?;
 
                 // hack for \substack{abc \\ bcd}
@@ -485,6 +496,28 @@ impl Converter {
 
                 if let ArgShape::Right(ArgPattern::None) = arg_shape {
                     f.write_char(' ')?
+                } else if let ArgShape::Right(ArgPattern::Greedy) = arg_shape {
+                    f.write_char('(')?;
+                    // there is only one arg in greedy
+                    let args = args
+                        .first()
+                        .unwrap()
+                        .as_node()
+                        .unwrap()
+                        .children_with_tokens()
+                        .collect::<Vec<_>>();
+                    let mut cnt = 0;
+                    let args_len = args.len();
+                    for arg in args {
+                        cnt += 1;
+                        let kind = arg.kind();
+                        self.convert(f, arg, spec)?;
+                        if matches!(kind, ItemCurly) && cnt != args_len {
+                            f.write_char(',')?;
+                        }
+                    }
+
+                    f.write_char(')')?;
                 } else if matches!(self.mode, LaTeXMode::Math) {
                     f.write_char('(')?;
 
@@ -729,12 +762,12 @@ mod tests {
     fn test_convert_command() {
         assert_debug_snapshot!(convert_math(r#"$\int_1^2 x \mathrm{d} x$"#), @r###"
         Ok(
-            "integral _(1 )^(2 ) x  upright(d zws ) x ",
+            "integral _(1 )^(2 ) x  upright(d ) x ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\underline{T}$"#), @r###"
         Ok(
-            "underline(T zws )",
+            "underline(T )",
         )
         "###);
     }
@@ -743,7 +776,7 @@ mod tests {
     fn test_convert_frac() {
         assert_debug_snapshot!(convert_math(r#"$\frac{a}{b}$"#), @r###"
         Ok(
-            "frac(a zws ,b zws )",
+            "frac(a ,b )",
         )
         "###
         );
@@ -761,13 +794,13 @@ mod tests {
     fn test_convert_displaystyle() {
         assert_debug_snapshot!(convert_math(r#"$\displaystyle xyz\frac{1}{2}$"#), @r###"
         Ok(
-            "mitexdisplay( x y z frac(1 zws ,2 zws ))",
+            "mitexdisplay( x y z frac(1 ,2 ))",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$1 + {\displaystyle 23} + 4$"#), @r###"
         Ok(
-            "1  +  mitexdisplay( 2 3 )zws  +  4 ",
+            "1  +  mitexdisplay( 2 3 ) +  4 ",
         )
         "###
         );
@@ -805,7 +838,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
         Ok(
-            "mitexoverbrace(a  +  b  +  c zws )^(textmath(\"This is an overbrace\")zws )",
+            "mitexoverbrace(a  +  b  +  c )^(textmath(\"This is an overbrace\"))",
         )
         "###
         );
@@ -829,7 +862,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\frac{_1^2}{3}$"#), @r###"
         Ok(
-            "frac(zws_(1 )zws^(2 )zws ,3 zws )",
+            "frac(zws_(1 )zws^(2 ),3 )",
         )
         "###
         );
@@ -845,13 +878,13 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$1 + {2 \over 3}$"#), @r###"
         Ok(
-            "1  +  frac(2  , 3 )zws ",
+            "1  +  frac(2  , 3 )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"${l \over 2'}$"#), @r###"
         Ok(
-            "frac(l  , 2 ')zws ",
+            "frac(l  , 2 ')",
         )
         "###);
     }
@@ -946,28 +979,28 @@ mod tests {
     fn test_convert_color() {
         assert_debug_snapshot!(convert_math(r#"$x\color{red}yz\frac{1}{2}$"#), @r###"
         Ok(
-            "x mitexcolor(r e d zws y z frac(1 zws ,2 zws ))",
+            "x mitexcolor(r e d ,y z frac(1 ,2 ))",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\textcolor{red}yz$"#), @r###"
         Ok(
-            "x colortext(r e d zws ,y )z ",
+            "x colortext(r e d ,y )z ",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\textcolor{red}{yz}$"#), @r###"
         Ok(
-            "x colortext(r e d zws ,y z zws )",
+            "x colortext(r e d ,y z )",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$x\colorbox{red}yz$"#), @r###"
         Ok(
-            "x colorbox(r e d zws ,y )z ",
+            "x colorbox(r e d ,y )z ",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$x\colorbox{red}{yz}$"#), @r###"
         Ok(
-            "x colorbox(r e d zws ,y z zws )",
+            "x colorbox(r e d ,y z )",
         )
         "###
         );
@@ -978,7 +1011,7 @@ mod tests {
         assert_debug_snapshot!(convert_math(
                      r#"$\begin{pmatrix}x{\\}x\end{pmatrix}$"#
             ).unwrap(),
-            @r###""pmatrix(x zws x )""###
+            @r###""pmatrix(x x )""###
         );
         assert_debug_snapshot!(convert_math(
                      r#"$\begin{pmatrix} \\ & \ddots \end{pmatrix}$"#
@@ -1017,7 +1050,7 @@ a & b & c
             ),
             @r###"
         Ok(
-            "mitexarray(arg0: l c r zws ,\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
+            "mitexarray(arg0: l c r ,\n1  zws , 2  zws , 3 zws ;\na  zws , b  zws , c \n)",
         )
         "###
         );

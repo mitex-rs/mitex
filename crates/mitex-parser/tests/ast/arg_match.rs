@@ -15,6 +15,32 @@ fn curly_group() {
     |space'(" ")
     |text(word'("text"))
     "###);
+    assert_debug_snapshot!(parse(r#"x \color {red} yz \frac{1}{2}"#), @r###"
+    root
+    |text(word'("x"),space'(" "))
+    |cmd
+    ||cmd-name("\\color")
+    ||args
+    |||space'(" ")
+    |||curly
+    ||||lbrace'("{")
+    ||||text(word'("red"))
+    ||||rbrace'("}")
+    |||space'(" ")
+    |||text(word'("yz"),space'(" "))
+    |||cmd
+    ||||cmd-name("\\frac")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("1"))
+    ||||||rbrace'("}")
+    ||||args
+    |||||curly
+    ||||||lbrace'("{")
+    ||||||text(word'("2"))
+    ||||||rbrace'("}")
+    "###);
 }
 
 #[test]
