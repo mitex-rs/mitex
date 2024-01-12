@@ -11,7 +11,7 @@ rust-version = "1.74"
 
 [workspace]
 resolver = "2"
-members = ["crates/*"]
+members = ["crates/*", "fuzz/*"]
 
 [workspace.dependencies]
 

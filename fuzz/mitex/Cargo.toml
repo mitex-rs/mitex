@@ -1,0 +1,21 @@
+[package]
+name = "fuzz-target-mitex"
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+
+[dependencies]
+afl = "*"
+mitex = { path = "../../crates/mitex" }
+rowan.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+divan.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
