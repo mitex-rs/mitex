@@ -1,8 +1,8 @@
 [package]
 name = "mitex"
-version = "0.2.0"
+version = "0.2.1"
 entrypoint = "lib.typ"
-authors = ["Myriad-Dreamin", "OrangeX4"]
+authors = ["Myriad-Dreamin", "OrangeX4", "Enter-tainer"]
 license = "Apache-2.0"
 description = "LaTeX support for Typst, powered by Rust and WASM."
 
