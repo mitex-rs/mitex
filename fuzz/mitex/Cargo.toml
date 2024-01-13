@@ -9,7 +9,7 @@ repository.workspace = true
 
 
 [dependencies]
-afl = "*"
+afl = "0.15"
 mitex = { path = "../../crates/mitex" }
 rowan.workspace = true
 
