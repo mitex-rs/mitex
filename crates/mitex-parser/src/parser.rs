@@ -35,68 +35,86 @@ mod list_state {
     pub struct ListState {
         /// The checkpoint of the first item in the list
         /// Note: if an infix command is parsed, this will become None
-        start: Option<Checkpoint>,
+        start: Checkpoint,
         /// The checkpoint of the last item in the list
-        last: Option<Checkpoint>,
+        last: Checkpoint,
         /// The current scope
         pub scope: ParseScope,
-    }
-
-    impl Default for ListState {
-        fn default() -> Self {
-            Self {
-                start: None,
-                last: None,
-                scope: ParseScope::Root,
-            }
-        }
+        /// Whether a start position of the list is valid
+        has_start: bool,
+        /// Whether a last position of the list is valid
+        has_last: bool,
     }
 
     impl ListState {
         /// Create a new list state with the given scope
-        pub fn new(scope: ParseScope) -> Self {
+        ///
+        /// The placeholder is only used to initialize the start and last.
+        pub fn new(scope: ParseScope, placeholder: Checkpoint) -> Self {
             Self {
+                start: placeholder,
+                has_start: false,
+                last: placeholder,
+                has_last: false,
                 scope,
-                ..Default::default()
             }
+        }
+
+        pub fn reset(&mut self, scope: ParseScope) {
+            self.scope = scope;
+            self.has_start = false;
+            self.has_last = false;
         }
 
         /// The start position of the list
         #[inline]
         pub fn start(&self) -> Option<Checkpoint> {
-            self.start
+            self.has_start.then_some(self.start)
         }
 
         /// The last position of the list
         #[inline]
         pub fn last(&self) -> Option<Checkpoint> {
-            self.last
+            self.has_last.then_some(self.last)
         }
 
         /// Take the start position of the list
+        /// This will set the `has_start` flag to false
         #[inline]
         pub fn take_start(&mut self) -> Option<Checkpoint> {
-            self.start.take()
+            let start = self.start();
+            self.has_start = false;
+            start
         }
 
         /// Store the start position of the list
         pub fn store_start(&mut self, current: Checkpoint) {
-            self.start = Some(current);
-        }
-
-        /// Store the last position of the list
-        pub fn store_last(&mut self, current: Checkpoint) {
-            self.last = Some(current);
-        }
-
-        /// Store the last position of the list
-        pub fn may_store_start(&mut self, current: Option<Checkpoint>) {
+            self.has_start = true;
             self.start = current;
         }
 
         /// Store the last position of the list
-        pub fn may_store_last(&mut self, current: Option<Checkpoint>) {
+        pub fn store_last(&mut self, current: Checkpoint) {
+            self.has_last = true;
             self.last = current;
+        }
+
+        /// Store the last position of the list
+        pub fn may_store_start(&mut self, current: Option<Checkpoint>) {
+            if let Some(current) = current {
+                self.store_start(current);
+            } else {
+                self.has_start = false;
+            }
+        }
+
+        /// Store the last position of the list
+        pub fn may_store_last(&mut self, current: Option<Checkpoint>) {
+            if let Some(current) = current {
+                self.store_last(current);
+            } else {
+                self.has_last = false;
+            }
         }
     }
 }
@@ -126,12 +144,15 @@ impl<'a> Parser<'a> {
     /// Create a new parser borrowing the input text and the immutable command
     /// specification.
     pub fn new(text: &'a str, spec: CommandSpec) -> Self {
+        let builder = GreenNodeBuilder::new();
+        let placeholder = builder.checkpoint();
+        let list_state = ListState::new(ParseScope::Root, placeholder);
         Self {
             lexer: Lexer::new(text, spec.clone()),
-            builder: GreenNodeBuilder::new(),
+            builder,
             spec,
             arg_matchers: ArgMatcherBuilder::default(),
-            list_state: Default::default(),
+            list_state,
             trivia_buffer: Vec::new(),
         }
     }
@@ -139,12 +160,15 @@ impl<'a> Parser<'a> {
     /// For internal testing
     pub fn new_macro(text: &'a str, spec: CommandSpec) -> Parser<'a, MacroEngine<'a>> {
         let lexer = Lexer::new_with_bumper(text, spec.clone(), MacroEngine::new(spec.clone()));
+        let builder = GreenNodeBuilder::new();
+        let placeholder = builder.checkpoint();
+        let list_state = ListState::new(ParseScope::Root, placeholder);
         Parser::<'a, MacroEngine<'a>> {
             lexer,
-            builder: GreenNodeBuilder::new(),
+            builder,
             spec,
             arg_matchers: ArgMatcherBuilder::default(),
-            list_state: Default::default(),
+            list_state,
             trivia_buffer: Vec::new(),
         }
     }
@@ -304,7 +328,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
         let parent_state = self.list_state;
 
         let mut current = self.builder.checkpoint();
-        self.list_state = ListState::new(scope);
+        self.list_state.reset(scope);
         self.list_state.store_start(current);
 
         while self.peek().map_or(false, |kind| !self.stop_by_scope(kind)) {
