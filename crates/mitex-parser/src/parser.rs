@@ -26,8 +26,6 @@ enum ParseScope {
 }
 
 mod list_state {
-    use std::mem::MaybeUninit;
-
     use rowan::Checkpoint;
 
     use super::ParseScope;
@@ -37,25 +35,19 @@ mod list_state {
     pub struct ListState {
         /// The checkpoint of the first item in the list
         /// Note: if an infix command is parsed, this will become None
-        start: MaybeUninit<Checkpoint>,
+        start: Option<Checkpoint>,
         /// The checkpoint of the last item in the list
-        last: MaybeUninit<Checkpoint>,
+        last: Option<Checkpoint>,
         /// The current scope
         pub scope: ParseScope,
-        /// Whether a start position of the list is valid
-        has_start: bool,
-        /// Whether a last position of the list is valid
-        has_last: bool,
     }
 
     impl Default for ListState {
         fn default() -> Self {
             Self {
-                start: MaybeUninit::uninit(),
-                last: MaybeUninit::uninit(),
+                start: None,
+                last: None,
                 scope: ParseScope::Root,
-                has_start: false,
-                has_last: false,
             }
         }
     }
@@ -72,64 +64,39 @@ mod list_state {
         /// The start position of the list
         #[inline]
         pub fn start(&self) -> Option<Checkpoint> {
-            self.has_start.then(|| {
-                // SAFETY:
-                // `has_start` is a private field.
-                // If `has_start` is false, then this is undefined
-                // Otherwise, this is a valid checkpoint
-                unsafe { self.start.assume_init() }
-            })
+            self.start
         }
 
         /// The last position of the list
         #[inline]
         pub fn last(&self) -> Option<Checkpoint> {
-            self.has_last.then(|| {
-                // SAFETY:
-                // `has_last` is a private field.
-                // If `has_last` is false, then this is undefined
-                // Otherwise, this is a valid checkpoint
-                unsafe { self.last.assume_init() }
-            })
+            self.last
         }
 
         /// Take the start position of the list
-        /// This will set the `has_start` flag to false
         #[inline]
         pub fn take_start(&mut self) -> Option<Checkpoint> {
-            let start = self.start();
-            self.has_start = false;
-            start
+            self.start.take()
         }
 
         /// Store the start position of the list
         pub fn store_start(&mut self, current: Checkpoint) {
-            self.has_start = true;
-            self.start = MaybeUninit::new(current);
+            self.start = Some(current);
         }
 
         /// Store the last position of the list
         pub fn store_last(&mut self, current: Checkpoint) {
-            self.has_last = true;
-            self.last = MaybeUninit::new(current);
+            self.last = Some(current);
         }
 
         /// Store the last position of the list
         pub fn may_store_start(&mut self, current: Option<Checkpoint>) {
-            if let Some(current) = current {
-                self.store_start(current);
-            } else {
-                self.has_start = false;
-            }
+            self.start = current;
         }
 
         /// Store the last position of the list
         pub fn may_store_last(&mut self, current: Option<Checkpoint>) {
-            if let Some(current) = current {
-                self.store_last(current);
-            } else {
-                self.has_last = false;
-            }
+            self.last = current;
         }
     }
 }

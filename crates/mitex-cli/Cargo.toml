@@ -26,9 +26,10 @@ mitex-parser = { path = "../mitex-parser" }
 mitex = { path = "../mitex" }
 
 clap.workspace = true
+clap_builder.workspace = true
 clap_complete.workspace = true
 clap_complete_fig.workspace = true
-clap_mangen = { workspace = true }
+clap_mangen.workspace = true
 
 serde.workspace = true
 serde_json.workspace = true

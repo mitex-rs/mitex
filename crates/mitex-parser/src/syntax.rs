@@ -3,12 +3,31 @@
 use mitex_lexer::{BraceKind, CommandName, Token};
 use rowan::ast::AstNode;
 
+macro_rules! enum_all {
+	(
+		$(#[$meta:meta])*
+		$vis:vis enum $name:ident {
+			$($(#[$variant_meta:meta])* $variant:ident,)*
+		}
+	) => {
+		$(#[$meta])*
+		$vis enum $name {
+			$($(#[$variant_meta])* $variant,)*
+		}
+
+		impl $name {
+			const ALL: &'static [Self] = &[$(Self::$variant,)*];
+		}
+	};
+}
+
+enum_all! {
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 #[allow(missing_docs)]
 #[repr(u16)]
 pub enum SyntaxKind {
     // Tokens
-    TokenError = 0,
+    TokenError,
     TokenLineBreak,
     TokenWhiteSpace,
     TokenComment,
@@ -55,6 +74,7 @@ pub enum SyntaxKind {
 
     // Scopes
     ScopeRoot,
+}
 }
 
 impl From<Token> for SyntaxKind {
@@ -116,6 +136,12 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
     }
 }
 
+impl From<rowan::SyntaxKind> for SyntaxKind {
+    fn from(kind: rowan::SyntaxKind) -> Self {
+        Self::ALL[usize::from(kind.0)]
+    }
+}
+
 /// Provides a TeX language for rowan
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TexLang {}
@@ -124,9 +150,7 @@ impl rowan::Language for TexLang {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
-        assert!(raw.0 <= ScopeRoot as u16);
-        // Safety: `SyntaxKind` is repr(u16)
-        unsafe { std::mem::transmute::<u16, SyntaxKind>(raw.0) }
+        raw.into()
     }
 
     fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {
