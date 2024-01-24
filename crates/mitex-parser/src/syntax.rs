@@ -3,28 +3,51 @@
 use mitex_lexer::{BraceKind, CommandName, Token};
 use rowan::ast::AstNode;
 
-macro_rules! enum_all {
-	(
-		$(#[$meta:meta])*
-		$vis:vis enum $name:ident {
-			$($(#[$variant_meta:meta])* $variant:ident,)*
-		}
-	) => {
-		$(#[$meta])*
-		$vis enum $name {
-			$($(#[$variant_meta])* $variant,)*
-		}
+macro_rules! arms {
+    ($scrut:ident [$($tokens:tt)*] [$($repr:tt)*] [$variant:tt $($rest:tt)*]) => {
+        arms!($scrut [$($tokens)* ConstValue::<{$($repr)*}>::VALUE => Some($variant),] [$($repr)* + 1] [$($rest)*])
+    };
 
-		impl $name {
-			const ALL: &'static [Self] = &[$(Self::$variant,)*];
-		}
-	};
+    ($scrut:ident [$($tokens:tt)*] [$($repr:tt)*] []) => {
+        match $scrut {
+            $($tokens)*
+            _ => None,
+        }
+    };
 }
 
-enum_all! {
+macro_rules! enum_from_repr {
+    (
+        #[repr($repr:tt)]
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $($(#[$variant_meta:meta])* $variant:ident,)*
+        }
+    ) => {
+        #[repr($repr)]
+        $(#[$meta])*
+        $vis enum $name {
+            $($(#[$variant_meta])* $variant,)*
+        }
+
+        impl $name {
+            fn from_repr(repr: $repr) -> Option<Self> {
+                struct ConstValue<const V: $repr>;
+
+                impl<const V: $repr> ConstValue<V> {
+                    const VALUE: $repr = V;
+                }
+
+                arms!(repr [] [0] [$($variant)*])
+            }
+        }
+    };
+}
+
+enum_from_repr! {
+#[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 #[allow(missing_docs)]
-#[repr(u16)]
 pub enum SyntaxKind {
     // Tokens
     TokenError,
@@ -138,7 +161,7 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
 
 impl From<rowan::SyntaxKind> for SyntaxKind {
     fn from(kind: rowan::SyntaxKind) -> Self {
-        Self::ALL[usize::from(kind.0)]
+        Self::from_repr(kind.0).expect("invalid rowan::SyntaxKind")
     }
 }
 
