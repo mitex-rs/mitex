@@ -3,12 +3,54 @@
 use mitex_lexer::{BraceKind, CommandName, Token};
 use rowan::ast::AstNode;
 
+macro_rules! arms {
+    ($scrut:ident [$($tokens:tt)*] [$($repr:tt)*] [$variant:tt $($rest:tt)*]) => {
+        arms!($scrut [$($tokens)* ConstValue::<{$($repr)*}>::VALUE => Some($variant),] [$($repr)* + 1] [$($rest)*])
+    };
+
+    ($scrut:ident [$($tokens:tt)*] [$($repr:tt)*] []) => {
+        match $scrut {
+            $($tokens)*
+            _ => None,
+        }
+    };
+}
+
+macro_rules! enum_from_repr {
+    (
+        #[repr($repr:tt)]
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $($(#[$variant_meta:meta])* $variant:ident,)*
+        }
+    ) => {
+        #[repr($repr)]
+        $(#[$meta])*
+        $vis enum $name {
+            $($(#[$variant_meta])* $variant,)*
+        }
+
+        impl $name {
+            fn from_repr(repr: $repr) -> Option<Self> {
+                struct ConstValue<const V: $repr>;
+
+                impl<const V: $repr> ConstValue<V> {
+                    const VALUE: $repr = V;
+                }
+
+                arms!(repr [] [0] [$($variant)*])
+            }
+        }
+    };
+}
+
+enum_from_repr! {
+#[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 #[allow(missing_docs)]
-#[repr(u16)]
 pub enum SyntaxKind {
     // Tokens
-    TokenError = 0,
+    TokenError,
     TokenLineBreak,
     TokenWhiteSpace,
     TokenComment,
@@ -55,6 +97,7 @@ pub enum SyntaxKind {
 
     // Scopes
     ScopeRoot,
+}
 }
 
 impl From<Token> for SyntaxKind {
@@ -116,6 +159,12 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
     }
 }
 
+impl From<rowan::SyntaxKind> for SyntaxKind {
+    fn from(kind: rowan::SyntaxKind) -> Self {
+        Self::from_repr(kind.0).expect("invalid rowan::SyntaxKind")
+    }
+}
+
 /// Provides a TeX language for rowan
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TexLang {}
@@ -124,9 +173,7 @@ impl rowan::Language for TexLang {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
-        assert!(raw.0 <= ScopeRoot as u16);
-        // Safety: `SyntaxKind` is repr(u16)
-        unsafe { std::mem::transmute::<u16, SyntaxKind>(raw.0) }
+        raw.into()
     }
 
     fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {

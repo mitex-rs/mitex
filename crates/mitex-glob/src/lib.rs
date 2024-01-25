@@ -471,10 +471,9 @@ impl State {
 #[inline(always)]
 fn skip_globstars(glob: &[u8], mut glob_index: usize) -> usize {
   // Coalesce multiple ** segments into one.
-  while glob_index + 3 <= glob.len()
-    && unsafe { glob.get_unchecked(glob_index..glob_index + 3) } == b"/**"
-  {
-    glob_index += 3;
+  let needle = b"/**";
+  while glob[glob_index..].starts_with(needle) {
+    glob_index += needle.len();
   }
   glob_index
 }

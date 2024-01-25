@@ -12,7 +12,6 @@
 use std::fs::{create_dir_all, File};
 use std::path::Path;
 use std::process::exit;
-use std::sync::Arc;
 
 use anyhow::Context;
 use mitex_spec::{CmdShape, CommandSpecItem, EnvShape};
@@ -211,17 +210,10 @@ fn generate_manual(cmd: clap::Command, out: &Path) -> Result<(), Box<dyn std::er
 
     Man::new(cmd.clone()).render(&mut File::create(out.join("mitex-cli.1")).unwrap())?;
 
-    let mut borrow_str = vec![];
-
     for subcmd in cmd.get_subcommands() {
-        let name: Arc<str> = format!("mitex-cli-{}", subcmd.get_name()).into();
-        Man::new(subcmd.clone().name({
-            // we need it since clap mangen doesn't support dynamic subcommand name
-            // Safety: `name` is a not freed until the end of the program
-            unsafe { std::mem::transmute::<&str, &'static str>(name.as_ref()) }
-        }))
-        .render(&mut File::create(out.join(format!("{name}.1")))?)?;
-        borrow_str.push(name);
+        let name = format!("mitex-cli-{}", subcmd.get_name());
+        let path = format!("{name}.1");
+        Man::new(subcmd.clone().name(name)).render(&mut File::create(out.join(path))?)?;
     }
 
     Ok(())
