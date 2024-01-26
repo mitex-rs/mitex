@@ -14,11 +14,11 @@ use clap::{Args, Command, FromArgMatches, Parser, Subcommand, ValueEnum};
 #[derive(Debug, Parser)]
 #[clap(name = "mitex-cli", version = VERSION)]
 pub struct Opts {
-    /// Print Version
+    /// Prints version
     #[arg(short = 'V', long, group = "version-dump")]
     pub version: bool,
 
-    /// Print Version in format
+    /// Prints version in format
     #[arg(long = "VV", alias = "version-fmt", group = "version-dump", default_value_t = VersionFormat::None)]
     pub vv: VersionFormat,
 
@@ -31,60 +31,123 @@ pub struct Opts {
 #[derive(ValueEnum, Debug, Clone, PartialEq, Eq)]
 #[value(rename_all = "kebab-case")]
 pub enum CompileStage {
-    /// Generate an AST.
+    /// Generates an AST.
     Syntax,
-    /// Generate an LaTeX document.
-    All,
+    /// Generates a Typst document.
+    Document,
 }
 
 /// Compile arguments.
 #[derive(Default, Debug, Clone, Parser)]
 #[clap(next_help_heading = "Compile options")]
 pub struct CompileArgs {
-    /// Path to typst workspace.
+    /// Path to workspace.
+    ///
+    /// This is used to resolve imports in `\iftypst` blocks.
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile -w '/my-workspace' main.tex
+    /// ```
+    ///
+    /// Resolves `/some-file.typ` with `/my-workspace/some-file.typ`
+    ///
+    /// ```latex
+    /// \iftypst
+    /// #import "/some-file.typ"
+    /// \fi
+    /// ```
     #[clap(long, short, default_value = ".")]
     pub workspace: String,
 
     /// Entry file.
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile main.tex
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile -i main.tex
+    /// ```
     #[clap(long, short, default_value = "")]
     pub input: String,
 
     /// Compile stage.
-    #[clap(long, short, value_enum)]
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile --stage syntax main.tex
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile --stage document main.tex
+    /// ```
+    #[clap(long, value_enum)]
     pub stage: Option<CompileStage>,
 
-    /// Output to file, default to entry file name with `.tex` extension.
+    /// Output to file, default to entry file name with `.typ` extension.
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile main.tex main.typ
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile -i main.tex -o main.typ
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile --stage syntax main.tex main.ast.txt
+    /// ```
     #[clap(long, short, default_value = "")]
     pub output: String,
 
     /// Default positional arguments for input and output file.
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile main.tex
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```bash
+    /// mitex compile main.tex main.typ
+    /// ```
     #[arg(trailing_var_arg = true, hide = true)]
     _i_or_o_args: Vec<String>,
 }
 
-#[derive(Debug, Subcommand)]
-#[clap(
-    about = "The CLI for MiTeX.",
-    after_help = "",
-    next_display_order = None
-)]
-
 /// Subcommands
+#[derive(Debug, Subcommand)]
+#[clap(about = "The CLI for MiTeX.", next_display_order = None)]
 #[allow(clippy::large_enum_variant)]
 pub enum Subcommands {
-    /// Run MiTeX transpiler.
-    #[clap(visible_alias = "c", about = "Run compiler.")]
+    /// Runs MiTeX transpiler.
+    #[clap(visible_alias = "c")]
     Compile(CompileArgs),
 
-    /// Generate shell completion script.
-    #[clap(about = "Generate shell completion script.")]
+    /// Generates a shell completion script.
     Completion(CompletionArgs),
 
-    /// Generate manual.
-    #[clap(about = "Generate manual.")]
+    /// Generates a manual.
     Manual(ManualArgs),
 
-    /// Subcommands about spec for MiTeX.
+    /// Subcommands about command specification for MiTeX.
     #[clap(subcommand)]
     Spec(SpecSubCommands),
 }
@@ -100,23 +163,20 @@ pub struct CompletionArgs {
 /// Generate shell completion script.
 #[derive(Debug, Clone, Parser)]
 pub struct ManualArgs {
-    /// Path to output directory
+    /// Path to output directory.
     pub dest: PathBuf,
 }
 
-/// Commands about spec for MiTeX.
+/// Commands about command specification for MiTeX.
 #[derive(Debug, Subcommand)]
-#[clap(
-    after_help = "",
-    next_display_order = None
-)]
+#[clap(next_display_order = None)]
 #[allow(clippy::large_enum_variant)]
 pub enum SpecSubCommands {
-    /// Generate Specification
+    /// Generates a command specification file for MiTeX.
     Generate(GenerateSpecArgs),
 }
 
-/// Generate specification for MiTeX.
+/// Generates a command specification file for MiTeX.
 #[derive(Debug, Clone, Parser)]
 pub struct GenerateSpecArgs {}
 
@@ -126,7 +186,7 @@ pub mod build_info {
     pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 }
 
-/// Get CLI command instance with/without subcommand.
+/// Get a CLI command instance with/without subcommand.
 pub fn get_cli(sub_command_required: bool) -> Command {
     let cli = Command::new("$").disable_version_flag(true);
     Opts::augment_args(cli).subcommand_required(sub_command_required)

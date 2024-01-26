@@ -9,17 +9,17 @@ use clap::ValueEnum;
 #[derive(ValueEnum, Debug, Clone)]
 #[value(rename_all = "kebab-case")]
 pub enum VersionFormat {
-    /// Show no version information
+    /// Don't show version information
     None,
-    /// Show short version information
+    /// Shows short version information
     Short,
-    /// Show only features information
+    /// Shows only features information
     Features,
-    /// Show full version information
+    /// Shows full version information
     Full,
-    /// Show version information in JSON format
+    /// Shows version information in JSON format
     Json,
-    /// Show version information in plain JSON format
+    /// Shows version information in plain JSON format
     JsonPlain,
 }
 
