@@ -102,9 +102,9 @@
   rVert: define-sym("||"),
   lparen: define-sym("paren.l"),
   rparen: define-sym("paren.r"),
-  lceil: define-sym(" ⌈ "),
-  rceil: define-sym("⌉ "),
-  lfloor: define-sym("⌊ "),
+  lceil: define-sym("⌈"),
+  rceil: define-sym("⌉"),
+  lfloor: define-sym("⌊"),
   rfloor: define-sym("⌋"),
   // Sizes and styles
   displaystyle: greedy-handle("mitexdisplay", math.display),
