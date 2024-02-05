@@ -180,6 +180,14 @@ pub enum CommandName {
     BeginEnvironment,
     /// clause of Environment: \end
     EndEnvironment,
+    /// clause of Math: \(
+    BeginMathInline,
+    /// clause of Math: \)
+    EndMathInline,
+    /// clause of Math: \[
+    BeginMathDisplay,
+    /// clause of Math: \]
+    EndMathDisplay,
     /// clause of Environment: \begin, but error
     ErrorBeginEnvironment,
     /// clause of Environment: \end, but error
@@ -240,6 +248,15 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
     // Note: the first char is always legal, since a backslash with any single char
     // is a valid escape sequence
     lexer.bump(c.len_utf8());
+
+    match c {
+        '(' => return CommandName::BeginMathInline,
+        ')' => return CommandName::EndMathInline,
+        '[' => return CommandName::BeginMathDisplay,
+        ']' => return CommandName::EndMathDisplay,
+        _ => {}
+    }
+
     // Lex the command name if it is not an escape sequence
     if !c.is_ascii_alphabetic() && c != '@' {
         return CommandName::Generic;
