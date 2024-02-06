@@ -434,7 +434,11 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
-                CommandName::EndMathInline | CommandName::EndMathDisplay => return false,
+                CommandName::EndMathInline | CommandName::EndMathDisplay => {
+                    self.builder.start_node(TokenError.into());
+                    self.eat();
+                    self.builder.finish_node();
+                }
             },
         }
 
