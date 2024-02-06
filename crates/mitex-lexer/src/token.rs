@@ -249,17 +249,15 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
     // is a valid escape sequence
     lexer.bump(c.len_utf8());
 
+    // Lex the command name if it is not an escape sequence
     match c {
         '(' => return CommandName::BeginMathInline,
         ')' => return CommandName::EndMathInline,
         '[' => return CommandName::BeginMathDisplay,
         ']' => return CommandName::EndMathDisplay,
+        '@' => {}
+        _ if !c.is_ascii_alphabetic() => return CommandName::Generic,
         _ => {}
-    }
-
-    // Lex the command name if it is not an escape sequence
-    if !c.is_ascii_alphabetic() && c != '@' {
-        return CommandName::Generic;
     }
 
     // Case3 (Rest): lex a general ascii command name
