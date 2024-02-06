@@ -286,7 +286,8 @@ impl Converter {
                 }
             }
             // do nothing
-            TokenLBrace | TokenRBrace | TokenDollar | TokenComment | ItemBlockComment => {}
+            TokenLBrace | TokenRBrace | TokenDollar | TokenStartMath | TokenEndMath
+            | TokenComment | ItemBlockComment => {}
             // space identical
             TokenWhiteSpace => {
                 if self.skip_next_space {
