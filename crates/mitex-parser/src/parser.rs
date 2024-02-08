@@ -271,6 +271,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 kind,
                 Token::Right(BraceKind::Curly)
                     | Token::CommandName(CommandName::EndEnvironment | CommandName::Right)
+                    | Token::CommandName(CommandName::EndMathInline | CommandName::EndMathDisplay)
                     | Token::Dollar
             ),
             ParseScope::Environment => matches!(
@@ -341,7 +342,18 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
         self.builder.start_node(group_kind.into());
         self.eat();
         self.item_list(scope);
-        self.eat_if(end_token);
+
+        if end_token == Token::Dollar
+            && matches!(
+                end_token,
+                Token::Dollar
+                    | Token::CommandName(CommandName::EndMathInline | CommandName::EndMathDisplay)
+            )
+        {
+            self.eat()
+        } else {
+            self.eat_if(end_token);
+        }
         self.builder.finish_node();
     }
 
@@ -410,6 +422,10 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
+                CommandName::BeginMathInline | CommandName::BeginMathDisplay => {
+                    self.item_group(ItemFormula);
+                    return false;
+                }
                 CommandName::If(IfCommandName::IfFalse) => self.block_comment(),
                 CommandName::If(IfCommandName::IfTypst) => self.typst_code(),
                 CommandName::If(..) | CommandName::Else | CommandName::EndIf => {
@@ -418,6 +434,11 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
+                CommandName::EndMathInline | CommandName::EndMathDisplay => {
+                    self.builder.start_node(TokenError.into());
+                    self.eat();
+                    self.builder.finish_node();
+                }
             },
         }
 
