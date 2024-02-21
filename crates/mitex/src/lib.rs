@@ -1125,4 +1125,46 @@ a & b & c
         #show: project
         "###);
     }
+
+    #[test]
+    fn test_convert_formula() {
+        assert_debug_snapshot!(convert_text(r#"$a$"#), @r###"
+        Ok(
+            "$a $",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"$$a$$"#), @r###"
+        Ok(
+            "$ a  $",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\(a\)"#), @r###"
+        Ok(
+            "$a $",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\[a\]"#), @r###"
+        Ok(
+            "$ a  $",
+        )
+        "###);
+        // todo: fix this bug
+        assert_debug_snapshot!(convert_text(r#"$ a $"#), @r###"
+        Ok(
+            "$ a  $",
+        )
+        "###);
+        // todo: fix semantic incorrect cases
+        assert_debug_snapshot!(convert_text(r#"$$ a $ $ b $$"#), @r###"
+        Ok(
+            "$  a   $ $ b  $",
+        )
+        "###);
+        // todo: fix semantic incorrect cases
+        assert_debug_snapshot!(convert_text(r#"\[a\)\(b\]"#), @r###"
+        Ok(
+            "$ a  $$b $",
+        )
+        "###);
+    }
 }
