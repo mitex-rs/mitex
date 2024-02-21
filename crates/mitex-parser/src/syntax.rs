@@ -65,7 +65,7 @@ pub enum SyntaxKind {
     TokenSlash,
     TokenWord,
     TokenDollar,
-    TokenStartMath,
+    TokenBeginMath,
     TokenEndMath,
     TokenAmpersand,
     TokenHash,
@@ -135,7 +135,7 @@ impl From<Token> for SyntaxKind {
             Token::CommandName(CommandName::BeginEnvironment | CommandName::EndEnvironment) => {
                 SyntaxKind::TokenCommandSym
             }
-            Token::CommandName(CommandName::BeginMath) => SyntaxKind::TokenStartMath,
+            Token::CommandName(CommandName::BeginMath) => SyntaxKind::TokenBeginMath,
             Token::CommandName(CommandName::EndMath) => SyntaxKind::TokenEndMath,
             Token::CommandName(_) => SyntaxKind::ClauseCommandName,
         }
@@ -237,7 +237,7 @@ impl FormulaItem {
     pub fn is_display(&self) -> bool {
         self.syntax().first_token().map_or(false, |node| {
             (node.kind() == TokenDollar && node.text() == "$$")
-                || (node.kind() == TokenStartMath && node.text() == "\\[")
+                || (node.kind() == TokenBeginMath && node.text() == "\\[")
         })
     }
 
@@ -245,7 +245,7 @@ impl FormulaItem {
     pub fn is_inline(&self) -> bool {
         self.syntax().first_token().map_or(false, |node| {
             (node.kind() == TokenDollar && node.text() == "$")
-                || (node.kind() == TokenStartMath && node.text() == "\\(")
+                || (node.kind() == TokenBeginMath && node.text() == "\\(")
         })
     }
 }

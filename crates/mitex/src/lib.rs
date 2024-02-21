@@ -286,7 +286,7 @@ impl Converter {
                 }
             }
             // do nothing
-            TokenLBrace | TokenRBrace | TokenDollar | TokenStartMath | TokenEndMath
+            TokenLBrace | TokenRBrace | TokenDollar | TokenBeginMath | TokenEndMath
             | TokenComment | ItemBlockComment => {}
             // space identical
             TokenWhiteSpace => {
