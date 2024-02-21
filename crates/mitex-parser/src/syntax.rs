@@ -135,12 +135,8 @@ impl From<Token> for SyntaxKind {
             Token::CommandName(CommandName::BeginEnvironment | CommandName::EndEnvironment) => {
                 SyntaxKind::TokenCommandSym
             }
-            Token::CommandName(CommandName::BeginMathInline | CommandName::BeginMathDisplay) => {
-                SyntaxKind::TokenStartMath
-            }
-            Token::CommandName(CommandName::EndMathInline | CommandName::EndMathDisplay) => {
-                SyntaxKind::TokenEndMath
-            }
+            Token::CommandName(CommandName::BeginMath) => SyntaxKind::TokenStartMath,
+            Token::CommandName(CommandName::EndMath) => SyntaxKind::TokenEndMath,
             Token::CommandName(_) => SyntaxKind::ClauseCommandName,
         }
     }

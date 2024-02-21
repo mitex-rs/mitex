@@ -271,7 +271,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 kind,
                 Token::Right(BraceKind::Curly)
                     | Token::CommandName(CommandName::EndEnvironment | CommandName::Right)
-                    | Token::CommandName(CommandName::EndMathInline | CommandName::EndMathDisplay)
+                    | Token::CommandName(CommandName::EndMath)
                     | Token::Dollar
             ),
             ParseScope::Environment => matches!(
@@ -346,8 +346,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
         if end_token == Token::Dollar
             && matches!(
                 end_token,
-                Token::Dollar
-                    | Token::CommandName(CommandName::EndMathInline | CommandName::EndMathDisplay)
+                Token::Dollar | Token::CommandName(CommandName::EndMath)
             )
         {
             self.eat()
@@ -422,7 +421,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
-                CommandName::BeginMathInline | CommandName::BeginMathDisplay => {
+                CommandName::BeginMath => {
                     self.item_group(ItemFormula);
                     return false;
                 }
@@ -434,7 +433,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
-                CommandName::EndMathInline | CommandName::EndMathDisplay => {
+                CommandName::EndMath => {
                     self.builder.start_node(TokenError.into());
                     self.eat();
                     self.builder.finish_node();
