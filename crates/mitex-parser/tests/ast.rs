@@ -18,6 +18,9 @@ mod ast {
     mod block_comment;
 
     #[cfg(test)]
+    mod formula;
+
+    #[cfg(test)]
     mod command;
 
     #[cfg(test)]
