@@ -12,7 +12,9 @@ enum ParseScope {
     /// The root scope, this is set when the parser enters the entry point
     Root,
     /// The scope of a formula, i.e. `$...$` or `$$...$$`
-    Formula,
+    DollarFormula,
+    /// The scope of a formula, i.e. `\(..\)` or `\[..\]`
+    CmdFormula,
     /// The scope of an environment, i.e. `\begin{...}...\end{...}`
     Environment,
     /// The scope of a lr command, i.e. `\left...\right`
@@ -267,12 +269,18 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
     fn stop_by_scope(&mut self, kind: Token) -> bool {
         match self.scope() {
             ParseScope::Root => false,
-            ParseScope::Formula => matches!(
+            ParseScope::DollarFormula => matches!(
                 kind,
                 Token::Right(BraceKind::Curly)
                     | Token::CommandName(CommandName::EndEnvironment | CommandName::Right)
-                    | Token::CommandName(CommandName::EndMath)
                     | Token::Dollar
+            ),
+            ParseScope::CmdFormula => matches!(
+                kind,
+                Token::Right(BraceKind::Curly)
+                    | Token::CommandName(
+                        CommandName::EndEnvironment | CommandName::Right | CommandName::EndMath
+                    )
             ),
             ParseScope::Environment => matches!(
                 kind,
@@ -325,17 +333,22 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
     /// Parsing Helper
     /// Parse a group of items which is enclosed by a pair of tokens
     #[inline]
-    fn item_group(&mut self, group_kind: SyntaxKind) {
+    fn item_group(&mut self, scope: ParseScope) {
         assert!(matches!(
-            group_kind,
-            ItemCurly | ItemBracket | ItemParen | ItemFormula
+            scope,
+            ParseScope::CurlyItem
+                | ParseScope::BracketItem
+                | ParseScope::ParenItem
+                | ParseScope::DollarFormula
+                | ParseScope::CmdFormula,
         ));
         // Get the corresponding closing token
-        let (end_token, scope) = match group_kind {
-            ItemCurly => (Token::Right(BraceKind::Curly), ParseScope::CurlyItem),
-            ItemBracket => (Token::Right(BraceKind::Bracket), ParseScope::BracketItem),
-            ItemParen => (Token::Right(BraceKind::Paren), ParseScope::ParenItem),
-            ItemFormula => (Token::Dollar, ParseScope::Formula),
+        let (end_token, group_kind) = match scope {
+            ParseScope::CurlyItem => (Token::Right(BraceKind::Curly), ItemCurly),
+            ParseScope::BracketItem => (Token::Right(BraceKind::Bracket), ItemBracket),
+            ParseScope::ParenItem => (Token::Right(BraceKind::Paren), ItemParen),
+            ParseScope::DollarFormula => (Token::Dollar, ItemFormula),
+            ParseScope::CmdFormula => (Token::CommandName(CommandName::EndMath), ItemFormula),
             _ => unreachable!(),
         };
 
@@ -343,16 +356,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
         self.eat();
         self.item_list(scope);
 
-        if end_token == Token::Dollar
-            && matches!(
-                end_token,
-                Token::Dollar | Token::CommandName(CommandName::EndMath)
-            )
-        {
-            self.eat()
-        } else {
-            self.eat_if(end_token);
-        }
+        self.eat_if(end_token);
         self.builder.finish_node();
     }
 
@@ -386,7 +390,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 self.attach_component(true);
                 return false;
             }
-            Token::Left(BraceKind::Curly) => self.item_group(ItemCurly),
+            Token::Left(BraceKind::Curly) => self.item_group(ParseScope::CurlyItem),
             Token::Right(BraceKind::Curly) | Token::MacroArg(_) => {
                 self.builder.start_node(TokenError.into());
                 self.eat();
@@ -396,9 +400,11 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
             // self.expect2(Token::Right(BraceKind::Bracket), Token::Right(BraceKind::Paren));
             // alternative self.expect(tok);
             Token::Left(BraceKind::Bracket) if not_prefer_single_char => {
-                self.item_group(ItemBracket)
+                self.item_group(ParseScope::BracketItem)
             }
-            Token::Left(BraceKind::Paren) if not_prefer_single_char => self.item_group(ItemParen),
+            Token::Left(BraceKind::Paren) if not_prefer_single_char => {
+                self.item_group(ParseScope::ParenItem)
+            }
             Token::Left(..)
             | Token::Right(..)
             | Token::Tilde
@@ -414,7 +420,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
             }
             Token::Comma => self.text(),
             Token::Dollar => {
-                self.item_group(ItemFormula);
+                self.item_group(ParseScope::DollarFormula);
                 return false;
             }
             Token::CommandName(name) => match name {
@@ -422,7 +428,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::BeginEnvironment => self.environment(),
                 CommandName::EndEnvironment => return self.command(),
                 CommandName::BeginMath => {
-                    self.item_group(ItemFormula);
+                    self.item_group(ParseScope::CmdFormula);
                     return false;
                 }
                 CommandName::If(IfCommandName::IfFalse) => self.block_comment(),
@@ -721,10 +727,10 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                     }
                 }
                 Token::Left(bk) => {
-                    let (encoded, sk) = match bk {
-                        BraceKind::Curly => (ARGUMENT_KIND_TERM, ItemCurly),
-                        BraceKind::Bracket => (ARGUMENT_KIND_BRACKET, ItemBracket),
-                        BraceKind::Paren => (ARGUMENT_KIND_PAREN, ItemParen),
+                    let (encoded, scope) = match bk {
+                        BraceKind::Curly => (ARGUMENT_KIND_TERM, ParseScope::CurlyItem),
+                        BraceKind::Bracket => (ARGUMENT_KIND_BRACKET, ParseScope::BracketItem),
+                        BraceKind::Paren => (ARGUMENT_KIND_PAREN, ParseScope::ParenItem),
                     };
 
                     let Some(modified_as_term) = searcher.match_as_term(encoded) else {
@@ -740,7 +746,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                         if modified_as_term {
                             this.eat();
                         } else {
-                            this.item_group(sk);
+                            this.item_group(scope);
                         }
                     });
 
