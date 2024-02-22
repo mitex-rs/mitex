@@ -167,7 +167,7 @@ impl Converter {
                 let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
                 if matches!(self.mode, LaTeXMode::Text) {
                     if formula.is_inline() {
-                        f.write_char('$')?;
+                        f.write_str("#math.equation(block: false, $")?;
                     } else {
                         f.write_str("$ ")?;
                     }
@@ -179,7 +179,7 @@ impl Converter {
                 self.exit_mode(prev);
                 if matches!(self.mode, LaTeXMode::Text) {
                     if formula.is_inline() {
-                        f.write_char('$')?;
+                        f.write_str("$);")?;
                     } else {
                         f.write_str(" $")?;
                     }
@@ -1130,7 +1130,7 @@ a & b & c
     fn test_convert_formula() {
         assert_debug_snapshot!(convert_text(r#"$a$"#), @r###"
         Ok(
-            "$a $",
+            "#math.equation(block: false, $a $);",
         )
         "###);
         assert_debug_snapshot!(convert_text(r#"$$a$$"#), @r###"
@@ -1140,7 +1140,7 @@ a & b & c
         "###);
         assert_debug_snapshot!(convert_text(r#"\(a\)"#), @r###"
         Ok(
-            "$a $",
+            "#math.equation(block: false, $a $);",
         )
         "###);
         assert_debug_snapshot!(convert_text(r#"\[a\]"#), @r###"
@@ -1148,22 +1148,21 @@ a & b & c
             "$ a  $",
         )
         "###);
-        // todo: fix this bug
         assert_debug_snapshot!(convert_text(r#"$ a $"#), @r###"
         Ok(
-            "$ a  $",
+            "#math.equation(block: false, $ a  $);",
         )
         "###);
         // todo: fix semantic incorrect cases
         assert_debug_snapshot!(convert_text(r#"$$ a $ $ b $$"#), @r###"
         Ok(
-            "$  a   $ $ b  $",
+            "$  a   $ #math.equation(block: false, $ b  $);",
         )
         "###);
         // todo: fix semantic incorrect cases
         assert_debug_snapshot!(convert_text(r#"\[a\)\(b\]"#), @r###"
         Ok(
-            "$ a  $$b $",
+            "$ a  $#math.equation(block: false, $b $);",
         )
         "###);
     }
