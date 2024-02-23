@@ -165,6 +165,9 @@ impl Converter {
             }
             ItemFormula => {
                 let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
+                if !formula.is_valid() {
+                  Err("formula is not valid".to_owned())?
+                }
                 if matches!(self.mode, LaTeXMode::Text) {
                     if formula.is_inline() {
                         f.write_str("#math.equation(block: false, $")?;
@@ -1153,16 +1156,14 @@ a & b & c
             "#math.equation(block: false, $ a  $);",
         )
         "###);
-        // todo: fix semantic incorrect cases
         assert_debug_snapshot!(convert_text(r#"$$ a $ $ b $$"#), @r###"
-        Ok(
-            "$  a   $ #math.equation(block: false, $ b  $);",
+        Err(
+            "error: formula is not valid",
         )
         "###);
-        // todo: fix semantic incorrect cases
         assert_debug_snapshot!(convert_text(r#"\[a\)\(b\]"#), @r###"
-        Ok(
-            "$ a  $#math.equation(block: false, $b $);",
+        Err(
+            "error: formula is not valid",
         )
         "###);
     }

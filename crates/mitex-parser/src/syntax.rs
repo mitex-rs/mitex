@@ -248,6 +248,22 @@ impl FormulaItem {
                 || (node.kind() == TokenBeginMath && node.text() == "\\(")
         })
     }
+
+    /// Checks whether the formula is valid
+    pub fn is_valid(&self) -> bool {
+        self.syntax().first_token().map_or(false, |first_node| {
+            self.syntax().last_token().map_or(false, |last_node| {
+                if first_node.kind() == TokenDollar && last_node.kind() == TokenDollar {
+                  return (first_node.text() == "$" && last_node.text() == "$")
+                    || (first_node.text() == "$$" && last_node.text() == "$$");
+                  } else if first_node.kind() == TokenBeginMath && last_node.kind() == TokenEndMath {
+                  return (first_node.text() == "\\(" && last_node.text() == "\\)")
+                    || (first_node.text() == "\\[" && last_node.text() == "\\]");
+                }
+                return false;
+            })
+        })
+    }
 }
 
 syntax_tree_node!(
