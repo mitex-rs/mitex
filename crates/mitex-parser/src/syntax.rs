@@ -260,7 +260,7 @@ impl FormulaItem {
                   return (first_node.text() == "\\(" && last_node.text() == "\\)")
                     || (first_node.text() == "\\[" && last_node.text() == "\\]");
                 }
-                return false;
+                false
             })
         })
     }
