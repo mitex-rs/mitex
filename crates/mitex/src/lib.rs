@@ -166,7 +166,7 @@ impl Converter {
             ItemFormula => {
                 let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
                 if !formula.is_valid() {
-                  Err("formula is not valid".to_owned())?
+                    Err("formula is not valid".to_owned())?
                 }
                 if matches!(self.mode, LaTeXMode::Text) {
                     if formula.is_inline() {
