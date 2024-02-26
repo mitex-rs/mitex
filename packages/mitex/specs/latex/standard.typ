@@ -53,6 +53,8 @@
   section: define-cmd(1, alias: "#heading(level: 1)"),
   subsection: define-cmd(1, alias: "#heading(level: 2)"),
   subsubsection: define-cmd(1, alias: "#heading(level: 3)"),
+  footnote: define-cmd(1, alias: "#footnote"),
+  cite: define-cmd(1, alias: "#mitexcite", handle: it => cite(label(get-tex-str(it)))),
   emph: define-cmd(1, alias: "#emph"),
   item: ignore-sym,
   itemize: define-env(none, kind: "is-itemize"),
