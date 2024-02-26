@@ -1,7 +1,7 @@
 //! Common build script for crates depending on the compacted default
 //! specification.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -37,11 +37,11 @@ fn copy_prebuilt() -> anyhow::Result<()> {
     let project_root = get_project_root()?;
 
     // assets/artifacts/spec/default.rkyv
-    std::fs::create_dir_all(project_root.join("target/mitex-artifacts/spec"))
+    std::fs::create_dir_all(project_root.join(Path::new("target/mitex-artifacts/spec")))
         .with_context(|| "failed to create target_dir for store spec")?;
 
-    let prebuilt_spec = project_root.join("assets/artifacts/spec/default.rkyv");
-    let target_spec = project_root.join("target/mitex-artifacts/spec/default.rkyv");
+    let prebuilt_spec = project_root.join(Path::new("assets/artifacts/spec/default.rkyv"));
+    let target_spec = project_root.join(Path::new("target/mitex-artifacts/spec/default.rkyv"));
     println!("cargo:warning=Use prebuilt spec binaries at {prebuilt_spec:?}");
 
     std::fs::copy(prebuilt_spec, target_spec).with_context(|| {
