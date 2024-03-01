@@ -70,7 +70,7 @@ pub mod ast_snapshot {
                 SyntaxKind::TokenSlash => "slash'",
                 SyntaxKind::TokenWord => "word'",
                 SyntaxKind::TokenDollar => "dollar'",
-                SyntaxKind::TokenStartMath => "start-math'",
+                SyntaxKind::TokenBeginMath => "begin-math'",
                 SyntaxKind::TokenEndMath => "end-math",
                 SyntaxKind::TokenAmpersand => "ampersand'",
                 SyntaxKind::TokenHash => "hash'",

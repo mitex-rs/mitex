@@ -165,9 +165,12 @@ impl Converter {
             }
             ItemFormula => {
                 let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
+                if !formula.is_valid() {
+                    Err("formula is not valid".to_owned())?
+                }
                 if matches!(self.mode, LaTeXMode::Text) {
                     if formula.is_inline() {
-                        f.write_char('$')?;
+                        f.write_str("#math.equation(block: false, $")?;
                     } else {
                         f.write_str("$ ")?;
                     }
@@ -179,7 +182,7 @@ impl Converter {
                 self.exit_mode(prev);
                 if matches!(self.mode, LaTeXMode::Text) {
                     if formula.is_inline() {
-                        f.write_char('$')?;
+                        f.write_str("$);")?;
                     } else {
                         f.write_str(" $")?;
                     }
@@ -286,7 +289,7 @@ impl Converter {
                 }
             }
             // do nothing
-            TokenLBrace | TokenRBrace | TokenDollar | TokenStartMath | TokenEndMath
+            TokenLBrace | TokenRBrace | TokenDollar | TokenBeginMath | TokenEndMath
             | TokenComment | ItemBlockComment => {}
             // space identical
             TokenWhiteSpace => {
@@ -1123,6 +1126,45 @@ a & b & c
 #show: project\fi"#).unwrap(), @r###"
         #import "template.typ": project
         #show: project
+        "###);
+    }
+
+    #[test]
+    fn test_convert_formula() {
+        assert_debug_snapshot!(convert_text(r#"$a$"#), @r###"
+        Ok(
+            "#math.equation(block: false, $a $);",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"$$a$$"#), @r###"
+        Ok(
+            "$ a  $",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\(a\)"#), @r###"
+        Ok(
+            "#math.equation(block: false, $a $);",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\[a\]"#), @r###"
+        Ok(
+            "$ a  $",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"$ a $"#), @r###"
+        Ok(
+            "#math.equation(block: false, $ a  $);",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"$$ a $ $ b $$"#), @r###"
+        Err(
+            "error: formula is not valid",
+        )
+        "###);
+        assert_debug_snapshot!(convert_text(r#"\[a\)\(b\]"#), @r###"
+        Err(
+            "error: formula is not valid",
+        )
         "###);
     }
 }

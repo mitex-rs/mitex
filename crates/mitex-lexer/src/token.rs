@@ -180,14 +180,10 @@ pub enum CommandName {
     BeginEnvironment,
     /// clause of Environment: \end
     EndEnvironment,
-    /// clause of Math: \(
-    BeginMathInline,
-    /// clause of Math: \)
-    EndMathInline,
-    /// clause of Math: \[
-    BeginMathDisplay,
-    /// clause of Math: \]
-    EndMathDisplay,
+    /// clause of Math: \( or \[
+    BeginMath,
+    /// clause of Math: \) or \]
+    EndMath,
     /// clause of Environment: \begin, but error
     ErrorBeginEnvironment,
     /// clause of Environment: \end, but error
@@ -251,10 +247,8 @@ fn lex_command_name(lexer: &mut logos::Lexer<Token>) -> CommandName {
 
     // Lex the command name if it is not an escape sequence
     match c {
-        '(' => return CommandName::BeginMathInline,
-        ')' => return CommandName::EndMathInline,
-        '[' => return CommandName::BeginMathDisplay,
-        ']' => return CommandName::EndMathDisplay,
+        '(' | '[' => return CommandName::BeginMath,
+        ')' | ']' => return CommandName::EndMath,
         '@' => {}
         _ if !c.is_ascii_alphabetic() => return CommandName::Generic,
         _ => {}

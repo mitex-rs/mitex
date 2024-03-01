@@ -65,7 +65,7 @@ pub enum SyntaxKind {
     TokenSlash,
     TokenWord,
     TokenDollar,
-    TokenStartMath,
+    TokenBeginMath,
     TokenEndMath,
     TokenAmpersand,
     TokenHash,
@@ -135,12 +135,8 @@ impl From<Token> for SyntaxKind {
             Token::CommandName(CommandName::BeginEnvironment | CommandName::EndEnvironment) => {
                 SyntaxKind::TokenCommandSym
             }
-            Token::CommandName(CommandName::BeginMathInline | CommandName::BeginMathDisplay) => {
-                SyntaxKind::TokenStartMath
-            }
-            Token::CommandName(CommandName::EndMathInline | CommandName::EndMathDisplay) => {
-                SyntaxKind::TokenEndMath
-            }
+            Token::CommandName(CommandName::BeginMath) => SyntaxKind::TokenBeginMath,
+            Token::CommandName(CommandName::EndMath) => SyntaxKind::TokenEndMath,
             Token::CommandName(_) => SyntaxKind::ClauseCommandName,
         }
     }
@@ -241,7 +237,7 @@ impl FormulaItem {
     pub fn is_display(&self) -> bool {
         self.syntax().first_token().map_or(false, |node| {
             (node.kind() == TokenDollar && node.text() == "$$")
-                || (node.kind() == TokenStartMath && node.text() == "\\[")
+                || (node.kind() == TokenBeginMath && node.text() == "\\[")
         })
     }
 
@@ -249,7 +245,23 @@ impl FormulaItem {
     pub fn is_inline(&self) -> bool {
         self.syntax().first_token().map_or(false, |node| {
             (node.kind() == TokenDollar && node.text() == "$")
-                || (node.kind() == TokenStartMath && node.text() == "\\(")
+                || (node.kind() == TokenBeginMath && node.text() == "\\(")
+        })
+    }
+
+    /// Checks whether the formula is valid
+    pub fn is_valid(&self) -> bool {
+        self.syntax().first_token().map_or(false, |first_node| {
+            self.syntax().last_token().map_or(false, |last_node| {
+                if first_node.kind() == TokenDollar && last_node.kind() == TokenDollar {
+                    return (first_node.text() == "$" && last_node.text() == "$")
+                        || (first_node.text() == "$$" && last_node.text() == "$$");
+                } else if first_node.kind() == TokenBeginMath && last_node.kind() == TokenEndMath {
+                    return (first_node.text() == "\\(" && last_node.text() == "\\)")
+                        || (first_node.text() == "\\[" && last_node.text() == "\\]");
+                }
+                false
+            })
         })
     }
 }
