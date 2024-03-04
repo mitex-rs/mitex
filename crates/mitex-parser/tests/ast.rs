@@ -9,6 +9,9 @@ mod ast {
     use prelude::*;
 
     #[cfg(test)]
+    mod arg_parse;
+
+    #[cfg(test)]
     mod arg_match;
 
     #[cfg(test)]

@@ -396,15 +396,6 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 self.eat();
                 self.builder.finish_node();
             }
-            // todo: check if this is correct
-            // self.expect2(Token::Right(BraceKind::Bracket), Token::Right(BraceKind::Paren));
-            // alternative self.expect(tok);
-            Token::Left(BraceKind::Bracket) if not_prefer_single_char => {
-                self.item_group(ParseScope::BracketItem)
-            }
-            Token::Left(BraceKind::Paren) if not_prefer_single_char => {
-                self.item_group(ParseScope::ParenItem)
-            }
             Token::Left(..)
             | Token::Right(..)
             | Token::Tilde
