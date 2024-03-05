@@ -238,9 +238,7 @@ impl Converter {
                         }
                         LatexSyntaxElem::Token(token) => match token.kind() {
                             TokenWord if token.text() == "." => {}
-                            _ => self
-                                .convert(f, rowan::NodeOrToken::Token(token), spec)
-                                .expect("fail to convert token"),
+                            _ => self.convert(f, rowan::NodeOrToken::Token(token), spec)?,
                         },
                     }
                 }
@@ -1166,5 +1164,11 @@ a & b & c
             "error: formula is not valid",
         )
         "###);
+    }
+
+    #[test]
+    fn test_fuzzing() {
+        assert_debug_snapshot!(convert_math(r#"\left\0"#).unwrap_err(), @r###""error: unknown command: \\0""###);
+        assert_debug_snapshot!(convert_math(r#"\end{}"#).unwrap_err(), @r###""error: error unexpected: \"\"""###);
     }
 }

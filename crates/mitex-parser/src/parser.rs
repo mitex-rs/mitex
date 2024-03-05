@@ -417,7 +417,6 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
             Token::CommandName(name) => match name {
                 CommandName::Generic => return self.command(),
                 CommandName::BeginEnvironment => self.environment(),
-                CommandName::EndEnvironment => return self.command(),
                 CommandName::BeginMath => {
                     self.item_group(ParseScope::CmdFormula);
                     return false;
@@ -430,7 +429,17 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 CommandName::Left => self.item_lr(),
                 CommandName::Right => return self.command(),
                 CommandName::ErrorBeginEnvironment | CommandName::ErrorEndEnvironment => self.eat(),
-                CommandName::EndMath => {
+                // todo: raise error end environment
+                //
+                // See:
+                //
+                // ```plain
+                // assert_debug_snapshot!(parse(r#"\end{}"#), @r###"
+                // root
+                // |error'(sym'(""))
+                // "###);
+                // ```
+                CommandName::EndEnvironment | CommandName::EndMath => {
                     self.builder.start_node(TokenError.into());
                     self.eat();
                     self.builder.finish_node();

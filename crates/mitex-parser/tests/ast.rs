@@ -24,6 +24,9 @@ mod ast {
     mod formula;
 
     #[cfg(test)]
+    mod fuzzing;
+
+    #[cfg(test)]
     mod command;
 
     #[cfg(test)]
