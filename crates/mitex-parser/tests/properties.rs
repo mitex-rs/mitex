@@ -84,13 +84,10 @@ mod properties {
     #[test]
     fn test_lr_symbol() {
         fn lr_info(input: &str) -> Option<String> {
-            let Some(e) = parse(input)
+            let e = parse(input)
                 .descendants()
                 .find(|node| matches!(node.kind(), SyntaxKind::ItemLR))
-                .and_then(LRItem::cast)
-            else {
-                return None;
-            };
+                .and_then(LRItem::cast)?;
 
             fn pretty_sym(s: Option<SyntaxToken>) -> String {
                 s.map(SnapToken)
