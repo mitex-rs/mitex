@@ -241,6 +241,8 @@ impl Converter {
                             _ => self.convert(f, rowan::NodeOrToken::Token(token), spec)?,
                         },
                     }
+                    // add space
+                    f.write_char(' ')?;
                 }
                 if name == "right" {
                     f.write_char(')')?;
@@ -949,29 +951,35 @@ mod tests {
     fn test_convert_lr() {
         assert_debug_snapshot!(convert_math(r#"$\left.\right.$"#), @r###"
         Ok(
-            "lr()",
+            "lr(  )",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\left.a\right.$"#), @r###"
         Ok(
-            "lr(a )",
+            "lr( a  )",
         )
         "###);
         assert_debug_snapshot!(convert_math(r#"$\alpha\left.\right.$"#), @r###"
         Ok(
-            "alpha lr()",
+            "alpha lr(  )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$\left  . a \right    \|$"#), @r###"
         Ok(
-            "lr(   a      ||)",
+            "lr(     a       || )",
         )
         "###
         );
         assert_debug_snapshot!(convert_math(r#"$\left\langle a\right\|$"#), @r###"
         Ok(
-            "lr(angle.l a ||)",
+            "lr(angle.l  a || )",
+        )
+        "###
+        );
+        assert_debug_snapshot!(convert_math(r#"$\left\lbrack\lbrack x\rbrack\right\rbrack$"#), @r###"
+        Ok(
+            "lr(bracket.l bracket.l  x bracket.r bracket.r )",
         )
         "###
         );
