@@ -13,7 +13,6 @@ use mitex_parser::syntax::FormulaItem;
 use mitex_parser::syntax::SyntaxNode;
 use mitex_spec_gen::DEFAULT_SPEC;
 use rowan::ast::AstNode;
-use rowan::SyntaxToken;
 
 // use bitflags::bitflags;
 //
@@ -442,49 +441,17 @@ impl Converter {
                 }
 
                 if typst_name.starts_with("text") {
+                    f.write_char('#')?;
                     f.write_str(typst_name)?;
-                    f.write_str("(\"")?;
+                    f.write_char('[')?;
 
-                    fn is_trivia_elem(elem: &LatexSyntaxElem) -> bool {
-                        elem.as_token()
-                            .map(SyntaxToken::kind)
-                            .map_or(false, LatexSyntaxKind::is_trivia)
-                    }
-
-                    let mut args = args.as_slice();
-                    while args.first().map_or(false, is_trivia_elem) {
-                        args = &args[1..];
-                    }
-                    while args.last().map_or(false, is_trivia_elem) {
-                        args = &args[..args.len() - 1];
-                    }
-
+                    let prev_mode = self.enter_mode(LaTeXMode::Text);
                     for arg in args {
-                        if let Some(text) = arg.as_token() {
-                            if matches!(text.kind(), TokenLBrace | TokenRBrace) {
-                                continue;
-                            }
-                            f.write_str(text.text())?;
-                        } else {
-                            arg.as_node()
-                                .unwrap()
-                                .descendants_with_tokens()
-                                .for_each(|child| {
-                                    if let Some(text) = child.as_token() {
-                                        if matches!(text.kind(), TokenLBrace | TokenRBrace) {
-                                            return;
-                                        }
-                                        if matches!(text.kind(), TokenDitto) {
-                                            f.write_str("\\\"").unwrap();
-                                            return;
-                                        }
-                                        f.write_str(text.text()).unwrap();
-                                    }
-                                });
-                        }
+                        self.convert(f, arg, spec)?;
                     }
+                    self.exit_mode(prev_mode);
 
-                    f.write_str("\")")?;
+                    f.write_str("];")?;
                     return Ok(());
                 }
 
@@ -842,7 +809,7 @@ mod tests {
         );
         assert_debug_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#), @r###"
         Ok(
-            "mitexoverbrace(a  +  b  +  c )^(textmath(\"This is an overbrace\"))",
+            "mitexoverbrace(a  +  b  +  c )^(#textmath[This is an overbrace];)",
         )
         "###
         );
@@ -1110,19 +1077,20 @@ a & b & c
     fn test_convert_ditto() {
         assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###);
         assert_debug_snapshot!(convert_math(r#"$a"b"c$"#).unwrap(), @r###""a \\\"b \\\"c ""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""textmath(\"a\\\"b\\\"c\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""textmath(\"a \\\" b \\\" c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a"b"c}$"#).unwrap(), @r###""#textmath[a\\\"b\\\"c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{a " b " c}$"#).unwrap(), @r###""#textmath[a \\\" b \\\" c];""###);
     }
 
     #[test]
     fn test_convert_text() {
-        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""textmath(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""textmath(\" a b c \")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""textmath(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""textmath(\"abc\")""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""textmath(\"ab c\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc}$"#).unwrap(), @r###""#textmath[abc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ a b c }$"#).unwrap(), @r###""#textmath[ a b c ];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{abc{}}$"#).unwrap(), @r###""#textmath[abc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""#textmath[abc];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""#textmath[ab c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab$x$c}$"#).unwrap(), @r###""#textmath[ab#math.equation(block: false, $x $);c];""###);
         // note: hack doesn't work in this case
-        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""textmath(\"ab\\colorredc\")""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""#textmath[abmitexcolor(red,c)];""###);
     }
 
     #[test]
