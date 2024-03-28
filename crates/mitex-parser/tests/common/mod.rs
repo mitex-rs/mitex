@@ -74,6 +74,7 @@ pub mod ast_snapshot {
                 SyntaxKind::TokenEndMath => "end-math",
                 SyntaxKind::TokenAmpersand => "ampersand'",
                 SyntaxKind::TokenHash => "hash'",
+                SyntaxKind::TokenAsterisk => "asterisk'",
                 SyntaxKind::TokenUnderscore => "underscore'",
                 SyntaxKind::TokenCaret => "caret'",
                 SyntaxKind::TokenApostrophe => "apostrophe'",

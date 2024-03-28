@@ -91,6 +91,10 @@ pub enum Token {
     #[token("#")]
     Hash,
 
+    /// An ascii asterisk
+    #[token("*")]
+    Asterisk,
+
     /// An ascii underscore
     #[token("_", priority = 2)]
     Underscore,

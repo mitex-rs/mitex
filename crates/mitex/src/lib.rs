@@ -248,26 +248,31 @@ impl Converter {
                 }
             }
             ItemAttachComponent => {
-                let mut based = false;
-                let mut first = true;
-                for child in elem.as_node().unwrap().children_with_tokens() {
-                    if first {
-                        let kind = child.as_token().map(|n| n.kind());
-                        if matches!(kind, Some(TokenUnderscore | TokenCaret)) {
-                            if !based {
-                                f.write_str("zws")?;
+                if matches!(self.mode, LaTeXMode::Math) {
+                    let mut based = false;
+                    let mut first = true;
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        if first {
+                            let kind = child.as_token().map(|n| n.kind());
+                            if matches!(kind, Some(TokenUnderscore | TokenCaret)) {
+                                if !based {
+                                    f.write_str("zws")?;
+                                }
+                                write!(f, "{}(", child.as_token().unwrap().text())?;
+                                first = false;
+                                continue;
+                            } else if !matches!(kind, Some(TokenWhiteSpace)) {
+                                based = true;
                             }
-                            write!(f, "{}(", child.as_token().unwrap().text())?;
-                            first = false;
-                            continue;
-                        } else if !matches!(kind, Some(TokenWhiteSpace)) {
-                            based = true;
                         }
+                        self.convert(f, child, spec)?;
                     }
-                    self.convert(f, child, spec)?;
-                }
-                if !first {
-                    f.write_char(')')?;
+                    if !first {
+                        f.write_char(')')?;
+                    }
+                } else {
+                    // write text directly in text mode
+                    f.write_str(elem.as_node().unwrap().text().to_string().as_ref())?;
                 }
             }
             TokenApostrophe => {
@@ -324,6 +329,9 @@ impl Converter {
             }
             TokenHash => {
                 f.write_str("\\#")?;
+            }
+            TokenAsterisk => {
+                f.write_str("\\*")?;
             }
             TokenDitto => {
                 f.write_str("\\\"")?;
@@ -1089,6 +1097,9 @@ a & b & c
         assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""#textmath[abc];""###);
         assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""#textmath[ab c];""###);
         assert_debug_snapshot!(convert_math(r#"$\text{ab$x$c}$"#).unwrap(), @r###""#textmath[ab#math.equation(block: false, $x $);c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab*c}$"#).unwrap(), @r###""#textmath[ab*c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab_c}$"#).unwrap(), @r###""#textmath[ab_c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab^c}$"#).unwrap(), @r###""#textmath[ab^c];""###);
         // note: hack doesn't work in this case
         assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""#textmath[abmitexcolor(red,c)];""###);
     }
