@@ -9,7 +9,10 @@ Write inline equations like #mi("x") or #mi[y].
 Also block equations (this case is from #text(blue.lighten(20%), link("https://katex.org/")[katex.org])):
 
 #mitex(`
-  abc\text{abfds fds}abc
+  \newcommand{\f}[2]{#1f(#2)}
+  \f\relax{x} = \int_{-\infty}^\infty
+    \f\hat\xi\,e^{2 \pi i \xi x}
+    \,d\xi
 `)
 
 We also support text mode (in development):
