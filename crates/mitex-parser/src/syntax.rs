@@ -69,6 +69,7 @@ pub enum SyntaxKind {
     TokenEndMath,
     TokenAmpersand,
     TokenHash,
+    TokenAsterisk,
     TokenUnderscore,
     TokenCaret,
     TokenApostrophe,
@@ -126,6 +127,7 @@ impl From<Token> for SyntaxKind {
             Token::Dollar => SyntaxKind::TokenDollar,
             Token::Ampersand => SyntaxKind::TokenAmpersand,
             Token::Hash => SyntaxKind::TokenHash,
+            Token::Asterisk => SyntaxKind::TokenAsterisk,
             Token::NewLine => SyntaxKind::ItemNewLine,
             Token::MacroArg(_) => SyntaxKind::TokenWord,
             Token::CommandName(

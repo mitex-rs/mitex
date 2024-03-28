@@ -32,7 +32,6 @@
 } else {
   texcolor.text
 } 
-#let text-end-space(it) = if it.len() > 1 and it.ends-with(" ") { " " }
 
 // 1. functions created to make it easier to define a spec
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
@@ -41,7 +40,7 @@
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
 #let matrix-handle(delim: none, handle: none) = define-env(none, kind: "is-matrix", alias: none, handle: math.mat.with(delim: delim))
-#let text-handle(wrap) = define-cmd(1, handle: it => $wrap(it)$ + text-end-space(it),)
+#let text-handle(handle) = define-cmd(1, handle: handle)
 #let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 { fn(..args) } else { math.zws }
 #let ignore-me = it => {}
 #let ignore-sym = define-sym("")

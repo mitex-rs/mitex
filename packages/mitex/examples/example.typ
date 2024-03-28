@@ -1,4 +1,4 @@
-#import "@preview/mitex:0.2.2": *
+#import "../lib.typ": *
 
 #set page(width: 500pt, height: auto, margin: 1em)
 
