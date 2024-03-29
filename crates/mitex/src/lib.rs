@@ -271,8 +271,9 @@ impl Converter {
                         f.write_char(')')?;
                     }
                 } else {
-                    // write text directly in text mode
-                    f.write_str(elem.as_node().unwrap().text().to_string().as_ref())?;
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        self.convert(f, child, spec)?;
+                    }
                 }
             }
             TokenApostrophe => {
@@ -729,6 +730,15 @@ mod tests {
     }
 
     #[test]
+    fn test_convert_asterisk() {
+        assert_debug_snapshot!(convert_math(r#"$a*b * c$"#), @r###"
+        Ok(
+            "a \\*b  \\* c ",
+        )
+        "###);
+    }
+
+    #[test]
     fn test_convert_greek() {
         assert_debug_snapshot!(convert_math(r#"$\alpha x$"#), @r###"
         Ok(
@@ -1097,9 +1107,9 @@ a & b & c
         assert_debug_snapshot!(convert_math(r#"$\text{ab{}c}$"#).unwrap(), @r###""#textmath[abc];""###);
         assert_debug_snapshot!(convert_math(r#"$\text{ab c}$"#).unwrap(), @r###""#textmath[ab c];""###);
         assert_debug_snapshot!(convert_math(r#"$\text{ab$x$c}$"#).unwrap(), @r###""#textmath[ab#math.equation(block: false, $x $);c];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab*c}$"#).unwrap(), @r###""#textmath[ab*c];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab_c}$"#).unwrap(), @r###""#textmath[ab_c];""###);
-        assert_debug_snapshot!(convert_math(r#"$\text{ab^c}$"#).unwrap(), @r###""#textmath[ab^c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab*c}$"#).unwrap(), @r###""#textmath[ab\\*c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab_c}$"#).unwrap(), @r###""#textmath[ab\\_c];""###);
+        assert_debug_snapshot!(convert_math(r#"$\text{ab^c}$"#).unwrap(), @r###""#textmath[ab\\^c];""###);
         // note: hack doesn't work in this case
         assert_debug_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @r###""#textmath[abmitexcolor(red,c)];""###);
     }

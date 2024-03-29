@@ -100,7 +100,7 @@ pub enum Token {
     Underscore,
 
     /// A character sequence that doesn't contain any above tokens
-    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_'";&^#]+"#, priority = 1)]
+    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_\*'";&^#]+"#, priority = 1)]
     Word,
 
     /// Special dollar signs
