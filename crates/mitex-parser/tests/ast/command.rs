@@ -19,7 +19,8 @@ fn test_starrd_command() {
     assert_debug_snapshot!(parse(r#"\varphi*1"#), @r###"
     root
     |cmd(cmd-name("\\varphi"))
-    |text(word'("*1"))
+    |asterisk'("*")
+    |text(word'("1"))
     "###
     );
 }
