@@ -70,6 +70,7 @@ pub enum SyntaxKind {
     TokenAmpersand,
     TokenHash,
     TokenAsterisk,
+    TokenAtSign,
     TokenUnderscore,
     TokenCaret,
     TokenApostrophe,
@@ -128,6 +129,7 @@ impl From<Token> for SyntaxKind {
             Token::Ampersand => SyntaxKind::TokenAmpersand,
             Token::Hash => SyntaxKind::TokenHash,
             Token::Asterisk => SyntaxKind::TokenAsterisk,
+            Token::AtSign => SyntaxKind::TokenAtSign,
             Token::NewLine => SyntaxKind::ItemNewLine,
             Token::MacroArg(_) => SyntaxKind::TokenWord,
             Token::CommandName(

@@ -334,6 +334,9 @@ impl Converter {
             TokenAsterisk => {
                 f.write_str("\\*")?;
             }
+            TokenAtSign => {
+                f.write_str("\\@")?;
+            }
             TokenDitto => {
                 f.write_str("\\\"")?;
             }
@@ -730,15 +733,6 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_asterisk() {
-        assert_debug_snapshot!(convert_math(r#"$a*b * c$"#), @r###"
-        Ok(
-            "a \\*b  \\* c ",
-        )
-        "###);
-    }
-
-    #[test]
     fn test_convert_greek() {
         assert_debug_snapshot!(convert_math(r#"$\alpha x$"#), @r###"
         Ok(
@@ -906,7 +900,11 @@ mod tests {
         )
         "###
         );
+        assert_debug_snapshot!(convert_math(r#"$a*b * c$"#).unwrap(), @r###""a \\*b  \\* c ""###
+        );
         assert_debug_snapshot!(convert_math(r#"$"$"#).unwrap(), @r###""\\\"""###
+        );
+        assert_debug_snapshot!(convert_text(r#"@abc"#).unwrap(), @r###""\\@abc""###
         );
     }
 

@@ -95,12 +95,16 @@ pub enum Token {
     #[token("*")]
     Asterisk,
 
+    /// An ascii atsign
+    #[token("@")]
+    AtSign,
+
     /// An ascii underscore
     #[token("_", priority = 2)]
     Underscore,
 
     /// A character sequence that doesn't contain any above tokens
-    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_\*'";&^#]+"#, priority = 1)]
+    #[regex(r#"[^\s\\%\{\},\$\[\]\(\)\~/_\*@'";&^#]+"#, priority = 1)]
     Word,
 
     /// Special dollar signs

@@ -379,6 +379,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
             | Token::LineComment
             | Token::Hash
             | Token::Asterisk
+            | Token::AtSign
             | Token::Error => {
                 self.eat();
                 return false;
