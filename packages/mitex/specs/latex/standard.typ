@@ -242,7 +242,7 @@
   underbrace: limits-handle("mitexunderbrace", math.underbrace),
   overbracket: limits-handle("mitexoverbracket", math.overbracket),
   underbracket: limits-handle("mitexunderbracket", math.underbracket),
-  boxed: define-cmd(1, handle: it => box(stroke: 0.5pt, $it$)),
+  boxed: define-cmd(1, handle: it => box(stroke: 0.5pt, inset: 6pt, $it$)),
   // Greeks
   alpha: sym,
   beta: sym,
