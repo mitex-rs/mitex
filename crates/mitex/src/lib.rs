@@ -14,21 +14,6 @@ use mitex_parser::syntax::SyntaxNode;
 use mitex_spec_gen::DEFAULT_SPEC;
 use rowan::ast::AstNode;
 
-// use bitflags::bitflags;
-//
-// The `bitflags!` macro generates `struct`s that manage a set of flags.
-// bitflags! {
-//     /// Represents a set of flags.
-//     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-//     struct ConvertContext: u32 {
-//         /// The value `Matrix`, at bit position `0`.
-//         const Matrix = 0b00000001;
-
-//         /// The combination of `A`, `B`, and `C`.
-//         const ABC = Self::Matrix.bits();
-//     }
-// }
-
 #[derive(Debug, Clone, Copy, Default)]
 enum LaTeXMode {
     #[default]
@@ -166,93 +151,14 @@ impl Converter {
                 self.convert_formula(f, elem, spec)?;
             }
             ItemCurly => {
-                // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
-                let mut prev = LaTeXEnv::None;
-                let mut enter_new_env = false;
-                // hack for \substack{abc \\ bcd}
-                if matches!(self.mode, LaTeXMode::Math) && !matches!(self.env, LaTeXEnv::SubStack) {
-                    prev = self.enter_env(LaTeXEnv::MathCurlyGroup);
-                    enter_new_env = true;
-                }
-                let mut zws = true;
-                for child in elem.as_node().unwrap().children_with_tokens() {
-                    match &child.kind() {
-                        TokenWhiteSpace | TokenLineBreak | TokenLBrace | TokenRBrace => {}
-                        _ => {
-                            zws = false;
-                        }
-                    }
-                    self.convert(f, child, spec)?;
-                }
-                if matches!(self.mode, LaTeXMode::Math) {
-                    if zws {
-                        // deal with case like `{}_1^2x_3^4`
-                        f.write_str("zws ")?;
-                    }
-                    if enter_new_env {
-                        self.exit_env(prev);
-                    }
-                }
+                self.convert_curly_group(f, elem, spec)?;
             }
-            // handle lr
+            // handle \left and \right
             ClauseLR => {
-                let name_and_args = elem
-                    .as_node()
-                    .unwrap()
-                    .children_with_tokens()
-                    .collect::<Vec<_>>();
-                let name = name_and_args[0].as_token().unwrap().text();
-                // remove prefix \
-                let name = &name[1..];
-                let args = name_and_args[1..].to_owned();
-                if name == "left" {
-                    f.write_str("lr(")?;
-                }
-                for arg in args {
-                    match arg {
-                        LatexSyntaxElem::Node(node) => {
-                            self.convert(f, LatexSyntaxElem::Node(node), spec)?;
-                        }
-                        LatexSyntaxElem::Token(token) => match token.kind() {
-                            TokenWord if token.text() == "." => {}
-                            _ => self.convert(f, rowan::NodeOrToken::Token(token), spec)?,
-                        },
-                    }
-                    // add space
-                    f.write_char(' ')?;
-                }
-                if name == "right" {
-                    f.write_char(')')?;
-                }
+                self.convert_clause_lr(f, elem, spec)?;
             }
             ItemAttachComponent => {
-                if matches!(self.mode, LaTeXMode::Math) {
-                    let mut based = false;
-                    let mut first = true;
-                    for child in elem.as_node().unwrap().children_with_tokens() {
-                        if first {
-                            let kind = child.as_token().map(|n| n.kind());
-                            if matches!(kind, Some(TokenUnderscore | TokenCaret)) {
-                                if !based {
-                                    f.write_str("zws")?;
-                                }
-                                write!(f, "{}(", child.as_token().unwrap().text())?;
-                                first = false;
-                                continue;
-                            } else if !matches!(kind, Some(TokenWhiteSpace)) {
-                                based = true;
-                            }
-                        }
-                        self.convert(f, child, spec)?;
-                    }
-                    if !first {
-                        f.write_char(')')?;
-                    }
-                } else {
-                    for child in elem.as_node().unwrap().children_with_tokens() {
-                        self.convert(f, child, spec)?;
-                    }
-                }
+                self.convert_attach_component(f, elem, spec)?;
             }
             ClauseCommandName => Err("command name outside of command".to_owned())?,
             ItemBegin | ItemEnd => Err("clauses outside of environment".to_owned())?,
@@ -265,6 +171,7 @@ impl Converter {
                         f.write_char(' ')?;
                     }
                 } else {
+                    // write the word directly in text mode
                     f.write_str(elem.as_token().unwrap().text())?;
                 }
             }
@@ -273,6 +180,7 @@ impl Converter {
             | TokenComment | ItemBlockComment => {}
             // space identical
             TokenWhiteSpace => {
+                // indent for itemize and enumerate
                 if self.skip_next_space {
                     self.skip_next_space = false;
                     return Ok(());
@@ -287,15 +195,12 @@ impl Converter {
                 }
                 self.skip_next_space = true;
             }
-            // escape
+            // escapes
             TokenApostrophe => {
                 f.write_char('\'')?;
             }
             TokenComma => {
                 f.write_str("\\,")?;
-            }
-            TokenTilde => {
-                f.write_str("space.nobreak ")?;
             }
             TokenSlash => {
                 f.write_str("\\/")?;
@@ -332,6 +237,13 @@ impl Converter {
             }
             TokenRBracket => {
                 f.write_str("\\]")?;
+            }
+            TokenTilde => {
+                if matches!(self.mode, LaTeXMode::Math) {
+                    f.write_str("space.nobreak ")?;
+                } else {
+                    f.write_str("\\~")?;
+                }
             }
             TokenAmpersand => match self.env {
                 LaTeXEnv::Matrix => f.write_str("zws ,")?,
@@ -598,6 +510,127 @@ impl Converter {
                 f.write_str("$);")?;
             } else {
                 f.write_str(" $")?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Convert curly group like `{abc}`
+    fn convert_curly_group(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        use LatexSyntaxKind::*;
+        // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
+        let mut prev = LaTeXEnv::None;
+        let mut enter_new_env = false;
+        // hack for \substack{abc \\ bcd}
+        if matches!(self.mode, LaTeXMode::Math) && !matches!(self.env, LaTeXEnv::SubStack) {
+            prev = self.enter_env(LaTeXEnv::MathCurlyGroup);
+            enter_new_env = true;
+        }
+        // whether to add zws for empty curly group
+        let mut zws = true;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            match &child.kind() {
+                TokenWhiteSpace | TokenLineBreak | TokenLBrace | TokenRBrace => {}
+                _ => {
+                    zws = false;
+                }
+            }
+            self.convert(f, child, spec)?;
+        }
+        if matches!(self.mode, LaTeXMode::Math) {
+            if zws {
+                // deal with case like `{}_1^2x_3^4`
+                f.write_str("zws ")?;
+            }
+            if enter_new_env {
+                self.exit_env(prev);
+            }
+        }
+        Ok(())
+    }
+
+    /// Convert \left and \right
+    fn convert_clause_lr(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let name_and_args = elem
+            .as_node()
+            .unwrap()
+            .children_with_tokens()
+            .collect::<Vec<_>>();
+        let name = name_and_args[0].as_token().unwrap().text();
+        // remove prefix \
+        let name = &name[1..];
+        let args = name_and_args[1..].to_owned();
+        if name == "left" {
+            f.write_str("lr(")?;
+        }
+        for arg in args {
+            match arg {
+                LatexSyntaxElem::Node(node) => {
+                    self.convert(f, LatexSyntaxElem::Node(node), spec)?;
+                }
+                LatexSyntaxElem::Token(token) => match token.kind() {
+                    LatexSyntaxKind::TokenWord if token.text() == "." => {}
+                    _ => self.convert(f, rowan::NodeOrToken::Token(token), spec)?,
+                },
+            }
+            // add space
+            f.write_char(' ')?;
+        }
+        if name == "right" {
+            f.write_char(')')?;
+        }
+        Ok(())
+    }
+
+    /// Convert attach component like `x_1^2`
+    fn convert_attach_component(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        if matches!(self.mode, LaTeXMode::Math) {
+            // if there is already a base, if not, we need to add zws, like `_1^2`
+            let mut based = false;
+            // is the first non-empty element
+            let mut first = true;
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                if first {
+                    let kind = child.as_token().map(|n| n.kind());
+                    // the underscore _ or caret ^ is the split point
+                    if matches!(
+                        kind,
+                        Some(LatexSyntaxKind::TokenUnderscore | LatexSyntaxKind::TokenCaret)
+                    ) {
+                        if !based {
+                            f.write_str("zws")?;
+                        }
+                        write!(f, "{}(", child.as_token().unwrap().text())?;
+                        first = false;
+                        continue;
+                    } else if !matches!(kind, Some(LatexSyntaxKind::TokenWhiteSpace)) {
+                        based = true;
+                    }
+                }
+                self.convert(f, child, spec)?;
+            }
+            if !first {
+                f.write_char(')')?;
+            }
+        } else {
+            // convert directly in text mode
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                self.convert(f, child, spec)?;
             }
         }
         Ok(())
