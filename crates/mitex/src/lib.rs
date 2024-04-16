@@ -163,29 +163,7 @@ impl Converter {
                 }
             }
             ItemFormula => {
-                let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
-                if !formula.is_valid() {
-                    Err("formula is not valid".to_owned())?
-                }
-                if matches!(self.mode, LaTeXMode::Text) {
-                    if formula.is_inline() {
-                        f.write_str("#math.equation(block: false, $")?;
-                    } else {
-                        f.write_str("$ ")?;
-                    }
-                }
-                let prev = self.enter_mode(LaTeXMode::Math);
-                for child in elem.as_node().unwrap().children_with_tokens() {
-                    self.convert(f, child, spec)?;
-                }
-                self.exit_mode(prev);
-                if matches!(self.mode, LaTeXMode::Text) {
-                    if formula.is_inline() {
-                        f.write_str("$);")?;
-                    } else {
-                        f.write_str(" $")?;
-                    }
-                }
+                self.convert_formula(f, elem, spec)?;
             }
             ItemCurly => {
                 // deal with case like `\begin{pmatrix}x{\\}x\end{pmatrix}`
@@ -276,9 +254,6 @@ impl Converter {
                     }
                 }
             }
-            TokenApostrophe => {
-                f.write_char('\'')?;
-            }
             ClauseCommandName => Err("command name outside of command".to_owned())?,
             ItemBegin | ItemEnd => Err("clauses outside of environment".to_owned())?,
             TokenWord => {
@@ -313,6 +288,9 @@ impl Converter {
                 self.skip_next_space = true;
             }
             // escape
+            TokenApostrophe => {
+                f.write_char('\'')?;
+            }
             TokenComma => {
                 f.write_str("\\,")?;
             }
@@ -365,19 +343,8 @@ impl Converter {
                 LaTeXEnv::MathCurlyGroup => {}
                 _ => f.write_str("\\ ")?,
             },
-            // for left/right
             TokenCommandSym => {
-                let name = elem.as_token().unwrap().text();
-                // remove prefix \
-                let name = &name[1..];
-                // get cmd_shape and arg_shape from spec
-                let cmd_shape = spec
-                    .get_cmd(name)
-                    .ok_or_else(|| format!("unknown command: \\{}", name))?;
-                // typst alias name
-                let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
-                // write to output
-                write!(f, "{}", typst_name)?;
+                self.convert_command_sym(f, elem, spec)?;
             }
             ItemCmd => {
                 let cmd = CmdItem::cast(elem.as_node().unwrap().clone()).unwrap();
@@ -388,45 +355,12 @@ impl Converter {
 
                 // hack for \item in itemize and enumerate
                 if name == "item" {
-                    if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
-                        f.write_char('\n')?;
-                        for _ in 0..(self.indent - 2) {
-                            f.write_char(' ')?;
-                        }
-                        if matches!(self.env, LaTeXEnv::Itemize) {
-                            f.write_str("- ")?;
-                        } else {
-                            f.write_str("+ ")?;
-                        }
-                    } else {
-                        Err("item command outside of itemize or enumerate".to_owned())?;
-                    }
-                    return Ok(());
+                    return self.convert_command_item(f);
                 }
 
                 // hack for \label
                 if name == "label" {
-                    let arg = cmd
-                        .arguments()
-                        .next()
-                        .expect("\\label command must have one argument");
-                    // remove { and } then trim
-                    let label = arg.text().to_string();
-                    let label = &label[1..(label.len() - 1)];
-                    let label = label.trim();
-                    match self.env {
-                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate => {
-                            if matches!(self.mode, LaTeXMode::Text) {
-                                f.write_char('<')?;
-                                f.write_str(label)?;
-                                f.write_char('>')?;
-                            }
-                        }
-                        _ => {
-                            self.label = Some(label.to_string());
-                        }
-                    }
-                    return Ok(());
+                    return self.convert_command_label(f, &cmd);
                 }
 
                 let args = elem
@@ -435,7 +369,6 @@ impl Converter {
                     .children_with_tokens()
                     .filter(|node| node.kind() != ClauseCommandName)
                     .collect::<Vec<_>>();
-                // println!("name: {:?} with args {:?}", name, args);
 
                 // get cmd_shape and arg_shape from spec
                 let cmd_shape = spec
@@ -452,6 +385,7 @@ impl Converter {
                     typst_name = "#emph";
                 }
 
+                // Commands starting with text in math mode are called in text mode
                 if typst_name.starts_with("text") {
                     f.write_char('#')?;
                     f.write_str(typst_name)?;
@@ -633,6 +567,107 @@ impl Converter {
             }
         };
 
+        Ok(())
+    }
+
+    /// Convert formula like `$x$` or `$$x$$`
+    fn convert_formula(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let formula = FormulaItem::cast(elem.as_node().unwrap().clone()).unwrap();
+        if !formula.is_valid() {
+            Err("formula is not valid".to_owned())?
+        }
+        if matches!(self.mode, LaTeXMode::Text) {
+            if formula.is_inline() {
+                f.write_str("#math.equation(block: false, $")?;
+            } else {
+                f.write_str("$ ")?;
+            }
+        }
+        let prev = self.enter_mode(LaTeXMode::Math);
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            self.convert(f, child, spec)?;
+        }
+        self.exit_mode(prev);
+        if matches!(self.mode, LaTeXMode::Text) {
+            if formula.is_inline() {
+                f.write_str("$);")?;
+            } else {
+                f.write_str(" $")?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Convert command symbol like `\alpha`
+    fn convert_command_sym(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let name = elem.as_token().unwrap().text();
+        // remove prefix \
+        let name = &name[1..];
+        // get cmd_shape and arg_shape from spec
+        let cmd_shape = spec
+            .get_cmd(name)
+            .ok_or_else(|| format!("unknown command: \\{}", name))?;
+        // typst alias name
+        let typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
+        // write to output
+        write!(f, "{}", typst_name)?;
+        Ok(())
+    }
+
+    /// Convert command `\item` for itemize and enumerate
+    fn convert_command_item(&mut self, f: &mut fmt::Formatter<'_>) -> Result<(), ConvertError> {
+        if matches!(self.env, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            f.write_char('\n')?;
+            for _ in 0..(self.indent - 2) {
+                f.write_char(' ')?;
+            }
+            if matches!(self.env, LaTeXEnv::Itemize) {
+                f.write_str("- ")?;
+            } else {
+                f.write_str("+ ")?;
+            }
+        } else {
+            Err("item command outside of itemize or enumerate".to_owned())?;
+        }
+        Ok(())
+    }
+
+    /// Convert command `\label`
+    fn convert_command_label(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        cmd: &CmdItem,
+    ) -> Result<(), ConvertError> {
+        let arg = cmd
+            .arguments()
+            .next()
+            .expect("\\label command must have one argument");
+        // remove { and } then trim
+        let label = arg.text().to_string();
+        let label = &label[1..(label.len() - 1)];
+        let label = label.trim();
+        match self.env {
+            LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate => {
+                if matches!(self.mode, LaTeXMode::Text) {
+                    f.write_char('<')?;
+                    f.write_str(label)?;
+                    f.write_char('>')?;
+                }
+            }
+            _ => {
+                self.label = Some(label.to_string());
+            }
+        }
         Ok(())
     }
 }
