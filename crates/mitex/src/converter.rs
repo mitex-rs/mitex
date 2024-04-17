@@ -275,99 +275,7 @@ impl Converter {
                 }
             }
             ItemEnv => {
-                let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
-                let name = env
-                    .name_tok()
-                    .expect("environment name must be non-empty")
-                    .text()
-                    .to_string();
-                let name = name.trim();
-                let args = env.arguments();
-                // todo: handle options
-
-                let env_shape = spec
-                    .get_env(name)
-                    .ok_or_else(|| format!("unknown environment: \\{}", name))?;
-                let typst_name = env_shape.alias.as_deref().unwrap_or(name);
-
-                let env_kind = match env_shape.ctx_feature {
-                    ContextFeature::None => LaTeXEnv::None,
-                    ContextFeature::IsMath => LaTeXEnv::Math,
-                    ContextFeature::IsMatrix => LaTeXEnv::Matrix,
-                    ContextFeature::IsCases => LaTeXEnv::Cases,
-                    ContextFeature::IsItemize => LaTeXEnv::Itemize,
-                    ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
-                };
-
-                // hack for itemize and enumerate
-                if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
-                    let prev = self.enter_env(env_kind);
-
-                    for child in elem.as_node().unwrap().children_with_tokens() {
-                        if matches!(child.kind(), ItemBegin | ItemEnd) {
-                            continue;
-                        }
-
-                        self.convert(f, child, spec)?;
-                    }
-
-                    self.exit_env(prev);
-
-                    return Ok(());
-                }
-
-                // text mode to math mode with $ ... $
-                let is_need_dollar = matches!(self.mode, LaTeXMode::Text)
-                    && !matches!(
-                        env_kind,
-                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-                    );
-                let prev = self.enter_env(env_kind);
-                let mut prev_mode = LaTeXMode::Text;
-                if is_need_dollar {
-                    f.write_str("$ ")?;
-                    prev_mode = self.enter_mode(LaTeXMode::Math);
-                }
-
-                // environment name
-                f.write_str(typst_name)?;
-                f.write_char('(')?;
-                // named args
-                for (index, arg) in args.enumerate() {
-                    f.write_str(format!("arg{}: ", index).as_str())?;
-                    self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
-                    f.write_char(',')?;
-                }
-
-                for child in elem.as_node().unwrap().children_with_tokens() {
-                    if matches!(child.kind(), ItemBegin | ItemEnd) {
-                        continue;
-                    }
-
-                    self.convert(f, child, spec)?;
-                }
-
-                f.write_char(')')?;
-
-                self.exit_env(prev);
-
-                if is_need_dollar {
-                    f.write_str(" $")?;
-                    self.exit_mode(prev_mode);
-                }
-
-                // handle label
-                if matches!(
-                    self.env,
-                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-                ) {
-                    if let Some(label) = self.label.take() {
-                        f.write_char('<')?;
-                        f.write_str(label.as_str())?;
-                        f.write_char('>')?;
-                        self.label = None;
-                    }
-                }
+                self.convert_env(f, elem, spec)?;
             }
             ItemTypstCode => {
                 write!(f, "{}", elem.as_node().unwrap().text())?;
@@ -702,6 +610,122 @@ impl Converter {
         // hack for \substack{abc \\ bcd}
         if typst_name == "substack" {
             self.exit_env(prev);
+        }
+
+        Ok(())
+    }
+
+    /// Convert environments
+    fn convert_env(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
+        let name = env
+            .name_tok()
+            .expect("environment name must be non-empty")
+            .text()
+            .to_string();
+        let name = name.trim();
+        let args = env.arguments();
+        // todo: handle options
+
+        let env_shape = spec
+            .get_env(name)
+            .ok_or_else(|| format!("unknown environment: \\{}", name))?;
+        let typst_name = env_shape.alias.as_deref().unwrap_or(name);
+
+        let env_kind = match env_shape.ctx_feature {
+            ContextFeature::None => LaTeXEnv::None,
+            ContextFeature::IsMath => LaTeXEnv::Math,
+            ContextFeature::IsMatrix => LaTeXEnv::Matrix,
+            ContextFeature::IsCases => LaTeXEnv::Cases,
+            ContextFeature::IsItemize => LaTeXEnv::Itemize,
+            ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
+        };
+
+        // hack for itemize and enumerate
+        if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            let prev = self.enter_env(env_kind);
+
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                if matches!(
+                    child.kind(),
+                    LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                ) {
+                    continue;
+                }
+
+                self.convert(f, child, spec)?;
+            }
+
+            self.exit_env(prev);
+
+            return Ok(());
+        }
+
+        // text mode to math mode with $ ... $
+        let with_dollar = matches!(self.mode, LaTeXMode::Text)
+            && matches!(
+                env_kind,
+                // math environments
+                LaTeXEnv::Math
+                    | LaTeXEnv::Matrix
+                    | LaTeXEnv::Cases
+                    | LaTeXEnv::SubStack
+                    | LaTeXEnv::MathCurlyGroup
+            );
+        let prev = self.enter_env(env_kind);
+        let mut prev_mode = LaTeXMode::Text;
+        if with_dollar {
+            f.write_str("$ ")?;
+            prev_mode = self.enter_mode(LaTeXMode::Math);
+        }
+
+        // environment name
+        f.write_str(typst_name)?;
+        f.write_char('(')?;
+        // named args
+        for (index, arg) in args.enumerate() {
+            f.write_str(format!("arg{}: ", index).as_str())?;
+            self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
+            f.write_char(',')?;
+        }
+
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            // skip \begin and \end commands
+            if matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+            ) {
+                continue;
+            }
+
+            self.convert(f, child, spec)?;
+        }
+
+        f.write_char(')')?;
+
+        self.exit_env(prev);
+
+        if with_dollar {
+            f.write_str(" $")?;
+            self.exit_mode(prev_mode);
+        }
+
+        // handle label
+        if matches!(
+            self.env,
+            LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
+        ) {
+            if let Some(label) = self.label.take() {
+                f.write_char('<')?;
+                f.write_str(label.as_str())?;
+                f.write_char('>')?;
+                self.label = None;
+            }
         }
 
         Ok(())
