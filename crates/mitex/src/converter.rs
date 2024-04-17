@@ -24,6 +24,8 @@ enum LaTeXEnv {
     #[default]
     // Text mode
     None,
+    Figure,
+    Table,
     Itemize,
     Enumerate,
     // Math mode
@@ -642,6 +644,8 @@ impl Converter {
             ContextFeature::IsMath => LaTeXEnv::Math,
             ContextFeature::IsMatrix => LaTeXEnv::Matrix,
             ContextFeature::IsCases => LaTeXEnv::Cases,
+            ContextFeature::IsFigure => LaTeXEnv::Figure,
+            ContextFeature::IsTable => LaTeXEnv::Table,
             ContextFeature::IsItemize => LaTeXEnv::Itemize,
             ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
         };
@@ -725,22 +729,86 @@ impl Converter {
             //    \begin{table}xxx\end{table} -> #figure(table(), caption: [])
             // 3. \begin{tabular}xxx\end{tabular}
             // environment name
-            let prev = self.enter_env(env_kind);
-            f.write_char('#')?;
-            f.write_str(typst_name)?;
-            f.write_char('[')?;
-            for child in elem.as_node().unwrap().children_with_tokens() {
-                // skip \begin and \end commands
-                if matches!(
-                    child.kind(),
-                    LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
-                ) {
-                    continue;
+            match env_kind {
+                LaTeXEnv::Figure => {
+                    fn is_named_arg(child: &LatexSyntaxElem) -> bool {
+                        matches!(
+                            child.kind(),
+                            LatexSyntaxKind::ItemCmd
+                                if matches!(
+                                    CmdItem::cast(child.as_node().unwrap().clone())
+                                        .unwrap()
+                                        .name_tok()
+                                        .unwrap()
+                                        .text(),
+                                    "\\caption" | "\\centering"
+                                )
+                        )
+                    }
+                    // collect named args
+                    let mut caption = None;
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        if is_named_arg(&child) {
+                            let cmd = CmdItem::cast(child.as_node().unwrap().clone()).unwrap();
+                            let name = cmd.name_tok().unwrap();
+                            let name = name.text();
+                            // remove prefix \
+                            let name = &name[1..];
+                            if name == "caption" {
+                                let arg = cmd
+                                    .arguments()
+                                    .next()
+                                    .expect("\\caption command must have one argument");
+                                caption = Some(arg);
+                            }
+                        }
+                    }
+                    // convert to #figure
+                    let prev = self.enter_env(env_kind);
+                    f.write_char('#')?;
+                    f.write_str(typst_name)?;
+                    f.write_char('(')?;
+                    if let Some(caption) = caption {
+                        f.write_str("caption: [")?;
+                        self.convert(f, caption.into(), spec)?;
+                        f.write_str("],")?;
+                    }
+                    f.write_str(")[")?;
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        // skip \begin and \end commands
+                        if matches!(
+                            child.kind(),
+                            LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                        ) || matches!(child.kind(), LatexSyntaxKind::ItemCmd)
+                            && is_named_arg(&child)
+                        {
+                            continue;
+                        }
+                        self.convert(f, child, spec)?;
+                    }
+                    f.write_str("];")?;
+                    self.exit_env(prev);
                 }
-                self.convert(f, child, spec)?;
+                LaTeXEnv::Table => {}
+                _ => {
+                    let prev = self.enter_env(env_kind);
+                    f.write_char('#')?;
+                    f.write_str(typst_name)?;
+                    f.write_char('[')?;
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        // skip \begin and \end commands
+                        if matches!(
+                            child.kind(),
+                            LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                        ) {
+                            continue;
+                        }
+                        self.convert(f, child, spec)?;
+                    }
+                    f.write_str("];")?;
+                    self.exit_env(prev);
+                }
             }
-            f.write_str("];")?;
-            self.exit_env(prev);
         }
 
         // handle label, only add <label> for text mode

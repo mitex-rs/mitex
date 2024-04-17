@@ -38,6 +38,12 @@ mod ast {
     #[cfg(test)]
     mod trivia;
 
+    #[cfg(test)]
+    mod figure;
+
+    #[cfg(test)]
+    mod tabular;
+
     /// Convenient function to launch/debug a test case
     #[test]
     fn bug_playground() {}

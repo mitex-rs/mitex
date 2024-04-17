@@ -53,6 +53,12 @@ mod cvt {
     mod trivia;
 
     #[cfg(test)]
+    mod figure;
+
+    #[cfg(test)]
+    mod tabular;
+
+    #[cfg(test)]
     mod misc;
     /// Convenient function to launch/debug a test case
     #[test]

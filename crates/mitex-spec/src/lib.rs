@@ -270,6 +270,10 @@ pub enum ContextFeature {
     IsMatrix,
     /// Parse content like cases
     IsCases,
+    /// Parse content like figure
+    IsFigure,
+    /// Parse content like table
+    IsTable,
     /// Parse content like itemize
     IsItemize,
     /// Parse content like enumerate

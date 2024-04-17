@@ -107,6 +107,15 @@
   ), if handle != none { (alias: alias, handle: handle) } else { none })
 }
 
+#let define-glob-env(pat, kind: "none", alias: none, handle: none) = {
+  ((
+    kind: "env",
+    args: ( kind: "glob", pattern: pat ),
+    ctx_feature: ( kind: kind ),
+    alias: alias,
+  ), if handle != none { (alias: alias, handle: handle) } else { none })
+}
+
 /// Define a symbol without alias and without handler function, like \alpha => alpha
 /// 
 /// Return: A spec item and no scope item (none for no scope item)
