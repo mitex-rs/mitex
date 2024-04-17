@@ -153,7 +153,6 @@ impl Converter {
             ItemCurly => {
                 self.convert_curly_group(f, elem, spec)?;
             }
-            // handle \left and \right
             ClauseLR => {
                 self.convert_clause_lr(f, elem, spec)?;
             }
@@ -275,109 +274,8 @@ impl Converter {
                     return self.convert_command_label(f, &cmd);
                 }
 
-                let args = elem
-                    .as_node()
-                    .unwrap()
-                    .children_with_tokens()
-                    .filter(|node| node.kind() != ClauseCommandName)
-                    .collect::<Vec<_>>();
-
-                // get cmd_shape and arg_shape from spec
-                let cmd_shape = spec
-                    .get_cmd(name)
-                    .ok_or_else(|| format!("unknown command: \\{}", name))?;
-                let arg_shape = &cmd_shape.args;
-                // typst alias name
-                let mut typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
-
-                // hack for textbf and textit
-                if name == "textbf" && matches!(self.mode, LaTeXMode::Text) {
-                    typst_name = "#strong";
-                } else if name == "textit" && matches!(self.mode, LaTeXMode::Text) {
-                    typst_name = "#emph";
-                }
-
-                // Commands starting with text in math mode are called in text mode
-                if typst_name.starts_with("text") {
-                    f.write_char('#')?;
-                    f.write_str(typst_name)?;
-                    f.write_char('[')?;
-
-                    let prev_mode = self.enter_mode(LaTeXMode::Text);
-                    for arg in args {
-                        self.convert(f, arg, spec)?;
-                    }
-                    self.exit_mode(prev_mode);
-
-                    f.write_str("];")?;
-                    return Ok(());
-                }
-
                 // normal command
-
-                write!(f, "{}", typst_name)?;
-
-                // hack for \substack{abc \\ bcd}
-                let mut prev = LaTeXEnv::None;
-                if typst_name == "substack" {
-                    prev = self.enter_env(LaTeXEnv::SubStack);
-                }
-
-                if let ArgShape::Right(ArgPattern::None) = arg_shape {
-                    f.write_char(' ')?
-                } else if let ArgShape::Right(ArgPattern::Greedy) = arg_shape {
-                    f.write_char('(')?;
-                    // there is only one arg in greedy
-                    let args = args
-                        .first()
-                        .unwrap()
-                        .as_node()
-                        .unwrap()
-                        .children_with_tokens()
-                        .collect::<Vec<_>>();
-                    let mut cnt = 0;
-                    let args_len = args.len();
-                    for arg in args {
-                        cnt += 1;
-                        let kind = arg.kind();
-                        self.convert(f, arg, spec)?;
-                        if matches!(kind, ItemCurly) && cnt != args_len {
-                            f.write_char(',')?;
-                        }
-                    }
-
-                    f.write_char(')')?;
-                } else if matches!(self.mode, LaTeXMode::Math) {
-                    f.write_char('(')?;
-
-                    let mut cnt = 0;
-                    let args_len = args.len();
-                    for arg in args {
-                        cnt += 1;
-                        let kind = arg.kind();
-                        self.convert(f, arg, spec)?;
-                        if matches!(kind, ClauseArgument) && cnt != args_len {
-                            f.write_char(',')?;
-                        }
-                    }
-
-                    f.write_char(')')?;
-                } else {
-                    // Text mode
-                    for arg in args {
-                        let kind = arg.kind();
-                        if matches!(kind, ClauseArgument) {
-                            f.write_char('[')?;
-                            self.convert(f, arg, spec)?;
-                            f.write_char(']')?;
-                        }
-                    }
-                }
-
-                // hack for \substack{abc \\ bcd}
-                if typst_name == "substack" {
-                    self.exit_env(prev);
-                }
+                self.convert_normal_command(f, elem, spec)?;
             }
             ItemEnv => {
                 let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
@@ -703,6 +601,112 @@ impl Converter {
         }
         Ok(())
     }
+
+    /// Convert normal command
+    fn convert_normal_command(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let cmd = CmdItem::cast(elem.as_node().unwrap().clone()).unwrap();
+        let name = cmd.name_tok().unwrap();
+        let name = name.text();
+        // remove prefix \
+        let name = &name[1..];
+        let args = elem
+            .as_node()
+            .unwrap()
+            .children_with_tokens()
+            .filter(|node| node.kind() != LatexSyntaxKind::ClauseCommandName)
+            .collect::<Vec<_>>();
+
+        // get cmd_shape and arg_shape from spec
+        let cmd_shape = spec
+            .get_cmd(name)
+            .ok_or_else(|| format!("unknown command: \\{}", name))?;
+        let arg_shape = &cmd_shape.args;
+
+        // typst alias name
+        let mut typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
+
+        // hack for textbf and textit
+        if name == "textbf" && matches!(self.mode, LaTeXMode::Text) {
+            typst_name = "#strong";
+        } else if name == "textit" && matches!(self.mode, LaTeXMode::Text) {
+            typst_name = "#emph";
+        }
+
+        // normal command
+        write!(f, "{}", typst_name)?;
+
+        // hack for \substack{abc \\ bcd}
+        let mut prev = LaTeXEnv::None;
+        if typst_name == "substack" {
+            prev = self.enter_env(LaTeXEnv::SubStack);
+        }
+
+        if let ArgShape::Right(ArgPattern::None) = arg_shape {
+            f.write_char(' ')?
+        } else if let ArgShape::Right(ArgPattern::Greedy) = arg_shape {
+            f.write_char('(')?;
+            // there is only one arg in greedy
+            let args = args
+                .first()
+                .unwrap()
+                .as_node()
+                .unwrap()
+                .children_with_tokens()
+                .collect::<Vec<_>>();
+            let mut cnt = 0;
+            let args_len = args.len();
+            for arg in args {
+                cnt += 1;
+                let kind = arg.kind();
+                self.convert(f, arg, spec)?;
+                if matches!(kind, LatexSyntaxKind::ItemCurly) && cnt != args_len {
+                    f.write_char(',')?;
+                }
+            }
+
+            f.write_char(')')?;
+        } else if matches!(self.mode, LaTeXMode::Math) && !typst_name.starts_with('#') {
+            f.write_char('(')?;
+
+            let mut cnt = 0;
+            let args_len = args.len();
+            for arg in args {
+                cnt += 1;
+                let kind = arg.kind();
+                self.convert(f, arg, spec)?;
+                if matches!(kind, LatexSyntaxKind::ClauseArgument) && cnt != args_len {
+                    f.write_char(',')?;
+                }
+            }
+
+            f.write_char(')')?;
+        } else {
+            // Text mode
+            for arg in args {
+                let kind = arg.kind();
+                if matches!(kind, LatexSyntaxKind::ClauseArgument) {
+                    f.write_char('[')?;
+                    let prev_mode = self.enter_mode(LaTeXMode::Text);
+                    self.convert(f, arg, spec)?;
+                    self.exit_mode(prev_mode);
+                    f.write_char(']')?;
+                }
+                f.write_char(';')?;
+            }
+        }
+
+        // hack for \substack{abc \\ bcd}
+        if typst_name == "substack" {
+            self.exit_env(prev);
+        }
+
+        Ok(())
+    }
 }
 
 struct TypstRepr {
@@ -781,12 +785,12 @@ mod tests {
         "###);
         assert_debug_snapshot!(convert_text(r#"\section{Title}"#), @r###"
         Ok(
-            "#heading(level: 1)[Title]",
+            "#heading(level: 1)[Title];",
         )
         "###);
         assert_debug_snapshot!(convert_text(r#"a \textbf{strong} text"#), @r###"
         Ok(
-            "a #strong[strong] text",
+            "a #strong[strong]; text",
         )
         "###);
     }
