@@ -715,11 +715,8 @@ impl Converter {
             self.exit_mode(prev_mode);
         }
 
-        // handle label
-        if matches!(
-            self.env,
-            LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-        ) {
+        // handle label, only add <label> for text mode
+        if matches!(self.mode, LaTeXMode::Text) {
             if let Some(label) = self.label.take() {
                 f.write_char('<')?;
                 f.write_str(label.as_str())?;
