@@ -264,18 +264,17 @@ impl Converter {
                 // remove prefix \
                 let name = &name[1..];
 
-                // hack for \item in itemize and enumerate
-                if name == "item" {
-                    return self.convert_command_item(f);
+                match name {
+                    "item" => {
+                        self.convert_command_item(f)?;
+                    }
+                    "label" => {
+                        self.convert_command_label(f, &cmd)?;
+                    }
+                    _ => {
+                        self.convert_normal_command(f, elem, spec)?;
+                    }
                 }
-
-                // hack for \label
-                if name == "label" {
-                    return self.convert_command_label(f, &cmd);
-                }
-
-                // normal command
-                self.convert_normal_command(f, elem, spec)?;
             }
             ItemEnv => {
                 let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
@@ -631,10 +630,12 @@ impl Converter {
         let mut typst_name = cmd_shape.alias.as_deref().unwrap_or(name);
 
         // hack for textbf and textit
-        if name == "textbf" && matches!(self.mode, LaTeXMode::Text) {
-            typst_name = "#strong";
-        } else if name == "textit" && matches!(self.mode, LaTeXMode::Text) {
-            typst_name = "#emph";
+        if matches!(self.mode, LaTeXMode::Text) {
+            if name == "textbf" {
+                typst_name = "#strong";
+            } else if name == "textit" {
+                typst_name = "#emph";
+            }
         }
 
         // normal command
