@@ -47,6 +47,9 @@ mod cvt {
     mod left_right;
 
     #[cfg(test)]
+    mod simple_env;
+
+    #[cfg(test)]
     mod trivia;
 
     #[cfg(test)]

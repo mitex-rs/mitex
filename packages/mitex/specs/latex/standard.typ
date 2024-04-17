@@ -57,6 +57,8 @@
   item: ignore-sym,
   itemize: define-env(none, kind: "is-itemize"),
   enumerate: define-env(none, kind: "is-enumerate"),
+  quote: define-env(none, alias: "quote(block: true)"),
+  abstract: define-env(none, alias: "quote(block: true)"),
   label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   tag: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   ref: define-cmd(1, alias: "#mitexref", handle: it => ref(label(get-tex-str(it)))),

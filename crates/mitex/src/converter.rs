@@ -666,53 +666,81 @@ impl Converter {
             return Ok(());
         }
 
-        // text mode to math mode with $ ... $
-        let with_dollar = matches!(self.mode, LaTeXMode::Text)
-            && matches!(
-                env_kind,
-                // math environments
-                LaTeXEnv::Math
-                    | LaTeXEnv::Matrix
-                    | LaTeXEnv::Cases
-                    | LaTeXEnv::SubStack
-                    | LaTeXEnv::MathCurlyGroup
-            );
-        let prev = self.enter_env(env_kind);
-        let mut prev_mode = LaTeXMode::Text;
-        if with_dollar {
-            f.write_str("$ ")?;
-            prev_mode = self.enter_mode(LaTeXMode::Math);
-        }
+        // is environment for math
+        let is_math_env = matches!(
+            env_kind,
+            // math environments
+            LaTeXEnv::Math
+                | LaTeXEnv::Matrix
+                | LaTeXEnv::Cases
+                | LaTeXEnv::SubStack
+                | LaTeXEnv::MathCurlyGroup
+        );
 
-        // environment name
-        f.write_str(typst_name)?;
-        f.write_char('(')?;
-        // named args
-        for (index, arg) in args.enumerate() {
-            f.write_str(format!("arg{}: ", index).as_str())?;
-            self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
-            f.write_char(',')?;
-        }
-
-        for child in elem.as_node().unwrap().children_with_tokens() {
-            // skip \begin and \end commands
-            if matches!(
-                child.kind(),
-                LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
-            ) {
-                continue;
+        // convert math environments into functions like `mat(a, b; c, d)`
+        if is_math_env {
+            // text mode to math mode with $ ... $
+            let with_dollar = matches!(self.mode, LaTeXMode::Text) && is_math_env;
+            let prev = self.enter_env(env_kind);
+            let prev_mode = self.enter_mode(LaTeXMode::Math);
+            if with_dollar {
+                f.write_str("$ ")?;
             }
 
-            self.convert(f, child, spec)?;
-        }
+            // environment name
+            f.write_str(typst_name)?;
 
-        f.write_char(')')?;
+            f.write_char('(')?;
+            // named args
+            for (index, arg) in args.enumerate() {
+                f.write_str(format!("arg{}: ", index).as_str())?;
+                self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
+                f.write_char(',')?;
+            }
 
-        self.exit_env(prev);
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                // skip \begin and \end commands
+                if matches!(
+                    child.kind(),
+                    LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                ) {
+                    continue;
+                }
+                self.convert(f, child, spec)?;
+            }
 
-        if with_dollar {
-            f.write_str(" $")?;
-            self.exit_mode(prev_mode);
+            f.write_char(')')?;
+
+            self.exit_env(prev);
+
+            if with_dollar {
+                f.write_str(" $")?;
+                self.exit_mode(prev_mode);
+            }
+        } else {
+            // convert text environments
+            // 1. \begin{quote}xxx\end{quote} -> #quote(block: true)[xxx]
+            //    \begin{abstract}xxx\end{abstract} -> #quote(block: true)[xxx]
+            // 2. \begin{figure}xxx\end{figure} -> #figure(image(), caption: [])
+            //    \begin{table}xxx\end{table} -> #figure(table(), caption: [])
+            // 3. \begin{tabular}xxx\end{tabular}
+            // environment name
+            let prev = self.enter_env(env_kind);
+            f.write_char('#')?;
+            f.write_str(typst_name)?;
+            f.write_char('[')?;
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                // skip \begin and \end commands
+                if matches!(
+                    child.kind(),
+                    LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                ) {
+                    continue;
+                }
+                self.convert(f, child, spec)?;
+            }
+            f.write_str("];")?;
+            self.exit_env(prev);
         }
 
         // handle label, only add <label> for text mode
