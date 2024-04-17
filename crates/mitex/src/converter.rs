@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use std::fmt::Write;
 use std::rc::Rc;
 
-pub use mitex_parser::command_preludes;
 pub use mitex_parser::spec::*;
 
 use mitex_parser::syntax::CmdItem;
