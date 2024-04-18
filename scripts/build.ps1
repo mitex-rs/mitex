@@ -3,6 +3,6 @@ $InstallPath = "packages/mitex/mitex.wasm"
 if (Test-Path $InstallPath) {
   Remove-Item $InstallPath
 }
-mv target/wasm32-unknown-unknown/release/mitex_wasm.wasm $InstallPath
+Move-Item target/wasm32-unknown-unknown/release/mitex_wasm.wasm $InstallPath
 
-pwsh -Command { cd crates/mitex-wasm; wasm-pack build --release --features web }
+pwsh -Command { Set-Location crates/mitex-wasm; wasm-pack build --release --features web }
