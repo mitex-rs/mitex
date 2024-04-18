@@ -2,62 +2,44 @@ use super::prelude::*;
 
 #[test]
 fn easy() {
-    assert_debug_snapshot!(convert_text(r#"\begin{equation}\end{equation}"#), @r###"
-    Ok(
-        "$ aligned() $",
-    )
-    "###);
-    assert_debug_snapshot!(convert_math(r#"\begin{equation}\end{equation}"#), @r###"
-    Ok(
-        "aligned()",
-    )
-    "###);
+    assert_snapshot!(convert_text(r#"\begin{equation}\end{equation}"#).unwrap(), @"$ aligned() $");
+    assert_snapshot!(convert_math(r#"\begin{equation}\end{equation}"#).unwrap(), @"aligned()");
 }
 
 #[test]
 fn matrix() {
-    assert_debug_snapshot!(convert_math(
+    assert_snapshot!(convert_math(
             r#"\begin{matrix}
 a & b \\
 c & d
-\end{matrix}"#), @r###"
-    Ok(
-        "matrix(\na  zws , b  zws ;\nc  zws , d \n)",
+\end{matrix}"#).unwrap(), @r###"
+    matrix(
+    a  zws , b  zws ;
+    c  zws , d 
     )
     "###);
-    assert_debug_snapshot!(convert_math(
-            r#"\begin{pmatrix}\\\end{pmatrix}"#), @r###"
-    Ok(
-        "pmatrix(zws ;)",
-    )
-    "###);
-    assert_debug_snapshot!(convert_math(
-            r#"\begin{pmatrix}x{\\}x\end{pmatrix}"#), @r###"
-    Ok(
-        "pmatrix(x x )",
-    )
-    "###);
+    assert_snapshot!(convert_math(
+            r#"\begin{pmatrix}\\\end{pmatrix}"#).unwrap(), @"pmatrix(zws ;)");
+    assert_snapshot!(convert_math(
+            r#"\begin{pmatrix}x{\\}x\end{pmatrix}"#).unwrap(), @"pmatrix(x x )");
 }
 
 #[test]
 fn arguments() {
-    assert_debug_snapshot!(convert_math(
+    assert_snapshot!(convert_math(
             r#"\begin{array}{lc}
 a & b \\
 c & d
-\end{array}"#), @r###"
-    Ok(
-        "mitexarray(arg0: l c ,\na  zws , b  zws ;\nc  zws , d \n)",
+\end{array}"#).unwrap(), @r###"
+    mitexarray(arg0: l c ,
+    a  zws , b  zws ;
+    c  zws , d 
     )
     "###);
 }
 
 #[test]
 fn space_around_and() {
-    assert_debug_snapshot!(convert_math(
-            r#"\begin{bmatrix}A&B\end{bmatrix}"#), @r###"
-    Ok(
-        "bmatrix(A zws ,B )",
-    )
-    "###);
+    assert_snapshot!(convert_math(
+            r#"\begin{bmatrix}A&B\end{bmatrix}"#).unwrap(), @"bmatrix(A zws ,B )");
 }
