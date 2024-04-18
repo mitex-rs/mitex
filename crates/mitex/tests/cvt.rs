@@ -1,6 +1,6 @@
 mod cvt {
     mod prelude {
-        pub use insta::{assert_debug_snapshot, assert_snapshot};
+        pub use insta::assert_snapshot;
         pub use mitex::convert_math as mitex_convert_math;
         pub use mitex::convert_text as mitex_convert_text;
         pub use mitex_spec_gen::DEFAULT_SPEC;
