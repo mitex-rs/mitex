@@ -809,7 +809,9 @@ impl Converter {
                 LaTeXEnv::Figure => {
                     self.convert_env_figure(f, elem, spec, env_kind, typst_name)?;
                 }
-                LaTeXEnv::Table => {}
+                LaTeXEnv::Table => {
+                    self.convert_env_table(f, elem, spec, env_kind, typst_name)?;
+                }
                 _ => {
                     // normal environment
                     let prev = self.enter_env(env_kind);
@@ -911,6 +913,138 @@ impl Converter {
         f.write_str("];")?;
         self.exit_env(prev);
 
+        Ok(())
+    }
+
+    /// Convert tabular environment
+    fn convert_env_table(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+        env_kind: LaTeXEnv,
+        typst_name: &str,
+    ) -> Result<(), ConvertError> {
+        let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
+        let arg = env
+            .arguments()
+            .next()
+            .expect("tabular environment must have one argument");
+        let arg = arg.text().to_string();
+        // remove { and } then trim
+        let arg = &arg[1..(arg.len() - 1)];
+        let arg = arg.trim();
+        // split arg to get alignments and vertical lines
+        let mut alignments: Vec<char> = vec![];
+        let mut vlines: Vec<usize> = vec![];
+        let mut index = 0;
+        for ch in arg.chars() {
+            match ch {
+                'l' | 'c' | 'r' => {
+                    alignments.push(ch);
+                    index += 1;
+                }
+                '|' => {
+                    vlines.push(index);
+                }
+                _ => {
+                    // unknown character
+                    Err(format!("unknown alignment: {}", ch))?;
+                }
+            }
+        }
+        // convert to #figure
+        let prev = self.enter_env(env_kind);
+        f.write_char('#')?;
+        f.write_str(typst_name)?;
+        f.write_char('(')?;
+        // stroke: none,
+        f.write_str("stroke: none,\n")?;
+        // columns: 2,
+        f.write_str(format!("columns: {},\n", alignments.len()).as_str())?;
+        // align: (left, center, right, ),
+        f.write_str("align: (")?;
+        for align in alignments {
+            match align {
+                'l' => f.write_str("left, ")?,
+                'c' => f.write_str("center, ")?,
+                'r' => f.write_str("right, ")?,
+                _ => {}
+            }
+        }
+        f.write_str("),\n")?;
+        // table.vline(x: 1),
+        for vline in vlines {
+            f.write_str(format!("table.vline(x: {}), ", vline).as_str())?;
+        }
+        f.write_str("\n")?;
+        let mut exterior = true;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            // skip \begin and \end commands
+            if matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+            ) {
+                continue;
+            }
+            // preprocess if exterior
+            if exterior {
+                match child.kind() {
+                    LatexSyntaxKind::TokenWhiteSpace | LatexSyntaxKind::TokenLineBreak => {}
+                    LatexSyntaxKind::TokenAmpersand => {
+                        // write `[],` for empty exterior when encountering &
+                        f.write_str("[], ")?;
+                    }
+                    LatexSyntaxKind::ItemNewLine => {
+                        // write `[],\n` for empty exterior when encountering //
+                        f.write_str("[],\n")?;
+                    }
+                    LatexSyntaxKind::ItemCmd => {
+                        let cmd_name = CmdItem::cast(child.as_node().unwrap().clone())
+                            .unwrap()
+                            .name_tok()
+                            .unwrap();
+                        let cmd_name = &cmd_name.text()[1..];
+                        match cmd_name {
+                            "hline" => {
+                                // write `table.hline(), ` when encountering \hline
+                                f.write_str("table.hline(),\n")?;
+                            }
+                            _ => {
+                                // enter interior for normal commands
+                                exterior = false;
+                                f.write_char('[')?;
+                            }
+                        }
+                    }
+                    _ => {
+                        // enter interior for normal text
+                        exterior = false;
+                        f.write_char('[')?;
+                    }
+                }
+            }
+            // process if interior
+            if !exterior {
+                match child.kind() {
+                    LatexSyntaxKind::TokenAmpersand => {
+                        // write `[],` when encountering &
+                        f.write_str("], ")?;
+                        exterior = true;
+                    }
+                    LatexSyntaxKind::ItemNewLine => {
+                        // write `[],\n` when encountering //
+                        f.write_str("],\n")?;
+                        exterior = true;
+                    }
+                    _ => {
+                        self.convert(f, child, spec)?;
+                    }
+                }
+            }
+        }
+        f.write_str(");")?;
+        self.exit_env(prev);
         Ok(())
     }
 }

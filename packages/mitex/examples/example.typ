@@ -20,15 +20,30 @@ We also support text mode (in development):
 #mitext(`
   \iftypst
     #set math.equation(numbering: "(1)", supplement: "equation")
+    #set figure(kind: table, supplement: "table")
   \fi
 
   \section{Title}
 
   A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
   
-  Also block \eqref{eq:pythagoras}.
+  Also block \eqref{eq:pythagoras} and \ref{tab:example}.
 
   \begin{equation}
     a^2 + b^2 = c^2 \label{eq:pythagoras}
   \end{equation}
+
+  \begin{table}[ht]
+      \centering
+      \begin{tabular}{|c|c|}
+          \hline
+          \textbf{Name} & \textbf{Age} \\
+          \hline
+          John & 25 \\
+          Jane & 22 \\
+          \hline
+      \end{tabular}
+      \caption{This is an example table.}
+      \label{tab:example}
+  \end{table}
 `)

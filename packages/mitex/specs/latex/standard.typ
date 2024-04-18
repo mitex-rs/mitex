@@ -66,7 +66,7 @@
   abstract: define-env(none, alias: "quote(block: true)"),
   figure: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
   table: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
-  tabular: define-env(1, kind: "is-table", alias: "mitextable", handle: (..args) => "tabular()"),
+  tabular: define-env(1, kind: "is-table", alias: "table"),
   // commands for figure
   centering: ignore-sym,
   textwidth: sym,
