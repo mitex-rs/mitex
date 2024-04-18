@@ -5,8 +5,7 @@ fn test_convert_text_mode() {
     assert_snapshot!(convert_text(r#"abc"#).unwrap(), @"abc");
     assert_snapshot!(convert_text(r#"\section{Title}"#).unwrap(), @"#heading(level: 1)[Title];");
     assert_snapshot!(convert_text(r#"a \textbf{strong} text"#).unwrap(), @"a #strong[strong]; text");
-    assert_snapshot!(convert_text(r###"
-    \section{Title}
+    assert_snapshot!(convert_text(r###"\section{Title}
 
     A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
     
@@ -14,8 +13,7 @@ fn test_convert_text_mode() {
   
     \begin{equation}
       a^2 + b^2 = c^2 \label{eq:pythagoras}
-    \end{equation}
-    "###).unwrap(), @r###"
+    \end{equation}"###).unwrap(), @r###"
 
     #heading(level: 1)[Title];
 

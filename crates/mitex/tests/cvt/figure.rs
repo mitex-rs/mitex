@@ -2,14 +2,12 @@ use super::prelude::*;
 
 #[test]
 fn figure() {
-    assert_snapshot!(convert_text(r###"
-    \begin{figure}[ht]
+    assert_snapshot!(convert_text(r###"\begin{figure}[ht]
         \centering
         \includegraphics[width=0.5\textwidth]{example-image}
         \caption{This is an example image.}
         \label{fig:example}
-    \end{figure}
-    "###).unwrap(), @r###"
+    \end{figure}"###).unwrap(), @r###"
 
     #figure(caption: [This is an example image.],)[
 
@@ -22,8 +20,7 @@ fn figure() {
 
 #[test]
 fn table() {
-    assert_snapshot!(convert_text(r###"
-    \begin{table}[ht]
+    assert_snapshot!(convert_text(r###"\begin{table}[ht]
         \centering
         \begin{tabular}{|c|c|}
             \hline
@@ -35,8 +32,7 @@ fn table() {
         \end{tabular}
         \caption{This is an example table.}
         \label{tab:example}
-    \end{table}
-    "###).unwrap(), @r###"
+    \end{table}"###).unwrap(), @r###"
 
     #figure(caption: [This is an example table.],)[
 
