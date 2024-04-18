@@ -271,6 +271,9 @@ impl Converter {
                     "label" => {
                         self.convert_command_label(f, &cmd)?;
                     }
+                    "includegraphics" => {
+                        self.convert_command_includegraphics(f, &cmd)?;
+                    }
                     _ => {
                         self.convert_normal_command(f, elem, spec)?;
                     }
@@ -506,6 +509,80 @@ impl Converter {
                 self.label = Some(label.to_string());
             }
         }
+        Ok(())
+    }
+
+    /// Convert command `\includegraphics[width=0.5\textwidth]{example-image}`
+    fn convert_command_includegraphics(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        cmd: &CmdItem,
+    ) -> Result<(), ConvertError> {
+        let opt_arg = cmd.arguments().find(|arg| {
+            matches!(
+                arg.first_child().unwrap().kind(),
+                LatexSyntaxKind::ItemBracket
+            )
+        });
+        let arg = cmd
+            .arguments()
+            .find(|arg| {
+                matches!(
+                    arg.first_child().unwrap().kind(),
+                    LatexSyntaxKind::ItemCurly
+                )
+            })
+            .expect("\\includegraphics command must have one argument");
+        // remove { and } then trim
+        let body = arg.text().to_string();
+        let body = &body[1..(body.len() - 1)];
+        let body = body.trim();
+        f.write_str("#image(")?;
+        // optional arguments
+        if let Some(opt_arg) = opt_arg {
+            let arg_text = opt_arg.text().to_string();
+            let arg_text = &arg_text[1..(arg_text.len() - 1)];
+            let arg_text = arg_text.trim();
+            // example: \includegraphics[width=0.5\textwidth, height=3cm,
+            // angle=45]{example-image} split by comma and convert
+            // to key-value pairs
+            let args = arg_text.split(',').collect::<Vec<_>>();
+            let args = args
+                .iter()
+                .map(|arg| {
+                    let arg = arg.trim();
+                    let arg = arg.split('=').collect::<Vec<_>>();
+                    let key = arg[0].trim();
+                    let value = if arg.len() == 2 { arg[1].trim() } else { "" };
+                    (key, value)
+                })
+                .collect::<Vec<_>>();
+            for (key, value) in args.iter() {
+                if matches!(key, &"width" | &"height") {
+                    f.write_str(key)?;
+                    f.write_char(':')?;
+                    f.write_char(' ')?;
+                    if value.ends_with("\\textwidth") {
+                        let value = value.trim_end_matches("\\textwidth");
+                        f.write_str(value)?;
+                        f.write_str(" * 100%")?;
+                    } else if value.ends_with("\\textheight") {
+                        let value = value.trim_end_matches("\\textheight");
+                        f.write_str(value)?;
+                        f.write_str(" * 100%")?;
+                    } else {
+                        f.write_str(value)?;
+                    }
+                    f.write_char(',')?;
+                    f.write_char(' ')?;
+                }
+            }
+        }
+        // image path
+        f.write_char('"')?;
+        f.write_str(body)?;
+        f.write_char('"')?;
+        f.write_char(')')?;
         Ok(())
     }
 

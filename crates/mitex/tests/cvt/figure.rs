@@ -4,13 +4,13 @@ use super::prelude::*;
 fn figure() {
     assert_snapshot!(convert_text(r###"\begin{figure}[ht]
         \centering
-        \includegraphics[width=0.5\textwidth]{example-image}
+        \includegraphics[width=0.5\textwidth, height=3cm, angle=45]{example-image.png}
         \caption{This is an example image.}
         \label{fig:example}
     \end{figure}"###).unwrap(), @r###"
     #figure(caption: [This is an example image.],)[
 
-    #miteximage[\[width=0.5 \]][example-image];
+    #image(width: 0.5 * 100%, height: 3cm, "example-image.png")
 
 
     ];<fig:example>

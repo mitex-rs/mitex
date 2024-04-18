@@ -69,7 +69,7 @@
   tabular: define-env(1, kind: "is-table", alias: "mitextable", handle: (..args) => "tabular()"),
   // commands for figure
   centering: ignore-sym,
-  textwidth: ignore-sym,
+  textwidth: sym,
   caption: define-cmd(1, alias: "mitexcaption", handle: ignore-me),
   includegraphics: define-glob-cmd("{,b}t", "#miteximage", handle: ignore-me),
   // Spaces: \! \, \> \: \; \ \quad \qquad
