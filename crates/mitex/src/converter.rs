@@ -709,7 +709,6 @@ impl Converter {
             .to_string();
         let name = name.trim();
         let args = env.arguments();
-        // todo: handle options
 
         let env_shape = spec
             .get_env(name)
@@ -808,66 +807,11 @@ impl Converter {
             // environment name
             match env_kind {
                 LaTeXEnv::Figure => {
-                    fn is_named_arg(child: &LatexSyntaxElem) -> bool {
-                        matches!(
-                            child.kind(),
-                            LatexSyntaxKind::ItemCmd
-                                if matches!(
-                                    CmdItem::cast(child.as_node().unwrap().clone())
-                                        .unwrap()
-                                        .name_tok()
-                                        .unwrap()
-                                        .text(),
-                                    "\\caption" | "\\centering"
-                                )
-                        )
-                    }
-                    // collect named args
-                    let mut caption = None;
-                    for child in elem.as_node().unwrap().children_with_tokens() {
-                        if is_named_arg(&child) {
-                            let cmd = CmdItem::cast(child.as_node().unwrap().clone()).unwrap();
-                            let name = cmd.name_tok().unwrap();
-                            let name = name.text();
-                            // remove prefix \
-                            let name = &name[1..];
-                            if name == "caption" {
-                                let arg = cmd
-                                    .arguments()
-                                    .next()
-                                    .expect("\\caption command must have one argument");
-                                caption = Some(arg);
-                            }
-                        }
-                    }
-                    // convert to #figure
-                    let prev = self.enter_env(env_kind);
-                    f.write_char('#')?;
-                    f.write_str(typst_name)?;
-                    f.write_char('(')?;
-                    if let Some(caption) = caption {
-                        f.write_str("caption: [")?;
-                        self.convert(f, caption.into(), spec)?;
-                        f.write_str("],")?;
-                    }
-                    f.write_str(")[")?;
-                    for child in elem.as_node().unwrap().children_with_tokens() {
-                        // skip \begin and \end commands
-                        if matches!(
-                            child.kind(),
-                            LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
-                        ) || matches!(child.kind(), LatexSyntaxKind::ItemCmd)
-                            && is_named_arg(&child)
-                        {
-                            continue;
-                        }
-                        self.convert(f, child, spec)?;
-                    }
-                    f.write_str("];")?;
-                    self.exit_env(prev);
+                    self.convert_env_figure(f, elem, spec, env_kind, typst_name)?;
                 }
                 LaTeXEnv::Table => {}
                 _ => {
+                    // normal environment
                     let prev = self.enter_env(env_kind);
                     f.write_char('#')?;
                     f.write_str(typst_name)?;
@@ -897,6 +841,75 @@ impl Converter {
                 self.label = None;
             }
         }
+
+        Ok(())
+    }
+
+    /// Convert figure environment
+    fn convert_env_figure(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+        env_kind: LaTeXEnv,
+        typst_name: &str,
+    ) -> Result<(), ConvertError> {
+        fn is_named_arg(child: &LatexSyntaxElem) -> bool {
+            matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemCmd
+                    if matches!(
+                        CmdItem::cast(child.as_node().unwrap().clone())
+                            .unwrap()
+                            .name_tok()
+                            .unwrap()
+                            .text(),
+                        "\\caption" | "\\centering"
+                    )
+            )
+        }
+        // collect named args
+        let mut caption = None;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            if is_named_arg(&child) {
+                let cmd = CmdItem::cast(child.as_node().unwrap().clone()).unwrap();
+                let name = cmd.name_tok().unwrap();
+                let name = name.text();
+                // remove prefix \
+                let name = &name[1..];
+                if name == "caption" {
+                    let arg = cmd
+                        .arguments()
+                        .next()
+                        .expect("\\caption command must have one argument");
+                    caption = Some(arg);
+                }
+            }
+        }
+        // convert to #figure
+        let prev = self.enter_env(env_kind);
+        f.write_char('#')?;
+        f.write_str(typst_name)?;
+        f.write_char('(')?;
+        if let Some(caption) = caption {
+            f.write_str("caption: [")?;
+            self.convert(f, caption.into(), spec)?;
+            f.write_str("],")?;
+        }
+        f.write_str(")[")?;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            // skip \begin and \end commands
+            if matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+            ) || matches!(child.kind(), LatexSyntaxKind::ItemCmd) && is_named_arg(&child)
+            {
+                continue;
+            }
+            self.convert(f, child, spec)?;
+        }
+        f.write_str("];")?;
+        self.exit_env(prev);
 
         Ok(())
     }
