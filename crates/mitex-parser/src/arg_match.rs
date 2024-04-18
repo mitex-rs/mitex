@@ -1,8 +1,8 @@
 use core::fmt;
-use std::sync::Arc;
 
 use crate::{argument_kind::ARGUMENT_KIND_TERM, ArgPattern};
 use mitex_glob::glob_match_prefix;
+use mitex_spec::GlobStr;
 
 /// A matcher for arguments of a TeX command
 /// It is created by `ArgMatcherBuilder`
@@ -30,7 +30,7 @@ pub enum ArgMatcher {
     /// - t: it later matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
     /// Note: any prefix of the glob is valid in parse stage hence you need to
     /// check whether it is complete in later stage.
-    Glob { re: Arc<str>, prefix: String },
+    Glob { re: GlobStr, prefix: String },
 }
 
 impl ArgMatcher {
@@ -69,7 +69,7 @@ impl ArgMatcher {
             }
             Self::Glob { ref re, prefix } => {
                 prefix.push(text);
-                glob_match_prefix(re, prefix)
+                glob_match_prefix(&re.0, prefix)
             }
         }
     }
@@ -88,7 +88,7 @@ impl ArgMatcherBuilder {
     pub fn start_match(&mut self, pat_meta: &ArgPattern) -> ArgMatcher {
         match pat_meta {
             ArgPattern::None => ArgMatcher::None,
-            ArgPattern::RangeLenTerm(_, mx) | ArgPattern::FixedLenTerm(mx) => {
+            ArgPattern::RangeLenTerm { max: mx, .. } | ArgPattern::FixedLenTerm { len: mx } => {
                 if mx == &0 {
                     ArgMatcher::None
                 } else {

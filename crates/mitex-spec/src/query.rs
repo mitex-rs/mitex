@@ -1,8 +1,11 @@
-#![allow(missing_docs)]
+//! The query module contains the data structures that are used by `typst query
+//! <mitex-packages>`
 
 use std::{collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
+
+use crate::{CmdShape, EnvShape};
 
 /// A package specification.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,8 +29,10 @@ pub struct PackagesVec(pub Vec<PackageSpec>);
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum CommandSpecItem {
+    /// A canonical command item.
     #[serde(rename = "cmd")]
     Cmd(CmdShape),
+    /// A canonical environment item.
     #[serde(rename = "env")]
     Env(EnvShape),
     /// A command that takes no argument, and its handler is also a typst
@@ -55,25 +60,39 @@ pub enum CommandSpecItem {
 
     /// A command that is aliased to a Typst symbol.
     #[serde(rename = "alias-sym")]
-    SymAlias { alias: String },
+    SymAlias {
+        /// The aliasing typst handle of the symbol.
+        alias: String,
+    },
     /// A command that is greedy and is aliased to a Typst handler.
     #[serde(rename = "greedy-cmd")]
-    CmdGreedy { alias: String },
+    CmdGreedy {
+        /// The aliasing typst handle of the command.
+        alias: String,
+    },
     #[serde(rename = "infix-cmd")]
     /// A command that is an infix operator and is aliased to a Typst handler.
-    CmdInfix { alias: String },
+    CmdInfix {
+        /// The aliasing typst handle of the command.
+        alias: String,
+    },
     #[serde(rename = "glob-cmd")]
     /// A command that has a glob argument pattern and is aliased to a Typst
     /// handler.
-    CmdGlob { pattern: String, alias: String },
+    CmdGlob {
+        /// The glob pattern of the command.
+        pattern: String,
+        /// The aliasing typst handle of the command.
+        alias: String,
+    },
 }
 
 impl From<CommandSpecItem> for crate::CommandSpecItem {
     fn from(item: CommandSpecItem) -> Self {
         use crate::preludes::command::*;
         match item {
-            CommandSpecItem::Cmd(shape) => Self::Cmd(shape.into()),
-            CommandSpecItem::Env(shape) => Self::Env(shape.into()),
+            CommandSpecItem::Cmd(shape) => Self::Cmd(shape),
+            CommandSpecItem::Env(shape) => Self::Env(shape),
             CommandSpecItem::Symbol => TEX_SYMBOL,
             CommandSpecItem::Command0 => TEX_CMD0,
             CommandSpecItem::Command1 => TEX_CMD1,
@@ -92,10 +111,16 @@ impl From<CommandSpecItem> for crate::CommandSpecItem {
     }
 }
 
-/// The following defined structs are copied so we don't maintain their
-/// comments. See [`crate::CommandSpecRepr`] for canonical representation.
+/// Command specification that contains a set of commands and environments. It
+/// is used for us to define the meta data of LaTeX packages in typst code and
+/// query by `typst query` then. See [`Spec`] for an example.
+///
+/// Note: There are non-canonical format of items could be used for convenience.
+///
+/// [`Spec`]: https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct CommandSpecRepr {
+    /// The command specifications.
     pub commands: HashMap<String, CommandSpecItem>,
 }
 
@@ -113,120 +138,6 @@ impl From<CommandSpecRepr> for crate::CommandSpecRepr {
                 .into_iter()
                 .map(|(k, v)| (k, v.into()))
                 .collect(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CmdShape {
-    pub args: ArgShape,
-    pub alias: Option<String>,
-}
-
-impl From<CmdShape> for crate::CmdShape {
-    fn from(shape: CmdShape) -> Self {
-        Self {
-            args: shape.args.into(),
-            alias: shape.alias,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EnvShape {
-    pub args: ArgPattern,
-    pub ctx_feature: ContextFeature,
-    pub alias: Option<String>,
-}
-
-impl From<EnvShape> for crate::EnvShape {
-    fn from(shape: EnvShape) -> Self {
-        Self {
-            args: shape.args.into(),
-            ctx_feature: shape.ctx_feature.into(),
-            alias: shape.alias,
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "kind")]
-pub enum ArgPattern {
-    #[default]
-    #[serde(rename = "none")]
-    None,
-    #[serde(rename = "fixed-len")]
-    FixedLenTerm { len: u8 },
-    #[serde(rename = "range-len")]
-    RangeLenTerm { min: u8, max: u8 },
-    #[serde(rename = "greedy")]
-    Greedy,
-    #[serde(rename = "glob")]
-    Glob { pattern: Box<str> },
-}
-
-impl From<ArgPattern> for crate::ArgPattern {
-    fn from(pattern: ArgPattern) -> Self {
-        match pattern {
-            ArgPattern::None => Self::None,
-            ArgPattern::FixedLenTerm { len } => Self::FixedLenTerm(len),
-            ArgPattern::RangeLenTerm { min, max } => Self::RangeLenTerm(min, max),
-            ArgPattern::Greedy => Self::Greedy,
-            ArgPattern::Glob { pattern } => Self::Glob(pattern.into()),
-        }
-    }
-}
-
-// struct ArgShape(ArgPattern, Direction);
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "kind")]
-pub enum ArgShape {
-    #[serde(rename = "right")]
-    Right { pattern: ArgPattern },
-    #[serde(rename = "left1")]
-    Left1,
-    #[serde(rename = "infix-greedy")]
-    InfixGreedy,
-}
-
-impl From<ArgShape> for crate::ArgShape {
-    fn from(shape: ArgShape) -> Self {
-        match shape {
-            ArgShape::Right { pattern } => Self::Right(pattern.into()),
-            ArgShape::Left1 => Self::Left1,
-            ArgShape::InfixGreedy => Self::InfixGreedy,
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "kind")]
-pub enum ContextFeature {
-    #[default]
-    #[serde(rename = "none")]
-    None,
-    #[serde(rename = "is-math")]
-    IsMath,
-    #[serde(rename = "is-matrix")]
-    IsMatrix,
-    #[serde(rename = "is-cases")]
-    IsCases,
-    #[serde(rename = "is-itemize")]
-    IsItemize,
-    #[serde(rename = "is-enumerate")]
-    IsEnumerate,
-}
-
-impl From<ContextFeature> for crate::ContextFeature {
-    fn from(feature: ContextFeature) -> Self {
-        match feature {
-            ContextFeature::None => Self::None,
-            ContextFeature::IsMath => Self::IsMath,
-            ContextFeature::IsMatrix => Self::IsMatrix,
-            ContextFeature::IsCases => Self::IsCases,
-            ContextFeature::IsItemize => Self::IsItemize,
-            ContextFeature::IsEnumerate => Self::IsEnumerate,
         }
     }
 }
