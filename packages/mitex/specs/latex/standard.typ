@@ -40,7 +40,6 @@
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
 #let matrix-handle(delim: none, handle: none) = define-env(none, kind: "is-matrix", alias: none, handle: math.mat.with(delim: delim))
-#let text-handle(handle) = define-cmd(1, handle: handle)
 #let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 { fn(..args) } else { math.zws }
 #let ignore-me = it => {}
 #let ignore-sym = define-sym("")
@@ -1020,15 +1019,15 @@
   "operatorname*": define-cmd(1, alias: "operatornamewithlimits", handle: operatornamewithlimits),
   vspace: define-cmd(1, handle: it => v(eval(get-tex-str(it)))),
   hspace: define-cmd(1, handle: it => h(eval(get-tex-str(it)))),
-  text: define-cmd(1, alias: "textmath", handle: it => it),
-  textmd: define-cmd(1, handle: it => it),
-  textnormal: define-cmd(1, handle: it => it),
-  textbf: text-handle(math.bold),
-  textit: text-handle(math.italic),
-  textrm: text-handle(math.upright),
-  textup: text-handle(math.upright),
-  textsf: text-handle(math.sans),
-  texttt: text-handle(math.mono),
+  text: define-cmd(1, alias: "#textmath", handle: it => it),
+  textmd: define-cmd(1, alias: "#textmd", handle: it => it),
+  textnormal: define-cmd(1, alias: "#textnormal", handle: it => it),
+  textbf: define-cmd(1, alias: "#textbf", handle: math.bold),
+  textit: define-cmd(1, alias: "#textit", handle: math.italic),
+  textrm: define-cmd(1, alias: "#textrm", handle: math.upright),
+  textup: define-cmd(1, alias: "#textup", handle: math.upright),
+  textsf: define-cmd(1, alias: "#textsf", handle: math.sans),
+  texttt: define-cmd(1, alias: "#texttt", handle: math.mono),
   over: define-infix-cmd("frac"),
   atop: define-infix-cmd("atop", handle: (a, b) => $mat(delim: #none, #a; #b)$),
   choose: define-infix-cmd("binom", handle: math.binom),
