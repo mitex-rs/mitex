@@ -10,8 +10,8 @@ fn figure() {
         \label{fig:example}
     \end{figure}
     "###), @r###"
-    Err(
-        "error: unknown command: \\textwidth",
+    Ok(
+        "\n#figure(caption: [This is an example image.],)[\n\n#miteximage[\\[width=0.5 \\]];[example-image];\n\n\n];<fig:example>\n",
     )
     "###);
 }
