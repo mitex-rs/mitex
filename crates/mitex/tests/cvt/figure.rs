@@ -10,9 +10,13 @@ fn figure() {
         \label{fig:example}
     \end{figure}
     "###).unwrap(), @r###"
-    Ok(
-        "\n#figure(caption: [This is an example image.],)[\n\n#miteximage[\\[width=0.5 \\]];[example-image];\n\n\n];<fig:example>\n",
-    )
+
+    #figure(caption: [This is an example image.],)[
+
+    #miteximage[\[width=0.5 \]];[example-image];
+
+
+    ];<fig:example>
     "###);
 }
 
@@ -33,8 +37,12 @@ fn table() {
         \label{tab:example}
     \end{table}
     "###).unwrap(), @r###"
-    Ok(
-        "\n#figure(caption: [This is an example table.],)[\n\n\n\n\n];<tab:example>\n",
-    )
+
+    #figure(caption: [This is an example table.],)[
+
+
+
+
+    ];<tab:example>
     "###);
 }

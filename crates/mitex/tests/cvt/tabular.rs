@@ -12,8 +12,7 @@ fn tabular() {
         \hline
     \end{tabular}
     "###).unwrap(), @r###"
-    Ok(
-        "\n\n",
-    )
+
+
     "###);
 }
