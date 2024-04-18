@@ -2,7 +2,7 @@ use super::prelude::*;
 
 #[test]
 fn tabular() {
-    assert_debug_snapshot!(convert_text(r###"
+    assert_snapshot!(convert_text(r###"
     \begin{tabular}{|c|c|}
         \hline
         \textbf{Name} & \textbf{Age} \\
@@ -11,7 +11,7 @@ fn tabular() {
         Jane & 22 \\
         \hline
     \end{tabular}
-    "###), @r###"
+    "###).unwrap(), @r###"
     Ok(
         "\n\n",
     )

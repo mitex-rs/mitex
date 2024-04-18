@@ -66,48 +66,28 @@ mod cvt {
 
     #[test]
     fn test_easy() {
-        assert_debug_snapshot!(convert_math(r#"\frac{ a }{ b }"#), @r###"
-        Ok(
-            "frac( a  , b  )",
-        )
-        "###);
+        assert_snapshot!(convert_math(r#"\frac{ a }{ b }"#).unwrap(), @"frac( a  , b  )");
     }
 
     #[test]
     fn test_utf8_char() {
         // note that there is utf8 minus sign in the middle
-        assert_debug_snapshot!(convert_math(r#"$u^−$"#), @r###"
-        Ok(
-            "u ^(− )",
-        )
-        "###
+        assert_snapshot!(convert_math(r#"$u^−$"#).unwrap(), @"u ^(− )"
         );
     }
 
     #[test]
     fn test_beat_pandoc() {
-        assert_debug_snapshot!(convert_math(r#"\frac 1 2 _3"#), @r###"
-        Ok(
-            "frac(1 ,2 ) _(3 )",
-        )
-        "###);
+        assert_snapshot!(convert_math(r#"\frac 1 2 _3"#).unwrap(), @"frac(1 ,2 ) _(3 )");
     }
 
     #[test]
     fn test_normal() {
-        assert_debug_snapshot!(convert_math(r#"\int_1^2 x \mathrm{d} x"#), @r###"
-        Ok(
-            "integral _(1 )^(2 ) x  upright(d ) x ",
-        )
-        "###);
+        assert_snapshot!(convert_math(r#"\int_1^2 x \mathrm{d} x"#).unwrap(), @"integral _(1 )^(2 ) x  upright(d ) x ");
     }
 
     #[test]
     fn test_sticky() {
-        assert_debug_snapshot!(convert_math(r#"\alpha_1"#), @r###"
-        Ok(
-            "alpha _(1 )",
-        )
-        "###);
+        assert_snapshot!(convert_math(r#"\alpha_1"#).unwrap(), @"alpha _(1 )");
     }
 }
