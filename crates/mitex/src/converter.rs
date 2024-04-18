@@ -605,8 +605,8 @@ impl Converter {
                     self.exit_mode(prev_mode);
                     f.write_char(']')?;
                 }
-                f.write_char(';')?;
             }
+            f.write_char(';')?;
         }
 
         // hack for \substack{abc \\ bcd}

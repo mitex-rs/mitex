@@ -8,10 +8,9 @@ fn figure() {
         \caption{This is an example image.}
         \label{fig:example}
     \end{figure}"###).unwrap(), @r###"
-
     #figure(caption: [This is an example image.],)[
 
-    #miteximage[\[width=0.5 \]];[example-image];
+    #miteximage[\[width=0.5 \]][example-image];
 
 
     ];<fig:example>
