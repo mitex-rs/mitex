@@ -975,7 +975,7 @@ impl Converter {
         f.write_str("),\n")?;
         // table.vline(x: 1),
         for vline in vlines {
-            f.write_str(format!("table.vline(x: {}), ", vline).as_str())?;
+            f.write_str(format!("table.vline(stroke: .5pt, x: {}), ", vline).as_str())?;
         }
         f.write_str("\n")?;
         let mut exterior = true;
@@ -1007,8 +1007,16 @@ impl Converter {
                         let cmd_name = &cmd_name.text()[1..];
                         match cmd_name {
                             "hline" => {
-                                // write `table.hline(), ` when encountering \hline
-                                f.write_str("table.hline(),\n")?;
+                                f.write_str("table.hline(stroke: .5pt),\n")?;
+                            }
+                            "toprule" => {
+                                f.write_str("table.hline(stroke: 1pt),\n")?;
+                            }
+                            "midrule" => {
+                                f.write_str("table.hline(stroke: .5pt),\n")?;
+                            }
+                            "bottomrule" => {
+                                f.write_str("table.hline(stroke: 1pt),\n")?;
                             }
                             _ => {
                                 // enter interior for normal commands

@@ -72,6 +72,12 @@
   textwidth: sym,
   caption: define-cmd(1, alias: "mitexcaption", handle: ignore-me),
   includegraphics: define-glob-cmd("{,b}t", "#miteximage", handle: ignore-me),
+  // commands for tabular
+  toprule: define-glob-cmd("{,b}", "toprule"),
+  midrule: define-glob-cmd("{,b}", "midrule"),
+  bottomrule: define-glob-cmd("{,b}", "bottomrule"),
+  hline: ignore-sym,
+  vline: ignore-sym,
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
   negthinspace: of-sym(h(-(3/18) * 1em)),
@@ -1013,8 +1019,6 @@
   relax: ignore-sym,
   cr: ignore-sym,
   expandafter: ignore-sym,
-  hline: ignore-sym,
-  vline: ignore-sym,
   hskip: ignore-sym,
   mskip: ignore-sym,
   kern: ignore-sym,

@@ -19,8 +19,7 @@ We also support text mode (in development):
 
 #mitext(`
   \iftypst
-    #set math.equation(numbering: "(1)", supplement: "equation")
-    #set figure(kind: table, supplement: "table")
+    #set math.equation(numbering: "(1)", supplement: "Equation")
   \fi
 
   \section{Title}

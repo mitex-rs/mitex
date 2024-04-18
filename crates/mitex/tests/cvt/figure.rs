@@ -37,13 +37,13 @@ fn table() {
     #table(stroke: none,
     columns: 2,
     align: (center, center, ),
-    table.vline(x: 0), table.vline(x: 1), table.vline(x: 2), 
-    table.hline(),
+    table.vline(stroke: .5pt, x: 0), table.vline(stroke: .5pt, x: 1), table.vline(stroke: .5pt, x: 2), 
+    table.hline(stroke: .5pt),
     [#strong[Name]; ], [#strong[Age]; ],
-    table.hline(),
+    table.hline(stroke: .5pt),
     [John ], [25 ],
     [Jane ], [22 ],
-    table.hline(),
+    table.hline(stroke: .5pt),
     );
 
 
