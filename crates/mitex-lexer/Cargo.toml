@@ -10,7 +10,7 @@ repository.workspace = true
 
 [dependencies]
 
-mitex-spec = { path = "../mitex-spec" }
+mitex-spec.workspace = true
 
 logos.workspace = true
 ena.workspace = true
@@ -19,7 +19,7 @@ fxhash.workspace = true
 once_cell.workspace = true
 
 [dev-dependencies]
-mitex-spec-gen = { path = "../mitex-spec-gen" }
+mitex-spec-gen.workspace = true
 
 insta.workspace = true
 divan.workspace = true

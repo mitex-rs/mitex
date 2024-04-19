@@ -16,15 +16,15 @@ harness = false
 
 [dependencies]
 
-mitex-glob = { path = "../mitex-glob" }
-mitex-lexer = { path = "../mitex-lexer" }
-mitex-spec = { path = "../mitex-spec" }
+mitex-glob.workspace = true
+mitex-lexer.workspace = true
+mitex-spec.workspace = true
 
 rowan.workspace = true
 
 [dev-dependencies]
 
-mitex-spec-gen = { path = "../mitex-spec-gen" }
+mitex-spec-gen.workspace = true
 
 once_cell.workspace = true
 insta.workspace = true

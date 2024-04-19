@@ -9,12 +9,12 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-mitex-spec = { path = "../mitex-spec" }
+mitex-spec.workspace = true
 
 once_cell.workspace = true
 
 [build-dependencies]
-mitex-spec = { path = "../mitex-spec" }
+mitex-spec.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 anyhow.workspace = true

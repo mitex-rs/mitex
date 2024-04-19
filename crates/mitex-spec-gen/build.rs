@@ -7,9 +7,12 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 fn main() {
+    let project_root = get_project_root();
+
     let spec_builder = if cfg!(feature = "prebuilt") {
         copy_prebuilt
-    } else if cfg!(feature = "generate") || which::which("typst").is_ok() {
+    } else if cfg!(feature = "generate") || (which::which("typst").is_ok() && project_root.is_ok())
+    {
         generate
     } else {
         // fallback to prebuilt spec
@@ -23,25 +26,36 @@ fn main() {
 
 fn get_project_root() -> anyhow::Result<PathBuf> {
     let project_root =
-        std::env::var("CARGO_MANIFEST_DIR").with_context(|| "failed to get project root")?;
-    Ok(std::path::Path::new(&project_root)
-        .parent()
-        .with_context(|| "failed to get project root")?
-        .parent()
-        .with_context(|| "failed to get project root")?
-        .to_owned())
+        std::env::var("CARGO_MANIFEST_DIR").with_context(|| "failed to get manifest dir")?;
+    let mut project_root = std::path::Path::new(&project_root);
+    Ok(loop {
+        let parent = project_root
+            .parent()
+            .with_context(|| "failed to get project root")?;
+        if parent.join("Cargo.toml").exists() {
+            break parent.to_owned();
+        }
+        project_root = parent;
+    })
 }
 
 fn copy_prebuilt() -> anyhow::Result<()> {
     // println!("cargo:warning=copy_prebuilt");
-    let project_root = get_project_root()?;
+    let manifest_dir =
+        std::env::var("CARGO_MANIFEST_DIR").with_context(|| "failed to get manifest dir")?;
+    let manifest_dir = std::path::Path::new(&manifest_dir);
+    let target_spec =
+        Path::new(&std::env::var("OUT_DIR").unwrap()).join("mitex-artifacts/spec/default.rkyv");
 
     // assets/artifacts/spec/default.rkyv
-    std::fs::create_dir_all(project_root.join(Path::new("target/mitex-artifacts/spec")))
-        .with_context(|| "failed to create target_dir for store spec")?;
+    std::fs::create_dir_all(
+        target_spec
+            .parent()
+            .context("failed to get dirname of target spec")?,
+    )
+    .with_context(|| "failed to create target_dir for store spec")?;
 
-    let prebuilt_spec = project_root.join(Path::new("assets/artifacts/spec/default.rkyv"));
-    let target_spec = project_root.join(Path::new("target/mitex-artifacts/spec/default.rkyv"));
+    let prebuilt_spec = manifest_dir.join(Path::new("assets/artifacts/spec/default.rkyv"));
     println!("cargo:warning=Use prebuilt spec binaries at {prebuilt_spec:?}");
 
     std::fs::copy(prebuilt_spec, target_spec).with_context(|| {
@@ -64,21 +78,19 @@ fn generate() -> anyhow::Result<()> {
         spec_root = spec_root.display()
     );
 
-    let target_dir = project_root.join("target/mitex-artifacts");
+    let target_dir = Path::new(&std::env::var("OUT_DIR").unwrap()).join("mitex-artifacts");
 
-    let package_specs = std::process::Command::new("typst")
-        .args([
-            "query",
-            "--root",
-            project_root.to_str().unwrap(),
-            project_root
-                .join("packages/mitex/specs/mod.typ")
-                .to_str()
-                .unwrap(),
-            "<mitex-packages>",
-        ])
-        .output()
-        .with_context(|| "failed to query metadata")?;
+    let mut package_specs = std::process::Command::new("typst");
+    let package_specs = package_specs.args([
+        "query",
+        "--root",
+        project_root.to_str().unwrap(),
+        project_root
+            .join("packages/mitex/specs/mod.typ")
+            .to_str()
+            .unwrap(),
+        "<mitex-packages>",
+    ]);
 
     #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
     struct QueryItem<T> {
@@ -88,8 +100,15 @@ fn generate() -> anyhow::Result<()> {
     type Json<T> = Vec<QueryItem<T>>;
 
     let mut json_spec: mitex_spec::JsonCommandSpec = Default::default();
-    let json_packages: Json<mitex_spec::query::PackagesVec> =
-        serde_json::from_slice(&package_specs.stdout).expect("failed to parse package specs");
+    let json_packages: Json<mitex_spec::query::PackagesVec> = serde_json::from_slice(
+        &package_specs
+            .output()
+            .with_context(|| "failed to query metadata")?
+            .stdout,
+    )
+    .context(format!(
+        "failed to parse package specs cmd: {package_specs:?}"
+    ))?;
     if json_packages.is_empty() {
         panic!("no package found");
     }

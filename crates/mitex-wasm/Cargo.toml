@@ -13,8 +13,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 
-mitex = { path = "../mitex" }
-mitex-spec = { path = "../mitex-spec" }
+mitex.workspace = true
+mitex-spec.workspace = true
 
 serde.workspace = true
 serde_json.workspace = true

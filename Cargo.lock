@@ -497,7 +497,6 @@ dependencies = [
 name = "mitex"
 version = "0.2.4"
 dependencies = [
- "bitflags",
  "divan",
  "insta",
  "mitex-parser",
