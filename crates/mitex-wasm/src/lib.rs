@@ -2,8 +2,8 @@
 //!
 //! # Usage
 //!
-//! For example, if you want to call [`convert_math`] function in Typst, you can
-//! write the following code in your Typst file:
+//! For example, you can call [`convert_math`] function in Typst by loading the
+//! plugin:
 //!
 //! ```typ
 //! #let mitex-wasm = plugin("./mitex.wasm")
@@ -36,36 +36,25 @@ mod impls {
         Result::Ok(res.to_bytes())
     }
 
-    /// Converts a LaTeX math equation into a plain text
-    ///
-    /// # Errors
-    /// Returns an error if the input is not a valid math equation
-    #[cfg_attr(feature = "web", wasm_bindgen)]
-    pub fn convert_math(input: &str, spec: &[u8]) -> Result<String, String> {
-        let spec = if spec.is_empty() {
-            None
-        } else {
-            let spec = mitex_spec::CommandSpec::from_bytes(spec);
-            Some(spec)
-        };
-        let res = mitex::convert_math(input, spec)?;
-        Result::Ok(res)
+    /// Extracts the command specification from its binary (rkyv)
+    /// representation.
+    fn extract_spec(spec: &[u8]) -> Option<mitex_spec::CommandSpec> {
+        (!spec.is_empty()).then(|| mitex_spec::CommandSpec::from_bytes(spec))
     }
 
-    /// Converts a LaTeX code into a plain text
-    ///
-    /// # Errors
-    /// Returns an error if the input is not a valid LaTeX code
+    /// Converts a LaTeX math equation into a plain text. You can pass an binary
+    /// (rkyv) command specification by `spec` at the same time to customize
+    /// parsing.
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    pub fn convert_math(input: &str, spec: &[u8]) -> Result<String, String> {
+        mitex::convert_math(input, extract_spec(spec))
+    }
+
+    /// Converts a LaTeX code into a plain text. You can pass an binary (rkyv)
+    /// command specification by `spec` at the same time to customize parsing.
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn convert_text(input: &str, spec: &[u8]) -> Result<String, String> {
-        let spec = if spec.is_empty() {
-            None
-        } else {
-            let spec = mitex_spec::CommandSpec::from_bytes(spec);
-            Some(spec)
-        };
-        let res = mitex::convert_text(input, spec)?;
-        Result::Ok(res)
+        mitex::convert_text(input, extract_spec(spec))
     }
 }
 
