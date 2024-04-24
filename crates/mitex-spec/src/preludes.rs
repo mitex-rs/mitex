@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 
 pub mod command {
-    use crate::{ArgShape, CommandSpecItem};
+    use crate::{ArgShape, CommandSpecItem, ContextFeature};
 
     pub fn define_command(len: u8) -> CommandSpecItem {
         CommandSpecItem::Cmd(crate::CmdShape {
@@ -18,6 +18,14 @@ pub mod command {
             args: crate::ArgShape::Right {
                 pattern: crate::ArgPattern::Glob(reg.into()),
             },
+            alias: Some(alias.to_owned()),
+        })
+    }
+
+    pub fn define_glob_env(reg: &str, alias: &str, ctx_feature: ContextFeature) -> CommandSpecItem {
+        CommandSpecItem::Env(crate::EnvShape {
+            args: crate::ArgPattern::Glob(reg.into()),
+            ctx_feature,
             alias: Some(alias.to_owned()),
         })
     }

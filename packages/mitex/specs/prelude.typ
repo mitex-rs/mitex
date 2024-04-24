@@ -109,8 +109,8 @@
 
 #let define-glob-env(pat, kind: "none", alias: none, handle: none) = {
   ((
-    kind: "env",
-    args: ( kind: "glob", pattern: pat ),
+    kind: "glob-env",
+    pattern: pat,
     ctx_feature: ( kind: kind ),
     alias: alias,
   ), if handle != none { (alias: alias, handle: handle) } else { none })

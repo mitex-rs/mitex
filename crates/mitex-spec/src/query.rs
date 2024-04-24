@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CmdShape, EnvShape};
+use crate::{CmdShape, ContextFeature, EnvShape};
 
 /// A package specification.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,6 +57,16 @@ pub enum CommandSpecItem {
     /// A command that takes no argument and is a normal environment.
     #[serde(rename = "normal-env")]
     EnvNormal,
+    /// A command that has a glob argument pattern and is an environment.
+    #[serde(rename = "glob-env")]
+    EnvGlob {
+        /// The glob pattern of the command.
+        pattern: String,
+        /// The aliasing typst handle of the command.
+        alias: String,
+        /// The context feature of the command.
+        ctx_feature: ContextFeature,
+    },
 
     /// A command that is aliased to a Typst symbol.
     #[serde(rename = "alias-sym")]
@@ -70,15 +80,15 @@ pub enum CommandSpecItem {
         /// The aliasing typst handle of the command.
         alias: String,
     },
-    #[serde(rename = "infix-cmd")]
     /// A command that is an infix operator and is aliased to a Typst handler.
+    #[serde(rename = "infix-cmd")]
     CmdInfix {
         /// The aliasing typst handle of the command.
         alias: String,
     },
-    #[serde(rename = "glob-cmd")]
     /// A command that has a glob argument pattern and is aliased to a Typst
     /// handler.
+    #[serde(rename = "glob-cmd")]
     CmdGlob {
         /// The glob pattern of the command.
         pattern: String,
@@ -100,6 +110,11 @@ impl From<CommandSpecItem> for crate::CommandSpecItem {
             CommandSpecItem::CmdLeft1 => TEX_LEFT1_OPEARTOR,
             CommandSpecItem::EnvMatrix => TEX_MATRIX_ENV,
             CommandSpecItem::EnvNormal => TEX_NORMAL_ENV,
+            CommandSpecItem::EnvGlob {
+                pattern,
+                alias,
+                ctx_feature,
+            } => define_glob_env(&pattern, &alias, ctx_feature),
             CommandSpecItem::SymAlias { alias } => define_symbol(&alias),
             CommandSpecItem::CmdGreedy { alias } => define_greedy_command(&alias),
             CommandSpecItem::CmdInfix { alias } => crate::CommandSpecItem::Cmd(crate::CmdShape {
