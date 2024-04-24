@@ -83,7 +83,7 @@ fn test_convert_space() {
 
 #[test]
 fn test_convert_escape() {
-    assert_snapshot!(convert_math(r#"$\|x\|| \& \# \% \$ y$"#).unwrap(), @"|| x || |  amp  hash  percent  dollar  y "
+    assert_snapshot!(convert_math(r#"$\|x\|| \& \# \% \$ y$"#).unwrap(), @"|| x || |  amp  hash  %  dollar  y "
     );
     assert_snapshot!(convert_math(r#"$a*b * c$"#).unwrap(), @r###"a \*b  \* c "###
     );
