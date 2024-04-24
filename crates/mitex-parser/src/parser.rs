@@ -488,7 +488,10 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
         let cmd_name = self.lexer.peek_text().unwrap().strip_prefix('\\').unwrap();
         let arg_shape = self.spec.get_cmd(cmd_name).map(|cmd| &cmd.args);
         let right_pat = match arg_shape {
-            None | Some(ArgShape::Right(ArgPattern::None | ArgPattern::FixedLenTerm(0))) => {
+            None
+            | Some(ArgShape::Right {
+                pattern: ArgPattern::None | ArgPattern::FixedLenTerm { len: 0 },
+            }) => {
                 self.builder.start_node(ItemCmd.into());
                 self.eat();
                 self.builder.finish_node();
@@ -501,7 +504,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
                 self.builder.finish_node();
                 return false;
             }
-            Some(ArgShape::Right(pattern)) => {
+            Some(ArgShape::Right { pattern }) => {
                 self.builder.start_node(ItemCmd.into());
                 pattern
             }
@@ -546,7 +549,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
 
             let arg_shape = self.spec.get_env(env_name);
             let right_pat = match arg_shape.map(|cmd| &cmd.args) {
-                None | Some(ArgPattern::None | ArgPattern::FixedLenTerm(0)) => None,
+                None | Some(ArgPattern::None | ArgPattern::FixedLenTerm { len: 0 }) => None,
                 Some(pattern) => Some(pattern),
             };
             let searcher = right_pat.map(|right_pat| self.arg_matchers.start_match(right_pat));

@@ -632,9 +632,15 @@ impl Converter {
             prev = self.enter_env(LaTeXEnv::SubStack);
         }
 
-        if let ArgShape::Right(ArgPattern::None) = arg_shape {
+        if let ArgShape::Right {
+            pattern: ArgPattern::None,
+        } = arg_shape
+        {
             f.write_char(' ')?
-        } else if let ArgShape::Right(ArgPattern::Greedy) = arg_shape {
+        } else if let ArgShape::Right {
+            pattern: ArgPattern::Greedy,
+        } = arg_shape
+        {
             f.write_char('(')?;
             // there is only one arg in greedy
             let args = args

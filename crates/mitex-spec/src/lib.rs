@@ -11,6 +11,9 @@
 
 use std::sync::Arc;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize as rDeser, Serialize as rSer};
 
@@ -27,6 +30,7 @@ pub use query::CommandSpecRepr as JsonCommandSpec;
 /// [Command Syntax]: https://latexref.xyz/LaTeX-command-syntax.html
 /// [Environment Syntax]: https://latexref.xyz/Environment-syntax.html
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum CommandSpecItem {
@@ -40,6 +44,7 @@ pub enum CommandSpecItem {
 
 /// Command specification that contains a set of commands and environments.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CommandSpecRepr {
@@ -129,6 +134,7 @@ impl CommandSpec {
 
 /// Shape of a TeX command.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CmdShape {
@@ -141,6 +147,7 @@ pub struct CmdShape {
 
 /// Shape of a TeX envionment.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct EnvShape {
@@ -163,6 +170,36 @@ pub mod argument_kind {
     pub const ARGUMENT_KIND_BRACKET: char = 'b';
     /// The character used for matching argument in a parenthesis group
     pub const ARGUMENT_KIND_PAREN: char = 'p';
+}
+
+/// A shared string that represents a glob pattern.
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+pub struct GlobStr(pub Arc<str>);
+
+impl From<&str> for GlobStr {
+    fn from(s: &str) -> Self {
+        Self(s.into())
+    }
+}
+#[cfg(feature = "serde")]
+mod glob_str_impl {
+
+    use super::GlobStr;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    impl Serialize for GlobStr {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for GlobStr {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            Ok(GlobStr(String::deserialize(deserializer)?.into()))
+        }
+    }
 }
 
 /// An efficient pattern used for argument matching.
@@ -193,6 +230,8 @@ pub mod argument_kind {
 /// Note: any prefix of the argument pattern are matched during the parse stage,
 /// so you need to check whether it is complete in later stages.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "kind"))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ArgPattern {
@@ -200,6 +239,7 @@ pub enum ArgPattern {
     ///
     /// E.g. `\alpha` => `$alpha$`, where `\alpha` has an argument pattern of
     /// `None`
+    #[cfg_attr(feature = "serde", serde(rename = "none"))]
     None,
     /// Fixed length pattern, equivalent to repeat `{,t}` for `x` times
     ///
@@ -208,15 +248,26 @@ pub enum ArgPattern {
     ///
     /// E.g. `1 \sum\limits` => `$1 limits(sum)$`, where `\limits` has an
     /// argument pattern of `FixedLenTerm(1)`
-    FixedLenTerm(u8),
+    #[cfg_attr(feature = "serde", serde(rename = "fixed-len"))]
+    FixedLenTerm {
+        /// The length of the arguments should be matched
+        len: u8,
+    },
     /// Range length pattern (matches as much as possible), equivalent to
     /// repeat `t` for `x` times, then repeat `{,t}` for `y` times.
     ///
     /// No example
-    RangeLenTerm(u8, u8),
+    #[cfg_attr(feature = "serde", serde(rename = "range-len"))]
+    RangeLenTerm {
+        /// The minimum length of the arguments should be matched
+        min: u8,
+        /// The maximum length of the arguments should be matched
+        max: u8,
+    },
     /// Receives any items as much as possible, equivalent to `*`.
     ///
     /// E.g. \over, \displaystyle
+    #[cfg_attr(feature = "serde", serde(rename = "greedy"))]
     Greedy,
     /// The most powerful pattern, but slightly slow.
     /// Note that the glob must accept the whole prefix of the input.
@@ -226,7 +277,8 @@ pub enum ArgPattern {
     /// Description of the glob pattern:
     /// - {,b}: first, it matches a bracket option, e.g. `\sqrt[3]`
     /// - t: it then matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
-    Glob(Arc<str>),
+    #[cfg_attr(feature = "serde", serde(rename = "glob"))]
+    Glob(GlobStr),
 }
 
 // struct ArgShape(ArgPattern, Direction);
@@ -238,44 +290,60 @@ pub enum ArgPattern {
 /// - `Direction::Left` with `ArgPattern::FixedLenTerm(1)`
 /// - `Direction::Infix` with `ArgPattern::Greedy`
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "kind"))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ArgShape {
     /// A command that associates with the right side of items.
     ///
     /// E.g. `\hat`
-    Right(ArgPattern),
+    #[cfg_attr(feature = "serde", serde(rename = "right"))]
+    Right {
+        /// The pattern to match the arguments
+        pattern: ArgPattern,
+    },
     /// A command that associates with the left side of items, and with
     /// `ArgPattern::FixedLenTerm(1)`.
     ///
     /// E.g. `\limits`
+    #[cfg_attr(feature = "serde", serde(rename = "left1"))]
     Left1,
     /// A command that associates with both side of items, and with
     /// `ArgPattern::Greedy`, also known as infix operators.
     ///
     /// E.g. `\over`
+    #[cfg_attr(feature = "serde", serde(rename = "infix-greedy"))]
     InfixGreedy,
 }
 
 /// A feature that specifies how to process the content of an environment.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "kind"))]
 #[cfg_attr(feature = "rkyv", derive(Archive, rDeser, rSer))]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub enum ContextFeature {
     /// No special feature
+    #[cfg_attr(feature = "serde", serde(rename = "none"))]
     None,
     /// Parse content like math environments
+    #[cfg_attr(feature = "serde", serde(rename = "is-math"))]
     IsMath,
     /// Parse content like mat arguments
+    #[cfg_attr(feature = "serde", serde(rename = "is-matrix"))]
     IsMatrix,
     /// Parse content like cases
+    #[cfg_attr(feature = "serde", serde(rename = "is-cases"))]
     IsCases,
     /// Parse content like figure
     IsFigure,
     /// Parse content like table
     IsTable,
     /// Parse content like itemize
+    #[cfg_attr(feature = "serde", serde(rename = "is-itemize"))]
     IsItemize,
     /// Parse content like enumerate
+    #[cfg_attr(feature = "serde", serde(rename = "is-enumerate"))]
     IsEnumerate,
 }

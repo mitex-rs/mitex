@@ -10,7 +10,7 @@
 //! The trusted (unsafe) Rkyv parsing is not used yet.
 
 use divan::{AllocProfiler, Bencher};
-use mitex_spec::CommandSpec;
+use mitex_spec::{ArgPattern, ArgShape, CmdShape, CommandSpec};
 
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();
@@ -46,9 +46,9 @@ fn prelude_100000() {
 
 fn bench_json_deserialize(bencher: Bencher, n: i32) {
     use mitex_spec::query;
-    const JSON_TEX_SYMBOL: query::CommandSpecItem = query::CommandSpecItem::Cmd(query::CmdShape {
-        args: query::ArgShape::Right {
-            pattern: query::ArgPattern::None,
+    const JSON_TEX_SYMBOL: query::CommandSpecItem = query::CommandSpecItem::Cmd(CmdShape {
+        args: ArgShape::Right {
+            pattern: ArgPattern::None,
         },
         alias: None,
     });

@@ -5,7 +5,7 @@ authors = [
     "OrangeX4 <orangex4@qq.com>",
     "mgt <mgt@oi-wiki.org>",
 ]
-version = "0.1.0"
+version = "0.2.2"
 edition = "2021"
 readme = "README.md"
 license = "Apache-2.0"
@@ -63,7 +63,6 @@ missing_docs = "warn"
 
 [workspace.lints.clippy]
 uninlined_format_args = "warn"
-missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 missing_safety_doc = "warn"
 undocumented_unsafe_blocks = "warn"
