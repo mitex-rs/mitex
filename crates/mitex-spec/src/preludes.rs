@@ -16,7 +16,9 @@ pub mod command {
     pub fn define_glob_command(reg: &str, alias: &str) -> CommandSpecItem {
         CommandSpecItem::Cmd(crate::CmdShape {
             args: crate::ArgShape::Right {
-                pattern: crate::ArgPattern::Glob(reg.into()),
+                pattern: crate::ArgPattern::Glob {
+                    pattern: reg.into(),
+                },
             },
             alias: Some(alias.to_owned()),
         })
@@ -24,7 +26,9 @@ pub mod command {
 
     pub fn define_glob_env(reg: &str, alias: &str, ctx_feature: ContextFeature) -> CommandSpecItem {
         CommandSpecItem::Env(crate::EnvShape {
-            args: crate::ArgPattern::Glob(reg.into()),
+            args: crate::ArgPattern::Glob {
+                pattern: reg.into(),
+            },
             ctx_feature,
             alias: Some(alias.to_owned()),
         })

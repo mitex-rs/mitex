@@ -278,7 +278,10 @@ pub enum ArgPattern {
     /// - {,b}: first, it matches a bracket option, e.g. `\sqrt[3]`
     /// - t: it then matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
     #[cfg_attr(feature = "serde", serde(rename = "glob"))]
-    Glob { pattern: GlobStr },
+    Glob {
+        /// The glob pattern to match the arguments
+        pattern: GlobStr,
+    },
 }
 
 // struct ArgShape(ArgPattern, Direction);
