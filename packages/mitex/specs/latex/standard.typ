@@ -64,8 +64,8 @@
   enumerate: define-env(none, kind: "is-enumerate"),
   quote: define-env(none, alias: "quote(block: true)"),
   abstract: define-env(none, alias: "quote(block: true)"),
-  figure: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
-  table: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
+  // figure: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),  // todo: fix this
+  // table: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
   tabular: define-env(1, kind: "is-table", alias: "table"),
   // commands for figure
   centering: ignore-sym,

@@ -337,8 +337,10 @@ pub enum ContextFeature {
     #[cfg_attr(feature = "serde", serde(rename = "is-cases"))]
     IsCases,
     /// Parse content like figure
+    #[cfg_attr(feature = "serde", serde(rename = "is-figure"))]
     IsFigure,
     /// Parse content like table
+    #[cfg_attr(feature = "serde", serde(rename = "is-table"))]
     IsTable,
     /// Parse content like itemize
     #[cfg_attr(feature = "serde", serde(rename = "is-itemize"))]
