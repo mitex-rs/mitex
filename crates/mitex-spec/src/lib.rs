@@ -278,7 +278,10 @@ pub enum ArgPattern {
     /// - {,b}: first, it matches a bracket option, e.g. `\sqrt[3]`
     /// - t: it then matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
     #[cfg_attr(feature = "serde", serde(rename = "glob"))]
-    Glob(GlobStr),
+    Glob {
+        /// The glob pattern to match the arguments
+        pattern: GlobStr,
+    },
 }
 
 // struct ArgShape(ArgPattern, Direction);
@@ -336,6 +339,12 @@ pub enum ContextFeature {
     /// Parse content like cases
     #[cfg_attr(feature = "serde", serde(rename = "is-cases"))]
     IsCases,
+    /// Parse content like figure
+    #[cfg_attr(feature = "serde", serde(rename = "is-figure"))]
+    IsFigure,
+    /// Parse content like table
+    #[cfg_attr(feature = "serde", serde(rename = "is-table"))]
+    IsTable,
     /// Parse content like itemize
     #[cfg_attr(feature = "serde", serde(rename = "is-itemize"))]
     IsItemize,

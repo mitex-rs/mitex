@@ -97,6 +97,7 @@ https://github.com/mitex-rs/mitex/assets/34951714/0ce77a2c-0a7d-445f-b26d-e139f3
   - [x] Inline and block math equations.
   - [x] `\ref`, `\eqref` and `\label`.
   - [x] `itemize` and `enumerate` environments.
+  - [x] `figure`, `table` and `tabular` environments.
 
 ## Features to Implement
 

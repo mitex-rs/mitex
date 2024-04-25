@@ -41,7 +41,7 @@
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
 #let matrix-handle(delim: none, handle: none) = define-env(none, kind: "is-matrix", alias: none, handle: math.mat.with(delim: delim))
 #let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 { fn(..args) } else { math.zws }
-#let ignore-me = it => {}
+#let ignore-me = (..args) => {}
 #let ignore-sym = define-sym("")
 
 // 2. Standard package definitions, generate specs and scopes,
@@ -54,13 +54,30 @@
   footnote: define-cmd(1, alias: "#footnote"),
   cite: define-cmd(1, alias: "#mitexcite", handle: it => cite(label(get-tex-str(it)))),
   emph: define-cmd(1, alias: "#emph"),
-  item: ignore-sym,
-  itemize: define-env(none, kind: "is-itemize"),
-  enumerate: define-env(none, kind: "is-enumerate"),
   label: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   tag: define-cmd(1, alias: "mitexlabel", handle: ignore-me),
   ref: define-cmd(1, alias: "#mitexref", handle: it => ref(label(get-tex-str(it)))),
   eqref: define-cmd(1, alias: "#mitexref"),
+  item: ignore-sym,
+  // environments for text mode
+  itemize: define-env(none, kind: "is-itemize"),
+  enumerate: define-env(none, kind: "is-enumerate"),
+  quote: define-env(none, alias: "quote(block: true)"),
+  abstract: define-env(none, alias: "quote(block: true)"),
+  figure: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
+  table: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
+  tabular: define-env(1, kind: "is-table", alias: "table"),
+  // commands for figure
+  centering: ignore-sym,
+  textwidth: sym,
+  caption: define-cmd(1, alias: "mitexcaption", handle: ignore-me),
+  includegraphics: define-glob-cmd("{,b}t", "#miteximage", handle: ignore-me),
+  // commands for tabular
+  toprule: define-glob-cmd("{,b}", "toprule"),
+  midrule: define-glob-cmd("{,b}", "midrule"),
+  bottomrule: define-glob-cmd("{,b}", "bottomrule"),
+  hline: ignore-sym,
+  vline: ignore-sym,
   // Spaces: \! \, \> \: \; \ \quad \qquad
   "!": define-sym("negthinspace", sym: h(-(3/18) * 1em)),
   negthinspace: of-sym(h(-(3/18) * 1em)),
@@ -1002,8 +1019,6 @@
   relax: ignore-sym,
   cr: ignore-sym,
   expandafter: ignore-sym,
-  hline: ignore-sym,
-  vline: ignore-sym,
   hskip: ignore-sym,
   mskip: ignore-sym,
   kern: ignore-sym,

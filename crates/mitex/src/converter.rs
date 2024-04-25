@@ -24,6 +24,8 @@ enum LaTeXEnv {
     #[default]
     // Text mode
     None,
+    Figure,
+    Table,
     Itemize,
     Enumerate,
     // Math mode
@@ -269,105 +271,16 @@ impl Converter {
                     "label" => {
                         self.convert_command_label(f, &cmd)?;
                     }
+                    "includegraphics" => {
+                        self.convert_command_includegraphics(f, &cmd)?;
+                    }
                     _ => {
                         self.convert_normal_command(f, elem, spec)?;
                     }
                 }
             }
             ItemEnv => {
-                let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
-                let name = env
-                    .name_tok()
-                    .expect("environment name must be non-empty")
-                    .text()
-                    .to_string();
-                let name = name.trim();
-                let args = env.arguments();
-                // todo: handle options
-
-                let env_shape = spec
-                    .get_env(name)
-                    .ok_or_else(|| format!("unknown environment: \\{}", name))?;
-                let typst_name = env_shape.alias.as_deref().unwrap_or(name);
-
-                let env_kind = match env_shape.ctx_feature {
-                    ContextFeature::None => LaTeXEnv::None,
-                    ContextFeature::IsMath => LaTeXEnv::Math,
-                    ContextFeature::IsMatrix => LaTeXEnv::Matrix,
-                    ContextFeature::IsCases => LaTeXEnv::Cases,
-                    ContextFeature::IsItemize => LaTeXEnv::Itemize,
-                    ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
-                };
-
-                // hack for itemize and enumerate
-                if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
-                    let prev = self.enter_env(env_kind);
-
-                    for child in elem.as_node().unwrap().children_with_tokens() {
-                        if matches!(child.kind(), ItemBegin | ItemEnd) {
-                            continue;
-                        }
-
-                        self.convert(f, child, spec)?;
-                    }
-
-                    self.exit_env(prev);
-
-                    return Ok(());
-                }
-
-                // text mode to math mode with $ ... $
-                let is_need_dollar = matches!(self.mode, LaTeXMode::Text)
-                    && !matches!(
-                        env_kind,
-                        LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-                    );
-                let prev = self.enter_env(env_kind);
-                let mut prev_mode = LaTeXMode::Text;
-                if is_need_dollar {
-                    f.write_str("$ ")?;
-                    prev_mode = self.enter_mode(LaTeXMode::Math);
-                }
-
-                // environment name
-                f.write_str(typst_name)?;
-                f.write_char('(')?;
-                // named args
-                for (index, arg) in args.enumerate() {
-                    f.write_str(format!("arg{}: ", index).as_str())?;
-                    self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
-                    f.write_char(',')?;
-                }
-
-                for child in elem.as_node().unwrap().children_with_tokens() {
-                    if matches!(child.kind(), ItemBegin | ItemEnd) {
-                        continue;
-                    }
-
-                    self.convert(f, child, spec)?;
-                }
-
-                f.write_char(')')?;
-
-                self.exit_env(prev);
-
-                if is_need_dollar {
-                    f.write_str(" $")?;
-                    self.exit_mode(prev_mode);
-                }
-
-                // handle label
-                if matches!(
-                    self.env,
-                    LaTeXEnv::None | LaTeXEnv::Itemize | LaTeXEnv::Enumerate
-                ) {
-                    if let Some(label) = self.label.take() {
-                        f.write_char('<')?;
-                        f.write_str(label.as_str())?;
-                        f.write_char('>')?;
-                        self.label = None;
-                    }
-                }
+                self.convert_env(f, elem, spec)?;
             }
             ItemTypstCode => {
                 write!(f, "{}", elem.as_node().unwrap().text())?;
@@ -599,6 +512,80 @@ impl Converter {
         Ok(())
     }
 
+    /// Convert command `\includegraphics[width=0.5\textwidth]{example-image}`
+    fn convert_command_includegraphics(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        cmd: &CmdItem,
+    ) -> Result<(), ConvertError> {
+        let opt_arg = cmd.arguments().find(|arg| {
+            matches!(
+                arg.first_child().unwrap().kind(),
+                LatexSyntaxKind::ItemBracket
+            )
+        });
+        let arg = cmd
+            .arguments()
+            .find(|arg| {
+                matches!(
+                    arg.first_child().unwrap().kind(),
+                    LatexSyntaxKind::ItemCurly
+                )
+            })
+            .expect("\\includegraphics command must have one argument");
+        // remove { and } then trim
+        let body = arg.text().to_string();
+        let body = &body[1..(body.len() - 1)];
+        let body = body.trim();
+        f.write_str("#image(")?;
+        // optional arguments
+        if let Some(opt_arg) = opt_arg {
+            let arg_text = opt_arg.text().to_string();
+            let arg_text = &arg_text[1..(arg_text.len() - 1)];
+            let arg_text = arg_text.trim();
+            // example: \includegraphics[width=0.5\textwidth, height=3cm,
+            // angle=45]{example-image} split by comma and convert
+            // to key-value pairs
+            let args = arg_text.split(',').collect::<Vec<_>>();
+            let args = args
+                .iter()
+                .map(|arg| {
+                    let arg = arg.trim();
+                    let arg = arg.split('=').collect::<Vec<_>>();
+                    let key = arg[0].trim();
+                    let value = if arg.len() == 2 { arg[1].trim() } else { "" };
+                    (key, value)
+                })
+                .collect::<Vec<_>>();
+            for (key, value) in args.iter() {
+                if matches!(key, &"width" | &"height") {
+                    f.write_str(key)?;
+                    f.write_char(':')?;
+                    f.write_char(' ')?;
+                    if value.ends_with("\\textwidth") {
+                        let value = value.trim_end_matches("\\textwidth");
+                        f.write_str(value)?;
+                        f.write_str(" * 100%")?;
+                    } else if value.ends_with("\\textheight") {
+                        let value = value.trim_end_matches("\\textheight");
+                        f.write_str(value)?;
+                        f.write_str(" * 100%")?;
+                    } else {
+                        f.write_str(value)?;
+                    }
+                    f.write_char(',')?;
+                    f.write_char(' ')?;
+                }
+            }
+        }
+        // image path
+        f.write_char('"')?;
+        f.write_str(body)?;
+        f.write_char('"')?;
+        f.write_char(')')?;
+        Ok(())
+    }
+
     /// Convert normal command
     fn convert_normal_command(
         &mut self,
@@ -701,8 +688,8 @@ impl Converter {
                     self.exit_mode(prev_mode);
                     f.write_char(']')?;
                 }
-                f.write_char(';')?;
             }
+            f.write_char(';')?;
         }
 
         // hack for \substack{abc \\ bcd}
@@ -710,6 +697,368 @@ impl Converter {
             self.exit_env(prev);
         }
 
+        Ok(())
+    }
+
+    /// Convert environments
+    fn convert_env(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
+        let name = env
+            .name_tok()
+            .expect("environment name must be non-empty")
+            .text()
+            .to_string();
+        let name = name.trim();
+        let args = env.arguments();
+
+        let env_shape = spec
+            .get_env(name)
+            .ok_or_else(|| format!("unknown environment: \\{}", name))?;
+        let typst_name = env_shape.alias.as_deref().unwrap_or(name);
+
+        let env_kind = match env_shape.ctx_feature {
+            ContextFeature::None => LaTeXEnv::None,
+            ContextFeature::IsMath => LaTeXEnv::Math,
+            ContextFeature::IsMatrix => LaTeXEnv::Matrix,
+            ContextFeature::IsCases => LaTeXEnv::Cases,
+            ContextFeature::IsFigure => LaTeXEnv::Figure,
+            ContextFeature::IsTable => LaTeXEnv::Table,
+            ContextFeature::IsItemize => LaTeXEnv::Itemize,
+            ContextFeature::IsEnumerate => LaTeXEnv::Enumerate,
+        };
+
+        // hack for itemize and enumerate
+        if matches!(env_kind, LaTeXEnv::Itemize | LaTeXEnv::Enumerate) {
+            let prev = self.enter_env(env_kind);
+
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                if matches!(
+                    child.kind(),
+                    LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                ) {
+                    continue;
+                }
+
+                self.convert(f, child, spec)?;
+            }
+
+            self.exit_env(prev);
+
+            return Ok(());
+        }
+
+        // is environment for math
+        let is_math_env = matches!(
+            env_kind,
+            // math environments
+            LaTeXEnv::Math
+                | LaTeXEnv::Matrix
+                | LaTeXEnv::Cases
+                | LaTeXEnv::SubStack
+                | LaTeXEnv::MathCurlyGroup
+        );
+
+        // convert math environments into functions like `mat(a, b; c, d)`
+        if is_math_env {
+            // text mode to math mode with $ ... $
+            let with_dollar = matches!(self.mode, LaTeXMode::Text) && is_math_env;
+            let prev = self.enter_env(env_kind);
+            let prev_mode = self.enter_mode(LaTeXMode::Math);
+            if with_dollar {
+                f.write_str("$ ")?;
+            }
+
+            // environment name
+            f.write_str(typst_name)?;
+
+            f.write_char('(')?;
+            // named args
+            for (index, arg) in args.enumerate() {
+                f.write_str(format!("arg{}: ", index).as_str())?;
+                self.convert(f, rowan::NodeOrToken::Node(arg), spec)?;
+                f.write_char(',')?;
+            }
+
+            for child in elem.as_node().unwrap().children_with_tokens() {
+                // skip \begin and \end commands
+                if matches!(
+                    child.kind(),
+                    LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                ) {
+                    continue;
+                }
+                self.convert(f, child, spec)?;
+            }
+
+            f.write_char(')')?;
+
+            self.exit_env(prev);
+
+            if with_dollar {
+                f.write_str(" $")?;
+                self.exit_mode(prev_mode);
+            }
+        } else {
+            // convert text environments
+            // 1. \begin{quote}xxx\end{quote} -> #quote(block: true)[xxx]
+            //    \begin{abstract}xxx\end{abstract} -> #quote(block: true)[xxx]
+            // 2. \begin{figure}xxx\end{figure} -> #figure(image(), caption: [])
+            //    \begin{table}xxx\end{table} -> #figure(table(), caption: [])
+            // 3. \begin{tabular}xxx\end{tabular}
+            // environment name
+            match env_kind {
+                LaTeXEnv::Figure => {
+                    self.convert_env_figure(f, elem, spec, env_kind, typst_name)?;
+                }
+                LaTeXEnv::Table => {
+                    self.convert_env_table(f, elem, spec, env_kind, typst_name)?;
+                }
+                _ => {
+                    // normal environment
+                    let prev = self.enter_env(env_kind);
+                    f.write_char('#')?;
+                    f.write_str(typst_name)?;
+                    f.write_char('[')?;
+                    for child in elem.as_node().unwrap().children_with_tokens() {
+                        // skip \begin and \end commands
+                        if matches!(
+                            child.kind(),
+                            LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+                        ) {
+                            continue;
+                        }
+                        self.convert(f, child, spec)?;
+                    }
+                    f.write_str("];")?;
+                    self.exit_env(prev);
+                }
+            }
+        }
+
+        // handle label, only add <label> for text mode
+        if matches!(self.mode, LaTeXMode::Text) {
+            if let Some(label) = self.label.take() {
+                f.write_char('<')?;
+                f.write_str(label.as_str())?;
+                f.write_char('>')?;
+                self.label = None;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Convert figure environment
+    fn convert_env_figure(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+        env_kind: LaTeXEnv,
+        typst_name: &str,
+    ) -> Result<(), ConvertError> {
+        fn is_named_arg(child: &LatexSyntaxElem) -> bool {
+            matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemCmd
+                    if matches!(
+                        CmdItem::cast(child.as_node().unwrap().clone())
+                            .unwrap()
+                            .name_tok()
+                            .unwrap()
+                            .text(),
+                        "\\caption" | "\\centering"
+                    )
+            )
+        }
+        // collect named args
+        let mut caption = None;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            if is_named_arg(&child) {
+                let cmd = CmdItem::cast(child.as_node().unwrap().clone()).unwrap();
+                let name = cmd.name_tok().unwrap();
+                let name = name.text();
+                // remove prefix \
+                let name = &name[1..];
+                if name == "caption" {
+                    let arg = cmd
+                        .arguments()
+                        .next()
+                        .expect("\\caption command must have one argument");
+                    caption = Some(arg);
+                }
+            }
+        }
+        // convert to #figure
+        let prev = self.enter_env(env_kind);
+        f.write_char('#')?;
+        f.write_str(typst_name)?;
+        f.write_char('(')?;
+        if let Some(caption) = caption {
+            f.write_str("caption: [")?;
+            self.convert(f, caption.into(), spec)?;
+            f.write_str("],")?;
+        }
+        f.write_str(")[")?;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            // skip \begin and \end commands
+            if matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+            ) || matches!(child.kind(), LatexSyntaxKind::ItemCmd) && is_named_arg(&child)
+            {
+                continue;
+            }
+            self.convert(f, child, spec)?;
+        }
+        f.write_str("];")?;
+        self.exit_env(prev);
+
+        Ok(())
+    }
+
+    /// Convert tabular environment
+    fn convert_env_table(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        elem: LatexSyntaxElem,
+        spec: &CommandSpec,
+        env_kind: LaTeXEnv,
+        typst_name: &str,
+    ) -> Result<(), ConvertError> {
+        let env = EnvItem::cast(elem.as_node().unwrap().clone()).unwrap();
+        let arg = env
+            .arguments()
+            .next()
+            .expect("tabular environment must have one argument");
+        let arg = arg.text().to_string();
+        // remove { and } then trim
+        let arg = &arg[1..(arg.len() - 1)];
+        let arg = arg.trim();
+        // split arg to get alignments and vertical lines
+        let mut alignments: Vec<char> = vec![];
+        let mut vlines: Vec<usize> = vec![];
+        let mut index = 0;
+        for ch in arg.chars() {
+            match ch {
+                'l' | 'c' | 'r' => {
+                    alignments.push(ch);
+                    index += 1;
+                }
+                '|' => {
+                    vlines.push(index);
+                }
+                _ => {
+                    // unknown character
+                    Err(format!("unknown alignment: {}", ch))?;
+                }
+            }
+        }
+        // convert to #figure
+        let prev = self.enter_env(env_kind);
+        f.write_char('#')?;
+        f.write_str(typst_name)?;
+        f.write_char('(')?;
+        // stroke: none,
+        f.write_str("stroke: none,\n")?;
+        // columns: 2,
+        f.write_str(format!("columns: {},\n", alignments.len()).as_str())?;
+        // align: (left, center, right, ),
+        f.write_str("align: (")?;
+        for align in alignments {
+            match align {
+                'l' => f.write_str("left, ")?,
+                'c' => f.write_str("center, ")?,
+                'r' => f.write_str("right, ")?,
+                _ => {}
+            }
+        }
+        f.write_str("),\n")?;
+        // table.vline(x: 1),
+        for vline in vlines {
+            f.write_str(format!("table.vline(stroke: .5pt, x: {}), ", vline).as_str())?;
+        }
+        f.write_str("\n")?;
+        let mut exterior = true;
+        for child in elem.as_node().unwrap().children_with_tokens() {
+            // skip \begin and \end commands
+            if matches!(
+                child.kind(),
+                LatexSyntaxKind::ItemBegin | LatexSyntaxKind::ItemEnd
+            ) {
+                continue;
+            }
+            // preprocess if exterior
+            if exterior {
+                match child.kind() {
+                    LatexSyntaxKind::TokenWhiteSpace | LatexSyntaxKind::TokenLineBreak => {}
+                    LatexSyntaxKind::TokenAmpersand => {
+                        // write `[],` for empty exterior when encountering &
+                        f.write_str("[], ")?;
+                    }
+                    LatexSyntaxKind::ItemNewLine => {
+                        // write `[],\n` for empty exterior when encountering //
+                        f.write_str("[],\n")?;
+                    }
+                    LatexSyntaxKind::ItemCmd => {
+                        let cmd_name = CmdItem::cast(child.as_node().unwrap().clone())
+                            .unwrap()
+                            .name_tok()
+                            .unwrap();
+                        let cmd_name = &cmd_name.text()[1..];
+                        match cmd_name {
+                            "hline" => {
+                                f.write_str("table.hline(stroke: .5pt),\n")?;
+                            }
+                            "toprule" => {
+                                f.write_str("table.hline(stroke: 1pt),\n")?;
+                            }
+                            "midrule" => {
+                                f.write_str("table.hline(stroke: .5pt),\n")?;
+                            }
+                            "bottomrule" => {
+                                f.write_str("table.hline(stroke: 1pt),\n")?;
+                            }
+                            _ => {
+                                // enter interior for normal commands
+                                exterior = false;
+                                f.write_char('[')?;
+                            }
+                        }
+                    }
+                    _ => {
+                        // enter interior for normal text
+                        exterior = false;
+                        f.write_char('[')?;
+                    }
+                }
+            }
+            // process if interior
+            if !exterior {
+                match child.kind() {
+                    LatexSyntaxKind::TokenAmpersand => {
+                        // write `[],` when encountering &
+                        f.write_str("], ")?;
+                        exterior = true;
+                    }
+                    LatexSyntaxKind::ItemNewLine => {
+                        // write `[],\n` when encountering //
+                        f.write_str("],\n")?;
+                        exterior = true;
+                    }
+                    _ => {
+                        self.convert(f, child, spec)?;
+                    }
+                }
+            }
+        }
+        f.write_str(");")?;
+        self.exit_env(prev);
         Ok(())
     }
 }

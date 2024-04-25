@@ -99,7 +99,7 @@ impl ArgMatcherBuilder {
                 }
             }
             ArgPattern::Greedy => ArgMatcher::Greedy,
-            ArgPattern::Glob(re) => ArgMatcher::Glob {
+            ArgPattern::Glob { pattern: re } => ArgMatcher::Glob {
                 re: re.clone(),
                 prefix: String::new(),
             },
