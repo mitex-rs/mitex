@@ -200,11 +200,11 @@ fn process_opts(mut opts: Opts) -> Result<Opts, clap::Error> {
             match io_args.len() {
                 0 => {}
                 1 => {
-                    args.input = io_args[0].clone();
+                    args.input.clone_from(&io_args[0]);
                 }
                 2 => {
-                    args.input = io_args[0].clone();
-                    args.output = io_args[1].clone();
+                    args.input.clone_from(&io_args[0]);
+                    args.output.clone_from(&io_args[1]);
                 }
                 _ => Err(clap::Error::raw(
                     clap::error::ErrorKind::ValueValidation,
@@ -226,7 +226,7 @@ fn process_opts(mut opts: Opts) -> Result<Opts, clap::Error> {
             ))?;
         }
         if args.output.is_empty() {
-            args.output = std::path::Path::new(&args.input)
+            std::path::Path::new(&args.input)
                 .with_extension("tex")
                 .to_str()
                 .ok_or_else(|| {
@@ -235,7 +235,7 @@ fn process_opts(mut opts: Opts) -> Result<Opts, clap::Error> {
                         "Input file name is invalid.",
                     )
                 })?
-                .to_owned();
+                .clone_into(&mut args.output);
         }
     }
 
