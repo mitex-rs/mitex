@@ -58,7 +58,7 @@ const App = () => {
     van.derive(async () => {
       if (fontLoaded.val) {
         svgData.val = await $typst.svg({
-          mainContent: `#import "@preview/mitex:0.2.2": *
+          mainContent: `#import "@preview/mitex:0.2.4": *
         #set page(width: auto, height: auto, margin: 1em);
         #set text(size: 24pt);
         ${darkModeStyle.val}
@@ -128,7 +128,7 @@ const App = () => {
     CopyButton(
       "Copy with template and imports",
       van.derive(
-        () => `#import "@preview/mitex:0.2.2": *\n
+        () => `#import "@preview/mitex:0.2.4": *\n
 #math.equation(eval("$" + \`${output.val}\`.text + "$", mode: "markup", scope: mitex-scope), block: true)`
       )
     ),

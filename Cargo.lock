@@ -342,7 +342,7 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
 name = "fuzz-target-mitex"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "afl",
  "divan",
@@ -495,7 +495,7 @@ dependencies = [
 
 [[package]]
 name = "mitex"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "bitflags",
  "divan",
@@ -509,7 +509,7 @@ dependencies = [
 
 [[package]]
 name = "mitex-cli"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -528,11 +528,11 @@ dependencies = [
 
 [[package]]
 name = "mitex-glob"
-version = "0.2.2"
+version = "0.2.4"
 
 [[package]]
 name = "mitex-lexer"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "divan",
  "ecow",
@@ -547,7 +547,7 @@ dependencies = [
 
 [[package]]
 name = "mitex-parser"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "divan",
  "insta",
@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "mitex-spec"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "divan",
  "fxhash",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "mitex-spec-gen"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "mitex-spec",
@@ -585,7 +585,7 @@ dependencies = [
 
 [[package]]
 name = "mitex-wasm"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "mitex",
  "mitex-spec",

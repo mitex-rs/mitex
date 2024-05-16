@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.2.4
+
+- Fix `\boxed` command.
+- Support basic figure and tabular environments.
+- Add escape symbols for plus, minus and percent.
+- Fix `\left` and `\right`: size of lr use em.
+
+
 ## 0.2.3
 
 - Support nesting math equation like `\text{$x$}`.
