@@ -13,13 +13,13 @@ crate-type = ["cdylib"]
 
 [dependencies]
 
-mitex = { path = "../mitex" }
-mitex-spec = { path = "../mitex-spec" }
+mitex.workspace = true
+mitex-spec.workspace = true
 
 serde.workspace = true
 serde_json.workspace = true
 
-wasm-bindgen = { version = "0.2.74", optional = true }
+wasm-bindgen = { version = "0.2.92", optional = true }
 wasm-minimal-protocol = { git = "https://github.com/astrale-sharp/wasm-minimal-protocol", optional = true }
 
 [features]

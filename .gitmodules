@@ -1,4 +1,4 @@
-[submodule "assets/artifacts"]
-	path = assets/artifacts
+[submodule "crates/mitex-spec-gen/assets/artifacts"]
+	path = crates/mitex-spec-gen/assets/artifacts
 	url = https://github.com/mitex-rs/artifacts
-	branch = v0.1.1
+	branch = v0.2.4

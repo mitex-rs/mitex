@@ -20,10 +20,10 @@ doc = false
 
 [dependencies]
 
-mitex-spec-gen = { path = "../mitex-spec-gen" }
-mitex-spec = { path = "../mitex-spec" }
-mitex-parser = { path = "../mitex-parser" }
-mitex = { path = "../mitex" }
+mitex-spec-gen.workspace = true
+mitex-spec.workspace = true
+mitex-parser.workspace = true
+mitex.workspace = true
 
 clap.workspace = true
 clap_builder.workspace = true

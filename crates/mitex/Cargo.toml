@@ -14,10 +14,9 @@ harness = false
 
 [dependencies]
 
-mitex-parser = { path = "../mitex-parser" }
-mitex-spec-gen = { path = "../mitex-spec-gen" }
+mitex-parser.workspace = true
+mitex-spec-gen.workspace = true
 rowan.workspace = true
-bitflags = "2.4.1"
 
 [dev-dependencies]
 insta.workspace = true
