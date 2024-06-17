@@ -25,7 +25,7 @@ We also support text mode (in development):
   \section{Title}
 
   A \textbf{strong} text, a \emph{emph} text and inline equation $x + y$.
-  
+
   Also block \eqref{eq:pythagoras} and \ref{tab:example}.
 
   \begin{equation}

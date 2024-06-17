@@ -23,30 +23,46 @@
   "olive": rgb(128, 128, 0),
 )
 #let get-tex-str-from-arr(arr) = arr.filter(it => it != [ ] and it != [#math.zws]).map(it => it.text).sum()
-#let get-tex-str(tex) = if tex.has("children") { get-tex-str-from-arr(tex.children) } else { tex.text }
+#let get-tex-str(tex) = if tex.has("children") {
+  get-tex-str-from-arr(tex.children)
+} else {
+  tex.text
+}
 #let get-tex-color-from-arr(arr) = {
-    mitex-color-map.at(lower(get-tex-str-from-arr(arr)), default: none)
+  mitex-color-map.at(lower(get-tex-str-from-arr(arr)), default: none)
 }
 #let get-tex-color(texcolor) = if texcolor.has("children") {
   get-tex-color-from-arr(texcolor.children)
 } else {
   texcolor.text
-} 
+}
 
 // 1. functions created to make it easier to define a spec
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
 #let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: #arrow-sym, it))$)
 #let _greedy-handle(fn) = (..args) => $fn(#args.pos().sum())$
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
-#let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: (it) => math.limits(wrap(it)))
-#let matrix-handle(delim: none, handle: none) = define-env(none, kind: "is-matrix", alias: none, handle: math.mat.with(delim: delim))
-#let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 { fn(..args) } else { math.zws }
-#let ignore-me = (..args) => {}
+#let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: it => math.limits(wrap(it)))
+#let matrix-handle(delim: none, handle: none) = define-env(
+  none,
+  kind: "is-matrix",
+  alias: none,
+  handle: math.mat.with(delim: delim),
+)
+#let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 {
+  fn(..args)
+} else {
+  math.zws
+}
+#let ignore-me = (..args) => { }
 #let ignore-sym = define-sym("")
 
 // 2. Standard package definitions, generate specs and scopes,
 //    for parser/convert and typst respectively
-#let (spec, scope) = process-spec((
+#let (
+  spec,
+  scope,
+) = process-spec((
   // Text mode
   section: define-cmd(1, alias: "#heading(level: 1)"),
   subsection: define-cmd(1, alias: "#heading(level: 2)"),
@@ -1126,5 +1142,5 @@
   LoadClassWithOptions: ignore-sym,
 ))
 
-// export: include package name, spec and scope 
+// export: include package name, spec and scope
 #let package = (name: "latex-std", spec: (commands: spec), scope: scope)

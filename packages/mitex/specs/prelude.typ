@@ -1,5 +1,5 @@
-/// Define a normal symbol, as no-argument commands like \alpha 
-/// 
+/// Define a normal symbol, as no-argument commands like \alpha
+///
 /// Arguments:
 /// - s (str): Alias command for typst handler.
 ///   For example, alias `\prod` to typst's `product`.
@@ -9,11 +9,18 @@
 ///
 /// Return: A spec item and a scope item (none for no scope item)
 #let define-sym(s, sym: none) = {
-  ((kind: "alias-sym", alias: s), if sym != none { (alias: s, handle: sym) } else { none })
+  (
+    (kind: "alias-sym", alias: s),
+    if sym != none {
+      (alias: s, handle: sym)
+    } else {
+      none
+    },
+  )
 }
 
 /// Define a greedy command, like \displaystyle
-/// 
+///
 /// Arguments:
 /// - s (str): Alias command for typst handler.
 ///   For example, alias `\displaystyle` to typst's `mitexdisplay`, as the key in mitex-scope.
@@ -23,11 +30,18 @@
 ///
 /// Return: A spec item and a scope item (none for no scope item)
 #let define-greedy-cmd(s, handle: none) = {
-  ((kind: "greedy-cmd", alias: s), if handle != none { (alias: s, handle: handle) } else { none })
+  (
+    (kind: "greedy-cmd", alias: s),
+    if handle != none {
+      (alias: s, handle: handle)
+    } else {
+      none
+    },
+  )
 }
 
 /// Define an infix command, like \over
-/// 
+///
 /// Arguments:
 /// - s (str): Alias command for typst handler.
 ///   For example, alias `\over` to typst's `frac`, as the key in mitex-scope.
@@ -37,7 +51,14 @@
 ///
 /// Return: A spec item and a scope item (none for no scope item)
 #let define-infix-cmd(s, handle: none) = {
-  ((kind: "infix-cmd", alias: s), if handle != none { (alias: s, handle: handle) } else { none })
+  (
+    (kind: "infix-cmd", alias: s),
+    if handle != none {
+      (alias: s, handle: handle)
+    } else {
+      none
+    },
+  )
 }
 
 /// Define a glob (Global Wildcard) match command with a specified pattern for matching args
@@ -57,11 +78,18 @@
 ///
 /// Return: A spec item and a scope item (none for no scope item)
 #let define-glob-cmd(pat, s, handle: none) = {
-  ((kind: "glob-cmd", pattern: pat, alias: s), if handle != none { (alias: s, handle: handle) } else { none })
+  (
+    (kind: "glob-cmd", pattern: pat, alias: s),
+    if handle != none {
+      (alias: s, handle: handle)
+    } else {
+      none
+    },
+  )
 }
 
 /// Define a command with a fixed number of arguments, like \hat{x} and \frac{1}{2}
-/// 
+///
 /// Arguments:
 /// - num (int): The number of arguments for the command.
 /// - alias (str): Alias command for typst handler.
@@ -71,15 +99,22 @@
 ///
 /// Return: A spec item and a scope item (none for no scope item)
 #let define-cmd(num, alias: none, handle: none) = {
-  ((
-    kind: "cmd",
-    args: ( "kind": "right", "pattern": ( kind: "fixed-len", len: num ) ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
+  (
+    (
+      kind: "cmd",
+      args: ("kind": "right", "pattern": (kind: "fixed-len", len: num)),
+      alias: alias,
+    ),
+    if handle != none {
+      (alias: alias, handle: handle)
+    } else {
+      none
+    },
+  )
 }
 
 /// Define an environment with a fixed number of arguments, like \begin{alignedat}{2}
-/// 
+///
 /// Arguments:
 /// - num (int): The number of arguments as environment options for the environment.
 /// - alias (str): Alias command for typst handler.
@@ -95,35 +130,49 @@
 ///
 /// Return: A spec item and a scope item (none for no scope item)
 #let define-env(num, kind: "none", alias: none, handle: none) = {
-  ((
-    kind: "env",
-    args: if num != none {
-      ( kind: "fixed-len", len: num )
+  (
+    (
+      kind: "env",
+      args: if num != none {
+        (kind: "fixed-len", len: num)
+      } else {
+        (kind: "none")
+      },
+      ctx_feature: (kind: kind),
+      alias: alias,
+    ),
+    if handle != none {
+      (alias: alias, handle: handle)
     } else {
-      ( kind: "none" )
+      none
     },
-    ctx_feature: ( kind: kind ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
+  )
 }
 
 #let define-glob-env(pat, kind: "none", alias: none, handle: none) = {
-  ((
-    kind: "glob-env",
-    pattern: pat,
-    ctx_feature: ( kind: kind ),
-    alias: alias,
-  ), if handle != none { (alias: alias, handle: handle) } else { none })
+  (
+    (
+      kind: "glob-env",
+      pattern: pat,
+      ctx_feature: (kind: kind),
+      alias: alias,
+    ),
+    if handle != none {
+      (alias: alias, handle: handle)
+    } else {
+      none
+    },
+  )
 }
 
 /// Define a symbol without alias and without handler function, like \alpha => alpha
-/// 
+///
 /// Return: A spec item and no scope item (none for no scope item)
 #let sym = ((kind: "sym"), none)
 
 /// Define a symbol without alias and with handler function,
 /// like \negthinspace => h(-(3/18) * 1em)
-/// 
+///
 /// Arguments:
 /// - handle (function): The handler function, as the value of alias in mitex-scope.
 ///   For example, define `negthinspace` to handle `h(-(3/18) * 1em)` in mitex-scope
@@ -132,27 +181,27 @@
 #let of-sym(handle) = ((kind: "sym"), (handle: handle))
 
 /// Define a left1-op command without handler, like `\limits` for `\sum\limits`
-/// 
+///
 /// Arguments:
 /// - alias (str): Alias command for typst handler.
 ///   For example, alias `\limits` to typst's `limits`
 ///   and alias `\nolimits` to typst's `scripts`
 ///
 /// Return: A cmd spec and no scope item (none for no scope item)
-#let left1-op(alias) = ((kind: "cmd", args: ( kind: "left1" ), alias: alias), none)
+#let left1-op(alias) = ((kind: "cmd", args: (kind: "left1"), alias: alias), none)
 
 /// Define a cmd1 command like \hat{x} => hat(x)
-/// 
+///
 /// Return: A cmd1 spec and a scope item (none for no scope item)
 #let cmd1 = ((kind: "cmd1"), none)
 
 /// Define a cmd2 command like \binom{1}{2} => binom(1, 2)
-/// 
+///
 /// Return: A cmd2 spec and a scope item (none for no scope item)
 #let cmd2 = ((kind: "cmd2"), none)
 
 /// Define a matrix environment without handler
-/// 
+///
 /// Return: A matrix-env spec and a scope item (none for no scope item)
 #let matrix-env = ((kind: "matrix-env"), none)
 
