@@ -62,7 +62,7 @@ We also support text mode (in development):
 
 ### Installation
 
-Install latest nightly version by `cargo install --git https://github.com/mitex-rs/mitex mitex-cli`.
+Install the latest nightly version by `cargo install --git https://github.com/mitex-rs/mitex mitex-cli`.
 
 ### Usage
 
@@ -130,7 +130,7 @@ Currently, MiTeX maintains following three parts of code:
 
 - A TeX parser library written in **Rust**, see [mitex-lexer](https://github.com/mitex-rs/mitex/tree/main/crates/mitex-lexer) and [mitex-parser](https://github.com/mitex-rs/mitex/tree/main/crates/mitex-parser).
 - A TeX to Typst converter library written in **Rust**, see [mitex](https://github.com/mitex-rs/mitex/tree/main/crates/mitex).
-- A list of TeX packages and comamnds written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs).
+- A list of TeX packages and commands written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs).
 
 For a translation process, for example, we have:
 
