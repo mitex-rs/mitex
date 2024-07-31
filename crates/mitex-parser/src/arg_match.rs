@@ -28,6 +28,7 @@ pub enum ArgMatcher {
     /// Description:
     /// - {,b}: first, it matches an bracket option, e.g. `\sqrt[3]`
     /// - t: it later matches a single term, e.g. `\sqrt[3]{a}` or `\sqrt{a}`
+    ///
     /// Note: any prefix of the glob is valid in parse stage hence you need to
     /// check whether it is complete in later stage.
     Glob { re: GlobStr, prefix: String },
