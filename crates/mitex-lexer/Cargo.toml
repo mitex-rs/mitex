@@ -15,7 +15,7 @@ mitex-spec.workspace = true
 logos.workspace = true
 ena.workspace = true
 ecow.workspace = true
-fxhash.workspace = true
+rustc-hash.workspace = true
 once_cell.workspace = true
 
 [dev-dependencies]

@@ -14,22 +14,22 @@ Also block equations:
 last^1
 17000
 Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
+  Time (mean ± σ):     323.1 ms ±  18.0 ms    [User: 84.4 ms, System: 14.1 ms]
+  Range (min … max):   302.1 ms … 353.9 ms    10 runs
+8000
+Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
+  Time (mean ± σ):     198.3 ms ±   6.5 ms    [User: 50.2 ms, System: 24.6 ms]
+  Range (min … max):   188.5 ms … 207.1 ms    14 runs
+
+last^2
+17000
+Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
   Time (mean ± σ):     638.8 ms ±  10.4 ms    [User: 143.8 ms, System: 32.8 ms]
   Range (min … max):   616.5 ms … 652.5 ms    10 runs
 8000
 Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
   Time (mean ± σ):     503.2 ms ±  15.1 ms    [User: 109.4 ms, System: 28.1 ms]
   Range (min … max):   485.8 ms … 535.5 ms    10 runs
-
-last^2
-17000
-Benchmark 1: typst compile --root . typst-package\examples\bench.typ
-  Time (mean ± σ):     647.5 ms ±  16.3 ms    [User: 109.4 ms, System: 23.4 ms]
-  Range (min … max):   630.9 ms … 676.8 ms    10 runs
-8000
-Benchmark 1: typst compile --root . typst-package\examples\bench.typ
-  Time (mean ± σ):     537.5 ms ±  23.3 ms    [User: 76.6 ms, System: 17.2 ms]
-  Range (min … max):   509.1 ms … 581.7 ms    10 runs
 
 init
 17000

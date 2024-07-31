@@ -22,14 +22,14 @@ members = ["crates/*", "fuzz/*"]
 once_cell = "1"
 anyhow = "1"
 
-fxhash = "0.2.1"
-ecow = "0.2.0"
-ena = "0.14.2"
+rustc-hash = "2"
+ecow = "0.2.2"
+ena = "0.14.3"
 
-logos = "0.13.0"
+logos = "0.14.0"
 rowan = "0.15.15"
 
-which = "5.0.0"
+which = "6"
 
 mitex-spec = { version = "0.2.4", path = "crates/mitex-spec" }
 mitex-glob = { version = "0.2.4", path = "crates/mitex-glob" }
@@ -51,8 +51,8 @@ vergen = { version = "8.2.5", features = [
     "rustc",
 ] }
 
-divan = "0.1.7"
-insta = "1.34"
+divan = "0.1.14"
+insta = "1.39"
 
 rkyv = "0.7.42"
 serde = "1.0.188"

@@ -16,7 +16,7 @@ harness = false
 rkyv = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json.workspace = true
-fxhash.workspace = true
+rustc-hash.workspace = true
 
 [features]
 

@@ -115,7 +115,7 @@ pub mod command {
 
     #[derive(Default)]
     pub struct SpecBuilder {
-        commands: fxhash::FxHashMap<String, CommandSpecItem>,
+        commands: rustc_hash::FxHashMap<String, CommandSpecItem>,
     }
 
     impl SpecBuilder {
