@@ -538,7 +538,7 @@ impl BraceStack {
   }
 }
 
-#[cfg(feature = "never-used")]
+#[cfg(feature = "glob-tests")]
 #[cfg(test)]
 mod tests {
   use super::*;

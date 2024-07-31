@@ -49,7 +49,7 @@ pub enum CommandSpecItem {
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct CommandSpecRepr {
     /// A map from command name to command specification
-    pub commands: fxhash::FxHashMap<String, CommandSpecItem>,
+    pub commands: rustc_hash::FxHashMap<String, CommandSpecItem>,
 }
 
 /// Command specification that is cheap to clone
@@ -95,7 +95,7 @@ impl CommandSpec {
 
 impl CommandSpec {
     /// Create a new command specification
-    pub fn new(commands: fxhash::FxHashMap<String, CommandSpecItem>) -> Self {
+    pub fn new(commands: rustc_hash::FxHashMap<String, CommandSpecItem>) -> Self {
         Self(Arc::new(CommandSpecRepr { commands }))
     }
 
