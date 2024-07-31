@@ -396,7 +396,11 @@ impl<'a> MacroEngine<'a> {
         /// Reserve one item for the peeked token
         const PEEK_CACHE_SIZE_M1: usize = PEEK_CACHE_SIZE - 1;
 
-        ctx.next_token();
+        // Get a token from the inner stream
+        if ctx.peek_full().is_none() {
+            ctx.next_token();
+        }
+
         while ctx.peek_outer.buf.len() < PEEK_CACHE_SIZE_M1 {
             let Some(token) = ctx.peek_full() else {
                 break;
@@ -432,11 +436,6 @@ impl<'a> MacroEngine<'a> {
                     ctx.next_token();
                 }
             }
-        }
-
-        // Push the remaining token in inner stream to outer stream
-        if let Some(e) = ctx.peek_full() {
-            ctx.push_outer(e);
         }
 
         // Reverse the peek cache to make it a stack
