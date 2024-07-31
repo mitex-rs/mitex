@@ -59,19 +59,19 @@ fn oiwiki_231222_macro(bencher: Bencher) {
 
 last^1 (macro support, typst v0.10.0)
 Benchmark 1: typst compile --root . crates\mitex\benches\empty.typ
-  Time (mean ± σ):      79.9 ms ±   3.0 ms    [User: 6.1 ms, System: 6.9 ms]
-  Range (min … max):    75.2 ms …  88.5 ms    36 runs
+  Time (mean ± σ):      81.5 ms ±   2.8 ms    [User: 7.8 ms, System: 7.7 ms]
+  Range (min … max):    76.9 ms …  88.7 ms    34 runs
 
 Benchmark 1: typst compile --root . crates\mitex\benches\oiwiki.typ
-  Time (mean ± σ):      1.526 s ±  0.070 s    [User: 0.473 s, System: 0.028 s]
-  Range (min … max):    1.418 s …  1.634 s    10 runs
+  Time (mean ± σ):      1.472 s ±  0.074 s    [User: 0.436 s, System: 0.027 s]
+  Range (min … max):    1.416 s …  1.654 s    10 runs
 
 Benchmark 1: typst compile --root . crates\mitex\benches\oiwiki-with-render.typ
-  Time (mean ± σ):      3.155 s ±  0.161 s    [User: 1.001 s, System: 0.082 s]
-  Range (min … max):    3.016 s …  3.563 s    10 runs
+  Time (mean ± σ):      3.145 s ±  0.125 s    [User: 0.937 s, System: 0.065 s]
+  Range (min … max):    2.978 s …  3.394 s    10 runs
 
 convert_large_projects  fastest       │ slowest       │ median        │ mean          │ samples │ iters
-├─ oiwiki_231222        83.09 ms      │ 104.7 ms      │ 87.86 ms      │ 88.71 ms      │ 100     │ 100
+├─ oiwiki_231222        84.3 ms       │ 115.5 ms      │ 87.79 ms      │ 88.91 ms      │ 100     │ 100
 │                       alloc:        │               │               │               │         │
 │                         1398801     │ 1398801       │ 1398801       │ 1398801       │         │
 │                         85.32 MB    │ 85.32 MB      │ 85.32 MB      │ 85.32 MB      │         │
@@ -81,7 +81,7 @@ convert_large_projects  fastest       │ slowest       │ median        │ me
 │                       grow:         │               │               │               │         │
 │                         71029       │ 71029         │ 71029         │ 71029         │         │
 │                         10.31 MB    │ 10.31 MB      │ 10.31 MB      │ 10.31 MB      │         │
-╰─ oiwiki_231222_macro  81.95 ms      │ 119 ms        │ 87.38 ms      │ 88.42 ms      │ 100     │ 100
+╰─ oiwiki_231222_macro  81.19 ms      │ 97.02 ms      │ 85.2 ms       │ 86.5 ms       │ 100     │ 100
                         alloc:        │               │               │               │         │
                           1398801     │ 1398801       │ 1398801       │ 1398801       │         │
                           85.32 MB    │ 85.32 MB      │ 85.32 MB      │ 85.32 MB      │         │

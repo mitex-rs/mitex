@@ -8,18 +8,18 @@ Write inline equations like #mi("x") or #mi[y].
 
 Also block equations:
 
-#mitex("\alpha x" * 17000)
+#mitex("\alpha x" * 8000)
 
 /*
 last^1
 17000
 Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
-  Time (mean ± σ):     337.0 ms ±  12.7 ms    [User: 31.2 ms, System: 4.7 ms]
-  Range (min … max):   321.9 ms … 361.7 ms    10 runs
+  Time (mean ± σ):     323.1 ms ±  18.0 ms    [User: 84.4 ms, System: 14.1 ms]
+  Range (min … max):   302.1 ms … 353.9 ms    10 runs
 8000
 Benchmark 1: typst compile --root . packages\mitex\examples\bench.typ
-  Time (mean ± σ):     209.0 ms ±  10.6 ms    [User: 42.4 ms, System: 19.0 ms]
-  Range (min … max):   197.0 ms … 230.0 ms    14 runs
+  Time (mean ± σ):     198.3 ms ±   6.5 ms    [User: 50.2 ms, System: 24.6 ms]
+  Range (min … max):   188.5 ms … 207.1 ms    14 runs
 
 last^2
 17000
