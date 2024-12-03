@@ -146,7 +146,7 @@
   textstyle: greedy-handle("mitexinline", math.inline),
   scriptstyle: greedy-handle("mitexscript", math.script),
   scriptscriptstyle: greedy-handle("mitexsscript", math.sscript),
-  bf: define-cmd(1, alias: "mitexbold", handle: it => math.bold(math.upright(it))),
+  bf: greedy-handle("mitexbold", it => math.bold(math.upright(it))),
   rm: greedy-handle("mitexupright", math.upright),
   it: greedy-handle("mitexitalic", math.italic),
   sf: greedy-handle("mitexsans", math.sans),
