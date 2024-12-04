@@ -1,3 +1,4 @@
+#[allow(missing_docs)]
 pub mod parser {
     use mitex_parser::syntax::SyntaxNode;
     use mitex_spec_gen::DEFAULT_SPEC;
@@ -16,6 +17,7 @@ pub mod parser {
 pub use ast_snapshot::{SnapNode, SnapToken};
 pub use parser::*;
 
+#[allow(missing_docs)]
 pub mod ast_snapshot {
     use core::fmt;
     use std::fmt::Write;

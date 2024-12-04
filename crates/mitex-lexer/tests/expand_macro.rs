@@ -1,3 +1,4 @@
+//! TODO: crate doc
 mod common;
 
 use insta::assert_snapshot;
