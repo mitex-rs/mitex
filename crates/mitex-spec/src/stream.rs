@@ -7,7 +7,7 @@ enum RkyvStreamData<'a> {
     Unaligned(AlignedVec),
 }
 
-impl<'a> AsRef<[u8]> for RkyvStreamData<'a> {
+impl AsRef<[u8]> for RkyvStreamData<'_> {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         match self {
