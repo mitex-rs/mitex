@@ -1,5 +1,3 @@
-#import "@preview/xarrow:0.2.0": xarrow
-
 #import "../prelude.typ": *
 
 // 0. Some useful internal variables or functions
@@ -39,7 +37,7 @@
 
 // 1. functions created to make it easier to define a spec
 #let operatornamewithlimits(it) = math.op(limits: true, math.upright(it))
-#let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(xarrow(sym: #arrow-sym, it))$)
+#let arrow-handle(arrow-sym) = define-cmd(1, handle: it => $limits(stretch(#arrow-sym)^#it)$)
 #let _greedy-handle(fn) = (..args) => $fn(#args.pos().sum())$
 #let greedy-handle(alias, fn) = define-greedy-cmd(alias, handle: _greedy-handle(fn))
 #let limits-handle(alias, wrap) = define-cmd(1, alias: alias, handle: it => math.limits(wrap(it)))
@@ -950,11 +948,10 @@
   varTheta: of-sym($italic(Theta)$),
   varUpsilon: of-sym($italic(Upsilon)$),
   varXi: of-sym($italic(Xi)$),
-  // xarrows
-  xleftarrow: arrow-handle(math.arrow.l.long),
-  xrightarrow: arrow-handle(math.arrow.r.long),
-  xLeftarrow: arrow-handle(math.arrow.l.double.long),
-  xRightarrow: arrow-handle(math.arrow.r.double.long),
+  xleftarrow: arrow-handle(math.arrow.l),
+  xrightarrow: arrow-handle(math.arrow.r),
+  xLeftarrow: arrow-handle(math.arrow.l.double),
+  xRightarrow: arrow-handle(math.arrow.r.double),
   xleftrightarrow: arrow-handle(math.arrow.l.r),
   xLeftrightarrow: arrow-handle(math.arrow.l.r.double),
   xhookleftarrow: arrow-handle(math.arrow.l.hook),
