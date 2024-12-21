@@ -22,11 +22,9 @@ PS: `#set math.equation(numbering: "(1)")` is also valid for MiTeX.
 Following is [a simple example](https://github.com/mitex-rs/mitex/blob/main/packages/mitex/examples/example.typ) of using MiTeX in Typst:
 
 ```typst
-#import "@preview/mitex:0.2.4": *
+#import "@preview/mitex:0.2.5": *
 
-#assert.eq(mitex-convert("\alpha x"), "alpha  x ")
-
-Write inline equations like #mi("x") or #mi[y].
+Write inline equations like #mi(`x`).
 
 Also block equations (this case is from #text(blue.lighten(20%), link("https://katex.org/")[katex.org])):
 

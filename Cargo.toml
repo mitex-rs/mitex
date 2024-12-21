@@ -5,7 +5,7 @@ authors = [
     "OrangeX4 <orangex4@qq.com>",
     "mgt <mgt@oi-wiki.org>",
 ]
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 readme = "README.md"
 license = "Apache-2.0"
@@ -31,12 +31,12 @@ rowan = "0.15.15"
 
 which = "6"
 
-mitex-spec = { version = "0.2.4", path = "crates/mitex-spec" }
-mitex-glob = { version = "0.2.4", path = "crates/mitex-glob" }
-mitex-lexer = { version = "0.2.4", path = "crates/mitex-lexer" }
-mitex-parser = { version = "0.2.4", path = "crates/mitex-parser" }
-mitex = { version = "0.2.4", path = "crates/mitex" }
-mitex-spec-gen = { version = "0.2.4", path = "crates/mitex-spec-gen" }
+mitex-spec = { version = "0.2.5", path = "crates/mitex-spec" }
+mitex-glob = { version = "0.2.5", path = "crates/mitex-glob" }
+mitex-lexer = { version = "0.2.5", path = "crates/mitex-lexer" }
+mitex-parser = { version = "0.2.5", path = "crates/mitex-parser" }
+mitex = { version = "0.2.5", path = "crates/mitex" }
+mitex-spec-gen = { version = "0.2.5", path = "crates/mitex-spec-gen" }
 
 clap = { version = "4.4", features = ["derive", "env", "unicode", "wrap_help"] }
 clap_builder = { version = "4", features = ["string"] }

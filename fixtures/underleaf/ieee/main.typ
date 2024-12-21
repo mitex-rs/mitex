@@ -1,5 +1,5 @@
 
-#import "@preview/mitex:0.2.4": *
+#import "@preview/mitex:0.2.5": *
 
 #let res = mitex-convert(mode: "text", read("main.tex"))
 #eval(res, mode: "markup", scope: mitex-scope)
