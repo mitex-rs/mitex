@@ -122,7 +122,7 @@ Another example is that MiTeX transforms `(\frac{1}{2})` into `\(frac(1, 2)\)` i
 
 There are two kinds of commands to add:
 
-- **Commonly used commands**: If you find there are some builtin or commonly used commands missing in MiTeX, you can submit an issue or contribute them according to [Adding missing TeX commands.](./CONTRIBUTING.md#adding-missing-tex-commands)
+- **Commonly used commands**: If there are some builtin or commonly used commands missing in MiTeX, you can submit an issue or contribute them according to [Adding missing TeX commands.](./CONTRIBUTING.md#adding-missing-tex-commands)
 
 - **Special commands (Preambles)**: If you want to add some special commands (preambles) for your own use, you can define them by `\newcommand` or `\newenvironment` and override the mitex function in your. Example:
 
