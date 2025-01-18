@@ -127,12 +127,11 @@ There are two kinds of commands to add:
 - **Special commands (Preambles)**: If you want to add some special commands (preambles) for your own use, you can define them by `\newcommand` or `\newenvironment` and override the mitex function in your. Example:
 
   ````typ
-  #let preamble = ```tex
-  \newcommand{\f}[2]{#1f(#2)}
-  ```
-
-  #let mitex = (it, ..args) => mitex.with(..args)({
-    (preamble, it).map(it => it.text).join("\n")
+  #let mitex = (content, ..args) => mitex.with(..args)({
+    ```tex
+    \newcommand{\f}[2]{#1f(#2)}
+    ```.text
+    content.text
   })
   ````
 

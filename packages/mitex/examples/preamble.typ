@@ -1,11 +1,10 @@
 #import "../lib.typ": *
 
-#let preamble = ```tex
-\newcommand{\f}[2]{#1f(#2)}
-```
-
 #let mitex = (it, ..args) => mitex.with(..args)({
-  (preamble, it).map(it => it.text).join("\n")
+  ```tex
+  \newcommand{\f}[2]{#1f(#2)}
+  ```.text
+  it.text
 })
 
 #mitex(```latex
