@@ -118,7 +118,7 @@ Another example is that MiTeX transforms `(\frac{1}{2})` into `\(frac(1, 2)\)` i
 
 **Certainly, the greatest advantage is that you can directly write LaTeX content in Typst without the need for manual conversion!**
 
-### Adding customized commands
+### Adding new commands
 
 There are two kinds of commands to add:
 
