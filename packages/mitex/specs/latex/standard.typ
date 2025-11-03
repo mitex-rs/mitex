@@ -1042,7 +1042,7 @@
   mkern: ignore-sym,
   mathstrut: ignore-sym,
   nonumber: ignore-sym,
-  KaTeX: of-sym(math.upright($kai A T E X$)),
+  KaTeX: of-sym(math.upright($K A T E X$)),
   LaTeX: of-sym(math.upright($L A T E X$)),
   TeX: of-sym(math.upright($T E X$)),
   middle: define-cmd(1, handle: it => math.mid(it)),
