@@ -20,7 +20,7 @@ jobs:
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: mozilla-actions/sccache-action@v0.0.9
       - run: cargo test --workspace --no-fail-fast
   checks:
     name: Check clippy, formatting, and documentation
@@ -33,7 +33,7 @@ jobs:
       - uses: rui314/setup-mold@v1
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: wasm32-unknown-unknown }
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: mozilla-actions/sccache-action@v0.0.9
       - run: cargo clippy --workspace --all-targets --all-features
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
@@ -51,5 +51,5 @@ jobs:
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "v0.12.1"
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: mozilla-actions/sccache-action@v0.0.9
       - run: scripts/build.sh
