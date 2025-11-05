@@ -23,7 +23,7 @@ pub struct BytesModuleStream<'a> {
 
 impl<'a> BytesModuleStream<'a> {
     pub fn from_slice(v: &'a [u8]) -> Self {
-        let v = if (v.as_ptr() as usize) % AlignedVec::ALIGNMENT != 0 {
+        let v = if !(v.as_ptr() as usize).is_multiple_of(AlignedVec::ALIGNMENT) {
             let mut aligned = AlignedVec::with_capacity(v.len());
             aligned.extend_from_slice(v);
             RkyvStreamData::Unaligned(aligned)
