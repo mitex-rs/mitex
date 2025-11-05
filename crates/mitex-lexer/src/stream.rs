@@ -136,7 +136,7 @@ impl<'a> StreamContext<'a> {
     }
 
     pub fn eat_if(&mut self, tk: Token) {
-        if self.peek_inner.peeked.map_or(false, |e| e.0 == tk) {
+        if self.peek_inner.peeked.is_some_and(|e| e.0 == tk) {
             self.next_token();
         }
     }
