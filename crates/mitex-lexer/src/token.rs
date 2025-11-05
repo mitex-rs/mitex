@@ -396,7 +396,7 @@ fn lex_begin_end(lexer: &mut logos::Lexer<Token>, is_begin: bool) -> CommandName
             }
 
             let ns = self.lexer.span().end + self.collected;
-            let ascii_str = self.lexer.source()[ns..].as_bytes();
+            let ascii_str = &self.lexer.source().as_bytes()[ns..];
 
             let bump_size = advance_ascii_name(self.lexer, ascii_str, false);
             self.lexer.extras.1 = ns..ns + bump_size;
