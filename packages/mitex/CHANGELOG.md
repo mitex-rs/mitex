@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.2.6
+
+- Fix: fix "kai is deprecated" warning for Typst v0.14.0 (https://github.com/mitex-rs/mitex/pull/201)
+
+
 ## 0.2.5
 
 - Fix: assign correct class for lvert and rvert (https://github.com/mitex-rs/mitex/pull/172)
