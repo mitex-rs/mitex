@@ -1,0 +1,17 @@
+[package]
+name = "mitex-python"
+description.workspace = true
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lib]
+name = "mitex_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3.workspace = true
+mitex.workspace = true
