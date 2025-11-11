@@ -53,3 +53,9 @@ jobs:
           version: "v0.12.1"
       - uses: mozilla-actions/sccache-action@v0.0.9
       - run: scripts/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mitex-artifacts
+          path: |
+            packages/mitex/
+            crates/mitex-wasm/pkg/
