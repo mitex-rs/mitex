@@ -47,13 +47,16 @@
   alias: none,
   handle: math.mat.with(delim: delim),
 )
-#let call-or-ignore(fn) = (..args) => if args.pos().len() > 0 {
-  fn(..args)
-} else {
-  math.zws
-}
+#let call-or-ignore(fn) = (
+  (..args) => if args.pos().len() > 0 {
+    fn(..args)
+  } else {
+    math.zws
+  }
+)
 #let ignore-me = (..args) => { }
 #let ignore-sym = define-sym("")
+#let ignore-command(n, alias: none) = define-cmd(n, alias: alias, handle: ignore-me)
 
 // 2. Standard package definitions, generate specs and scopes,
 //    for parser/convert and typst respectively
@@ -78,12 +81,12 @@
   enumerate: define-env(none, kind: "is-enumerate"),
   quote: define-env(none, alias: "quote(block: true)"),
   abstract: define-env(none, alias: "quote(block: true)"),
+  document: define-env(none, alias: ""),
   figure: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
   table: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
   tabular: define-env(1, kind: "is-table", alias: "table"),
   // commands for figure
   centering: ignore-sym,
-  textwidth: sym,
   caption: define-cmd(1, alias: "mitexcaption", handle: ignore-me),
   includegraphics: define-glob-cmd("{,b}t", "#miteximage", handle: ignore-me),
   // commands for tabular
@@ -971,7 +974,7 @@
   xlongequal: arrow-handle(math.eq),
   pmod: define-cmd(1, handle: it => $quad (mod thick it)$),
   pod: define-cmd(1, handle: it => $quad (it)$),
-  "set": define-cmd(1, handle: it => $\{it\}$),
+  "set": define-cmd(1, alias: "mitexset", handle: it => $\{it\}$),
   Set: define-cmd(1, handle: it => $lr(\{it\})$),
   bra: define-cmd(1, handle: it => $angle.l it|$),
   Bra: define-cmd(1, handle: it => $lr(angle.l it|)$),
@@ -1091,10 +1094,6 @@
   ProvideTextCommandDefault: ignore-sym,
   providecommand: ignore-sym,
   "providecommand*": ignore-sym,
-  newenvironment: ignore-sym,
-  "newenvironment*": ignore-sym,
-  renewenvironment: ignore-sym,
-  "renewenvironment*": ignore-sym,
   AtEndOfClass: ignore-sym,
   AtEndOfPackage: ignore-sym,
   AtBeginDocument: ignore-sym,
@@ -1139,6 +1138,37 @@
   ProvidesClass: ignore-sym,
   LoadClass: ignore-sym,
   LoadClassWithOptions: ignore-sym,
+
+  title: ignore-command(1),
+  author: ignore-command(1),
+  date: ignore-command(1),
+  usepackage: ignore-command(1),
+  thanks: ignore-command(1),
+  comment: define-env(none, alias: "mitexcomment", handle: ignore-me),
+
+  // todo: set/length commands
+  topmargin: ignore-sym,
+  oddsidemargin: ignore-sym,
+  textwidth: ignore-sym,
+  today: ignore-sym,
+  maketitle: ignore-sym,
+  textheight: ignore-sym,
+  footskip: ignore-sym,
+  interfootnotelinepenalty: ignore-sym,
+
+  makeatother: ignore-sym,
+  makeatletter: ignore-sym,
+  "env@matrix": ignore-command(1),
+  arraystretch: ignore-command(1),
+  bibliography: ignore-command(1, alias: "mitexbibliography"),
+  bibliographystyle: ignore-command(1),
+  arraycolsep: ignore-sym,
+  "@ifnextchar": ignore-sym,
+  "new@ifnextchar": ignore-sym,
+  // \edef\arraystretch{#1}%
+  "let": ignore-sym,
+  edef: ignore-sym,
+  // todo: \newcommand{\newtheorem}[2]{\newenvironment{#1}{}{}}
 ))
 
 // export: include package name, spec and scope

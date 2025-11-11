@@ -89,9 +89,9 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
     // Insert preludes
     // todo: better way?
     let mut builtin_set = std::collections::HashSet::<&'static str>::new();
-    builtin_set.extend(["and", "or", "in", "not"]);
+    builtin_set.extend(["and", "or", "in", "not", "footnote", "dot"]);
     let mut alias_set = std::collections::HashSet::<Box<str>>::new();
-    for (_, cmd) in spec.items() {
+    for (key, cmd) in spec.items() {
         let alias = match cmd {
             CommandSpecItem::Cmd(CmdShape {
                 alias: Some(alias), ..
@@ -99,8 +99,10 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
             CommandSpecItem::Env(EnvShape {
                 alias: Some(alias), ..
             }) => alias.as_str(),
-            _ => continue,
+            _ => key,
         };
+        // todo: this is hacky
+        let alias = alias.trim_start_matches('#');
         if alias.is_empty() || !alias.chars().all(|c| c.is_ascii_alphanumeric()) {
             continue;
         }
