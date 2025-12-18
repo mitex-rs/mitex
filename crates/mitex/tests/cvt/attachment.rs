@@ -14,7 +14,7 @@ fn base() {
     assert_snapshot!(convert_math(r#"{}_1"#).unwrap(), @"zws _(1 )");
     assert_snapshot!(convert_math(r#"{}_1_1"#).unwrap(), @"zws _(1 )_(1 )");
     assert_snapshot!(convert_math(r#"\frac{1}{2}_{3}"#).unwrap(), @"frac(1 ,2 )_(3 )");
-    assert_snapshot!(convert_math(r#"\overbrace{a + b + c}^{\text{This is an overbrace}}"#).unwrap(), @"mitexoverbrace(a  +  b  +  c )^(#textmath[This is an overbrace];)");
+    assert_snapshot!(convert_math(r#"\overbrace{a + b + c}^{\text{This is an overbrace}}"#).unwrap(), @"mitexoverbrace(a  + b  + c )^(#textmath[This is an overbrace];)");
     assert_snapshot!(convert_math(r#"\underbrace{x \times y}_{\text{This is an underbrace}}"#).unwrap(), @"mitexunderbrace(x  times  y )_(#textmath[This is an underbrace];)");
     assert_snapshot!(convert_math(r#"x_1''^2"#).unwrap(), @"x _(1 )''^(2 )");
     assert_snapshot!(convert_math(r#"x''_1"#).unwrap(), @"x ''_(1 )");

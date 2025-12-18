@@ -17,12 +17,12 @@ fn test_convert_text_mode() {
 
     #heading(level: 1)[Title];
 
-    A #strong[strong]; text\, a #emph[emph]; text and inline equation #math.equation(block: false, $x  +  y $);.
+    A #strong[strong]; text\, a #emph[emph]; text and inline equation #math.equation(block: false, $x  + y $);.
 
     Also block #mitexref[eq:pythagoras];.
 
     $ aligned(
-    a ^(2 ) +  b ^(2 ) =  c ^(2 ) 
+    a ^(2 ) + b ^(2 ) = c ^(2 ) 
     ) $<eq:pythagoras>
     "###);
 }

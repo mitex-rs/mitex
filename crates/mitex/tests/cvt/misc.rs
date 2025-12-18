@@ -30,7 +30,7 @@ fn test_convert_frac() {
 fn test_convert_displaystyle() {
     assert_snapshot!(convert_math(r#"$\displaystyle xyz\frac{1}{2}$"#).unwrap(), @"mitexdisplay( x y z frac(1 ,2 ))"
     );
-    assert_snapshot!(convert_math(r#"$1 + {\displaystyle 23} + 4$"#).unwrap(), @"1  +  mitexdisplay( 2 3 ) +  4 "
+    assert_snapshot!(convert_math(r#"$1 + {\displaystyle 23} + 4$"#).unwrap(), @"1  + mitexdisplay( 2 3 ) + 4 "
     );
 }
 
@@ -48,7 +48,7 @@ fn test_convert_subsup() {
     );
     assert_snapshot!(convert_math(r#"$x''_1$"#).unwrap(), @"x ''_(1 )"
     );
-    assert_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#).unwrap(), @"mitexoverbrace(a  +  b  +  c )^(#textmath[This is an overbrace];)"
+    assert_snapshot!(convert_math(r#"$\overbrace{a + b + c}^{\text{This is an overbrace}}$"#).unwrap(), @"mitexoverbrace(a  + b  + c )^(#textmath[This is an overbrace];)"
     );
     assert_snapshot!(convert_math(r#"$x_1''$"#).unwrap(), @"x _(1 )''"
     );
@@ -62,9 +62,9 @@ fn test_convert_subsup() {
 
 #[test]
 fn test_convert_over() {
-    assert_snapshot!(convert_math(r#"$x + 1 \over y + 2$"#).unwrap(), @"frac(x  +  1  , y  +  2 )"
+    assert_snapshot!(convert_math(r#"$x + 1 \over y + 2$"#).unwrap(), @"frac(x  + 1  , y  + 2 )"
     );
-    assert_snapshot!(convert_math(r#"$1 + {2 \over 3}$"#).unwrap(), @"1  +  frac(2  , 3 )"
+    assert_snapshot!(convert_math(r#"$1 + {2 \over 3}$"#).unwrap(), @"1  + frac(2  , 3 )"
     );
     assert_snapshot!(convert_math(r#"${l \over 2'}$"#).unwrap(), @"frac(l  , 2 ')");
 }
@@ -83,7 +83,7 @@ fn test_convert_space() {
 
 #[test]
 fn test_convert_escape() {
-    assert_snapshot!(convert_math(r#"$\|x\|| \& \# \% \$ y$"#).unwrap(), @"|| x || |  amp  hash  %  dollar  y "
+    assert_snapshot!(convert_math(r#"$\|x\|| \& \# \% \$ y$"#).unwrap(), @"|| x || | amp  hash  %  dollar  y "
     );
     assert_snapshot!(convert_math(r#"$a*b * c$"#).unwrap(), @r###"a \*b  \* c "###
     );

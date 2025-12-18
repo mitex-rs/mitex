@@ -61,7 +61,7 @@ fn right_greedy() {
     // Description: doesn't identify brackets as group
     assert_snapshot!(convert_math(r#"\displaystyle[\sum T]"#).unwrap(), @r###"mitexdisplay(\[sum  T \])"###);
     // Description: scoped by curly braces
-    assert_snapshot!(convert_math(r#"a + {\displaystyle a b} c"#).unwrap(), @"a  +  mitexdisplay( a  b ) c ");
+    assert_snapshot!(convert_math(r#"a + {\displaystyle a b} c"#).unwrap(), @"a  + mitexdisplay( a  b ) c ");
     // Description: doeesn't affect left side
     assert_snapshot!(convert_math(r#"T \displaystyle"#).unwrap(), @"T  mitexdisplay()");
 }
@@ -72,5 +72,5 @@ fn infix() {
     assert_snapshot!(convert_math(r#"\over'"#).unwrap(), @"frac(,')");
     assert_snapshot!(convert_math(r#"a \over b'_1"#).unwrap(), @"frac(a  , b '_(1 ))");
     assert_snapshot!(convert_math(r#"a \over b"#).unwrap(), @"frac(a  , b )");
-    assert_snapshot!(convert_math(r#"1 + {2 \over 3}"#).unwrap(), @"1  +  frac(2  , 3 )");
+    assert_snapshot!(convert_math(r#"1 + {2 \over 3}"#).unwrap(), @"1  + frac(2  , 3 )");
 }
