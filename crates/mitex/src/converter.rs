@@ -167,7 +167,9 @@ impl Converter {
                     let text = elem.as_token().unwrap().text().to_string();
                     for prev in text.chars() {
                         f.write_char(prev)?;
-                        f.write_char(' ')?;
+                        if !prev.is_ascii_punctuation() {
+                            f.write_char(' ')?;
+                        }
                     }
                 } else {
                     // write the word directly in text mode
