@@ -611,7 +611,7 @@ impl Converter {
             let mut iter = root.children_with_tokens().peekable();
 
             // Skip trivia
-            while iter.peek().map_or(false, |e| e.kind().is_trivia()) {
+            while iter.peek().is_some_and(|e| e.kind().is_trivia()) {
                 iter.next();
             }
 
@@ -620,7 +620,7 @@ impl Converter {
             // optional args like [rgb] are not automatically grouped.
             let model = if iter
                 .peek()
-                .map_or(false, |e| e.kind() == LatexSyntaxKind::TokenLBracket)
+                .is_some_and(|e| e.kind() == LatexSyntaxKind::TokenLBracket)
             {
                 iter.next(); // Eat '['
                 let mut s = String::new();
@@ -641,7 +641,7 @@ impl Converter {
             };
 
             // Skip trivia after [model]
-            while iter.peek().map_or(false, |e| e.kind().is_trivia()) {
+            while iter.peek().is_some_and(|e| e.kind().is_trivia()) {
                 iter.next();
             }
             (model, iter.next(), iter.collect::<Vec<_>>())
@@ -651,7 +651,7 @@ impl Converter {
             let first = args.next();
 
             // Check if the first argument is an optional [model]
-            let is_model = first.as_ref().map_or(false, |n| {
+            let is_model = first.as_ref().is_some_and(|n| {
                 let t = n.text().to_string();
                 t.starts_with('[') && t.ends_with(']') && t.len() >= 2
             });

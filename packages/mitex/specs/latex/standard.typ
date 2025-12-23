@@ -233,8 +233,6 @@
   large: ignore-sym,
   tiny: ignore-sym,
   // Colors
-  color: define-greedy-cmd("mitexcolor", handle: (texcolor, ..args) => {
-    let color = get-tex-color(texcolor)
   color: define-greedy-cmd("#mitexcolor", handle: (model, texcolor, ..args) => {
     let color = get-tex-color(model, texcolor)
     if color != none {
