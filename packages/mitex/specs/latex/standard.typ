@@ -165,6 +165,10 @@
   Bbb: define-cmd(1, alias: "bb"),
   mathbb: define-cmd(1, alias: "bb"),
   mathcal: define-cmd(1, alias: "cal"),
+  mathscr: define-cmd(1, handle: it => {
+    let s = get-tex-str(it)
+    s.clusters().map(x => $scr(#x)$).join()
+  }),
   mathbin: define-cmd(1, handle: it => math.class("binary", it)),
   mathclose: define-cmd(1, handle: it => math.class("closing", it)),
   mathinner: define-cmd(1, handle: it => math.class("fence", it)),
