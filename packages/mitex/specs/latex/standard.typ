@@ -114,6 +114,7 @@
   phantom: define-cmd(1, handle: hide),
   hphantom: define-cmd(1, handle: it => box(height: 0pt, hide(it))),
   vphantom: define-cmd(1, handle: it => box(width: 0pt, hide(it))),
+  smash: define-cmd(1, handle: it => box(height: 0pt, align(bottom, $#it$))),
   // Escape symbols
   "_": define-sym("\\_"),
   "^": define-sym("hat"),
