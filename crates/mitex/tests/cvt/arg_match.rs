@@ -3,7 +3,7 @@ use super::prelude::*;
 #[test]
 fn curly_group() {
     assert_snapshot!(convert_math(r#"a \textbf{strong} text"#).unwrap(), @"a  #textbf[strong]; t e x t ");
-    assert_snapshot!(convert_math(r#"x \color {red} yz \frac{1}{2}"#).unwrap(), @"x  mitexcolor( r e d , y z  frac(1 ,2 ))");
+    assert_snapshot!(convert_math(r#"x \color {red} yz \frac{1}{2}"#).unwrap(), @"x  #mitexcolor(none, [red])[$ $$y z  $$frac(1 ,2 )$]");
 }
 
 #[test]

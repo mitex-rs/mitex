@@ -123,12 +123,12 @@ fn test_convert_lr() {
 
 #[test]
 fn test_convert_color() {
-    assert_snapshot!(convert_math(r#"$x\color{red}yz\frac{1}{2}$"#).unwrap(), @"x mitexcolor(r e d ,y z frac(1 ,2 ))");
-    assert_snapshot!(convert_math(r#"$x\textcolor{red}yz$"#).unwrap(), @"x colortext(r e d ,y )z ");
-    assert_snapshot!(convert_math(r#"$x\textcolor{red}{yz}$"#).unwrap(), @"x colortext(r e d ,y z )");
-    assert_snapshot!(convert_math(r#"$x\colorbox{red}yz$"#).unwrap(), @"x colorbox(r e d ,y )z "
+    assert_snapshot!(convert_math(r#"$x\color{red}yz\frac{1}{2}$"#).unwrap(), @"x #mitexcolor(none, [red])[$y z $$frac(1 ,2 )$]");
+    assert_snapshot!(convert_math(r#"$x\textcolor{red}yz$"#).unwrap(), @"x #colortext(none, [red])[$y $]z");
+    assert_snapshot!(convert_math(r#"$x\textcolor{red}{yz}$"#).unwrap(), @"x #colortext(none, [red])[$y z $]");
+    assert_snapshot!(convert_math(r#"$x\colorbox{red}yz$"#).unwrap(), @"x #mitexcolorbox(none, [red])[$y $]z"
     );
-    assert_snapshot!(convert_math(r#"$x\colorbox{red}{yz}$"#).unwrap(), @"x colorbox(r e d ,y z )"
+    assert_snapshot!(convert_math(r#"$x\colorbox{red}{yz}$"#).unwrap(), @"x #mitexcolorbox(none, [red])[$y z $]"
     );
 }
 
@@ -248,7 +248,7 @@ fn test_convert_text() {
     assert_snapshot!(convert_math(r#"$\text{ab_c}$"#).unwrap(), @r###"#textmath[ab\_c];"###);
     assert_snapshot!(convert_math(r#"$\text{ab^c}$"#).unwrap(), @r###"#textmath[ab\^c];"###);
     // note: hack doesn't work in this case
-    assert_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @"#textmath[abmitexcolor(red,c)];");
+    assert_snapshot!(convert_math(r#"$\text{ab\color{red}c}$"#).unwrap(), @"#textmath[ab#mitexcolor(none, [red])[c];];");
 }
 
 #[test]
