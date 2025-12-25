@@ -115,7 +115,7 @@ fn test_convert_lr() {
     );
     assert_snapshot!(convert_math(r#"$\left  . a \right    \|$"#).unwrap(), @"lr(     a       || )"
     );
-    assert_snapshot!(convert_math(r#"$\left\langle a\right\|$"#).unwrap(), @"lr(angle.l  a || )"
+    assert_snapshot!(convert_math(r#"$\left\langle a\right\|$"#).unwrap(), @"lr(chevron.l  a || )"
     );
     assert_snapshot!(convert_math(r#"$\left\lbrack\lbrack x\rbrack\right\rbrack$"#).unwrap(), @"lr(bracket.l bracket.l  x bracket.r bracket.r )"
     );
