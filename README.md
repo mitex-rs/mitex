@@ -118,36 +118,38 @@ Another example is that MiTeX transforms `(\frac{1}{2})` into `\(frac(1, 2)\)` i
 
 **Certainly, the greatest advantage is that you can directly write LaTeX content in Typst without the need for manual conversion!**
 
+### Adding new commands
+
+There are two kinds of commands to add:
+
+- **Commonly used commands**: If there are some builtin or commonly used commands missing in MiTeX, you can submit an issue or contribute them according to [Adding missing TeX commands.](./CONTRIBUTING.md#adding-missing-tex-commands)
+
+- **Special commands (Preambles)**: If you want to add some special commands (preambles) for your own use, you can define them by `\newcommand` or `\newenvironment` and override the mitex function in your. Example:
+
+  ````typ
+  #let mitex = (content, ..args) => mitex.with(..args)({
+    ```tex
+    \newcommand{\f}[2]{#1f(#2)}
+    ```.text
+    content.text
+  })
+  ````
+
+  And use them in your Typst code:
+
+  ````typ
+  #show raw.where(lang: "mitex"): mitex
+  ```mitex
+  \f\relax{x} = \int_{-\infty}^\infty
+    \f\hat\xi\,e^{2 \pi i \xi x}
+    \,d\xi
+  ```
+  ````
+
 ## Submitting Issues
 
 If you find missing commands or bugs of MiTeX, please feel free to submit an issue [here](https://github.com/mitex-rs/mitex/issues).
 
-## Contributing to MiTeX
+## Contributing
 
-Currently, MiTeX maintains following three parts of code:
-
-- A TeX parser library written in **Rust**, see [mitex-lexer](https://github.com/mitex-rs/mitex/tree/main/crates/mitex-lexer) and [mitex-parser](https://github.com/mitex-rs/mitex/tree/main/crates/mitex-parser).
-- A TeX to Typst converter library written in **Rust**, see [mitex](https://github.com/mitex-rs/mitex/tree/main/crates/mitex).
-- A list of TeX packages and commands written in **Typst**, which then used by the typst package, see [MiTeX Command Specification](https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs).
-
-For a translation process, for example, we have:
-
-```
-\frac{1}{2}
-
-===[parser]===> AST ===[converter]===>
-
-#eval("$frac(1, 2)$", scope: (frac: (num, den) => $(num)/(den)$))
-```
-
-You can use the `#mitex-convert()` function to get the Typst Code generated from LaTeX Code.
-
-### Add missing TeX commands
-
-Even if you don't know Rust at all, you can still add missing TeX commands to MiTeX by modifying [specification files](https://github.com/mitex-rs/mitex/tree/main/packages/mitex/specs), since they are written in typst! You can open an issue to acquire the commands you want to add, or you can edit the files and submit a pull request.
-
-In the future, we will provide the ability to customize TeX commands, which will make it easier for you to use the commands you create for yourself.
-
-### Develop the parser and the converter
-
-See [CONTRIBUTING.md](https://github.com/mitex-rs/mitex/blob/main/CONTRIBUTING.md).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
