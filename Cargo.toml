@@ -58,6 +58,8 @@ rkyv = "0.7.42"
 serde = "1.0.188"
 serde_json = "1.0.106"
 
+pyo3 = { version = "0.19", features = ["extension-module"] }
+
 [profile.release]
 lto = true        # Enable link-time optimization
 strip = true      # Strip symbols from binary*
