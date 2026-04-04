@@ -274,6 +274,9 @@ impl Converter {
                     "includegraphics" => {
                         self.convert_command_includegraphics(f, &cmd)?;
                     }
+                    "color" | "textcolor" | "colorbox" => {
+                        self.convert_command_color(f, &cmd, spec)?;
+                    }
                     _ => {
                         self.convert_normal_command(f, elem, spec)?;
                     }
@@ -583,6 +586,130 @@ impl Converter {
         f.write_str(body)?;
         f.write_char('"')?;
         f.write_char(')')?;
+        Ok(())
+    }
+
+    // \color, \textcolor, \colorbox commands
+    fn convert_command_color(
+        &mut self,
+        f: &mut fmt::Formatter<'_>,
+        cmd: &CmdItem,
+        spec: &CommandSpec,
+    ) -> Result<(), ConvertError> {
+        let cmd_name = cmd
+            .name_tok()
+            .map(|t| t.text().to_string())
+            .unwrap_or_default();
+        let alias = spec
+            .get_cmd(cmd_name.strip_prefix('\\').unwrap_or(""))
+            .and_then(|s| s.alias.as_deref())
+            .unwrap_or("mitexcolor");
+
+        // Parse arguments: (model, color, body)
+        let (model, color, body) = if cmd_name == "\\color" {
+            let root = cmd.arguments().next().expect("greedy cmd has args");
+            let mut iter = root.children_with_tokens().peekable();
+
+            // Skip trivia
+            while iter.peek().is_some_and(|e| e.kind().is_trivia()) {
+                iter.next();
+            }
+
+            // Parse optional [model]
+            // Check for TokenLBracket directly because in greedy mode,
+            // optional args like [rgb] are not automatically grouped.
+            let model = if iter
+                .peek()
+                .is_some_and(|e| e.kind() == LatexSyntaxKind::TokenLBracket)
+            {
+                iter.next(); // Eat '['
+                let mut s = String::new();
+                // Collect text until ']'
+                // Use by_ref() to keep the iterator alive for subsequent use
+                for e in iter.by_ref() {
+                    if e.kind() == LatexSyntaxKind::TokenRBracket {
+                        break;
+                    }
+                    match e {
+                        LatexSyntaxElem::Node(n) => s.push_str(&n.text().to_string()),
+                        LatexSyntaxElem::Token(t) => s.push_str(t.text()),
+                    }
+                }
+                Some(s)
+            } else {
+                None
+            };
+
+            // Skip trivia after [model]
+            while iter.peek().is_some_and(|e| e.kind().is_trivia()) {
+                iter.next();
+            }
+            (model, iter.next(), iter.collect::<Vec<_>>())
+        } else {
+            // \textcolor, \colorbox
+            let mut args = cmd.arguments();
+            let first = args.next();
+
+            // Check if the first argument is an optional [model]
+            let is_model = first.as_ref().is_some_and(|n| {
+                let t = n.text().to_string();
+                t.starts_with('[') && t.ends_with(']') && t.len() >= 2
+            });
+
+            if is_model {
+                let text = first.unwrap().text().to_string();
+                // Remove brackets safely
+                let model = text.get(1..text.len() - 1).map(String::from);
+                (
+                    model,
+                    args.next().map(LatexSyntaxElem::Node),
+                    args.map(LatexSyntaxElem::Node).collect::<Vec<_>>(),
+                )
+            } else {
+                (
+                    None,
+                    first.map(LatexSyntaxElem::Node),
+                    args.map(LatexSyntaxElem::Node).collect::<Vec<_>>(),
+                )
+            }
+        };
+
+        write!(f, "{}(", alias)?;
+
+        // Arg 1: Model
+        match model {
+            Some(m) => write!(f, "[{}], ", m)?,
+            None => f.write_str("none, ")?,
+        }
+
+        // Arg 2: Color
+        f.write_char('[')?;
+        if let Some(c) = color {
+            let prev = self.enter_mode(LaTeXMode::Text);
+            self.convert(f, c, spec)?;
+            self.exit_mode(prev);
+        } else {
+            f.write_str("black")?;
+        }
+        f.write_str("]")?;
+        f.write_char(')')?;
+
+        // Arg 3: Body
+        f.write_char('[')?;
+        for elem in body {
+            if matches!(self.mode, LaTeXMode::Math) {
+                f.write_char('$')?;
+                self.convert(f, elem, spec)?;
+                f.write_char('$')?;
+            } else {
+                self.convert(f, elem, spec)?;
+            }
+        }
+        f.write_char(']')?;
+        if matches!(self.mode, LaTeXMode::Text) {
+            f.write_char(';')?;
+        }
+
         Ok(())
     }
 

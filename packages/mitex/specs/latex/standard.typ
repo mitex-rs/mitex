@@ -29,10 +29,42 @@
 #let get-tex-color-from-arr(arr) = {
   mitex-color-map.at(lower(get-tex-str-from-arr(arr)), default: none)
 }
-#let get-tex-color(texcolor) = if texcolor.has("children") {
-  get-tex-color-from-arr(texcolor.children)
-} else {
-  texcolor.text
+#let get-tex-color(model, spec) = {
+  let model = if type(model) == content and model.has("text") {
+    model.text
+  } else if type(model) == str {
+    model
+  } else {
+    model
+  }
+
+  let s = if type(spec) == str {
+    spec
+  } else if type(spec) == content and spec.has("text") {
+    spec.text
+  } else if (
+    type(spec) == content and spec.has("children")
+  ) {
+    spec.children.map(it => if it.has("text") { it.text } else { "" }).join("")
+  } else {
+    ""
+  }
+
+  if model == none {
+    mitex-color-map.at(lower(s), default: none)
+  } else if model == "gray" {
+    luma(float(s) * 100%)
+  } else if model == "rgb" {
+    rgb(..s.split(",").map(x => float(x) * 100%))
+  } else if model == "RGB" {
+    rgb(..s.split(",").map(x => int(x)))
+  } else if model == "HTML" {
+    rgb("#" + s)
+  } else if model == "cmyk" {
+    cmyk(..s.split(",").map(x => float(x) * 100%))
+  } else {
+    none
+  }
 }
 
 // 1. functions created to make it easier to define a spec
@@ -206,26 +238,26 @@
   large: ignore-sym,
   tiny: ignore-sym,
   // Colors
-  color: define-greedy-cmd("mitexcolor", handle: (texcolor, ..args) => {
-    let color = get-tex-color(texcolor)
+  color: define-greedy-cmd("#mitexcolor", handle: (model, texcolor, ..args) => {
+    let color = get-tex-color(model, texcolor)
     if color != none {
       text(fill: color, args.pos().sum())
     } else {
       args.pos().sum()
     }
   }),
-  textcolor: define-cmd(2, alias: "colortext", handle: (texcolor, body) => {
-    let color = get-tex-color(texcolor)
+  textcolor: define-glob-cmd("{,b}tt", "#colortext", handle: (model, texcolor, body) => {
+    let color = get-tex-color(model, texcolor)
     if color != none {
-      text(fill: get-tex-color(texcolor), body)
+      text(fill: color, body)
     } else {
       body
     }
   }),
-  colorbox: define-cmd(2, handle: (texcolor, body) => {
-    let color = get-tex-color(texcolor)
+  colorbox: define-glob-cmd("{,b}tt", "#mitexcolorbox", handle: (model, texcolor, body) => {
+    let color = get-tex-color(model, texcolor)
     if color != none {
-      box(fill: get-tex-color(texcolor), $body$)
+      box(fill: color, inset: (x: 3pt), outset: (y: 3pt), radius: 2pt, body)
     } else {
       body
     }
