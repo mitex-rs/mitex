@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.2.7
+
+feat: support color-related optional arguments for commands
+feat: support missing commands
+feat: implement \smash command
+
+Thanks to [Shichien](https://github.com/Shichien).
+
+
+
 ## 0.2.6
 
 - Fix: fix "kai is deprecated" warning for Typst v0.14.0 (https://github.com/mitex-rs/mitex/pull/201)

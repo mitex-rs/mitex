@@ -22,7 +22,7 @@ PS: `#set math.equation(numbering: "(1)")` is also valid for MiTeX.
 Following is [a simple example](https://github.com/mitex-rs/mitex/blob/main/packages/mitex/examples/example.typ) of using MiTeX in Typst:
 
 ```typst
-#import "@preview/mitex:0.2.6": *
+#import "@preview/mitex:0.2.7": *
 
 Write inline equations like #mi(`x`).
 
@@ -54,7 +54,7 @@ We also support text mode (in development):
 `)
 ```
 
-![example](packages/mitex/examples/example.png)
+![MiTeX example showing LaTeX equations rendered in Typst](examples/example.png)
 
 ## MiTeX as a CLI Tool
 
