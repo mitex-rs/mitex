@@ -940,6 +940,7 @@
   textquoteleft: define-sym("quote.l.single"),
   textquoteright: define-sym("quote.r.single"),
   textregistered: define-sym("®"),
+  textperthousand: define-sym("permille"),
   textsterling: define-sym("pound"),
   textunderscore: define-sym("\\_"),
   thetasym: define-sym("theta.alt"),
