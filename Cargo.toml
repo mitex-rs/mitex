@@ -4,6 +4,7 @@ authors = [
     "Myriad-Dreamin <camiyoru@gmail.com>",
     "OrangeX4 <orangex4@qq.com>",
     "mgt <mgt@oi-wiki.org>",
+    "Shichien",
 ]
 version = "0.2.7"
 edition = "2021"
