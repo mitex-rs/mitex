@@ -54,7 +54,7 @@ We also support text mode (in development):
 `)
 ```
 
-![MiTeX example showing LaTeX equations rendered in Typst](examples/example.png)
+![MiTeX example showing LaTeX equations rendered in Typst](packages/mitex/examples/example.png)
 
 ## MiTeX as a CLI Tool
 
