@@ -1071,6 +1071,7 @@
   "equation*": define-env(none, kind: "is-math", alias: "aligned"),
   split: define-env(none, kind: "is-math", alias: "aligned"),
   gather: define-env(none, kind: "is-math", alias: "aligned"),
+  "gather*": define-env(none, kind: "is-math", alias: "aligned"),
   gathered: define-env(none, kind: "is-math", alias: "aligned"),
   cases: define-env(none, kind: "is-cases", alias: "cases"),
   rcases: define-env(none, kind: "is-cases", alias: "rcases", handle: math.cases.with(reverse: true)),
