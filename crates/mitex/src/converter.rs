@@ -274,6 +274,8 @@ impl Converter {
                     "includegraphics" => {
                         self.convert_command_includegraphics(f, &cmd)?;
                     }
+                    // TODO(testset): replace this preamble-only no-op with proper
+                    // command/environment disambiguation for \array.
                     "array" => {}
                     "color" | "textcolor" | "colorbox" => {
                         self.convert_command_color(f, &cmd, spec)?;

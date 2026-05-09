@@ -1209,6 +1209,7 @@
   arraycolsep: ignore-sym,
   "@ifnextchar": ignore-sym,
   "new@ifnextchar": ignore-sym,
+  // TODO(testset): model TeX register-style commands from matrix preambles.
   "c@MaxMatrixCols": ignore-sym,
   // \edef\arraystretch{#1}%
   "let": ignore-sym,

@@ -621,6 +621,8 @@ impl<'a> MacroEngine<'a> {
                 None
             }
             Macro::Declare(NewTheorem) => {
+                // TODO(testset): preserve theorem metadata instead of registering
+                // theorem environments as empty wrappers.
                 let name = Self::identify_theorem_environment(ctx)?;
                 self.add_macro(
                     name,
