@@ -60,6 +60,9 @@ mod cvt {
 
     #[cfg(test)]
     mod misc;
+
+    #[cfg(test)]
+    mod testset;
     /// Convenient function to launch/debug a test case
     #[test]
     fn bug_playground() {}

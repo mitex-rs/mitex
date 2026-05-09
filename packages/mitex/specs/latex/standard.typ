@@ -1166,6 +1166,7 @@
   arraycolsep: ignore-sym,
   "@ifnextchar": ignore-sym,
   "new@ifnextchar": ignore-sym,
+  "c@MaxMatrixCols": ignore-sym,
   // \edef\arraystretch{#1}%
   "let": ignore-sym,
   edef: ignore-sym,

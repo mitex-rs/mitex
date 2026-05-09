@@ -274,6 +274,7 @@ impl Converter {
                     "includegraphics" => {
                         self.convert_command_includegraphics(f, &cmd)?;
                     }
+                    "array" => {}
                     _ => {
                         self.convert_normal_command(f, elem, spec)?;
                     }

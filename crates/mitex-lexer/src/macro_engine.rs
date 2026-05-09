@@ -192,6 +192,14 @@ pub enum DeclareMacro {
     /// Synopsis,
     /// \AtEndDocument{code}
     AtEndDocument,
+    /// Command macro for NewTheorem.
+    ///
+    /// Synopsis, one of:
+    ///
+    /// \newtheorem{name}{caption}
+    /// \newtheorem{name}[numbered_like]{caption}
+    /// \newtheorem{name}{caption}[within]
+    NewTheorem,
 }
 
 fn define_declarative_macros(macros: &mut MacroMap) {
@@ -282,6 +290,7 @@ fn define_declarative_macros(macros: &mut MacroMap) {
         ("AtEndOfPackage", DeclareMacro::AtEndOfPackage),
         ("AtBeginDocument", DeclareMacro::AtBeginDocument),
         ("AtEndDocument", DeclareMacro::AtEndDocument),
+        ("newtheorem", DeclareMacro::NewTheorem),
     ]
     .into_iter()
     {
@@ -611,6 +620,21 @@ impl<'a> MacroEngine<'a> {
                 ctx.next_token();
                 None
             }
+            Macro::Declare(NewTheorem) => {
+                let name = Self::identify_theorem_environment(ctx)?;
+                self.add_macro(
+                    name,
+                    Macro::Env(Arc::new(EnvMacro {
+                        name: name.to_owned(),
+                        num_args: 0,
+                        opt: None,
+                        begin_def: vec![],
+                        end_def: vec![],
+                    })),
+                );
+
+                None
+            }
             Macro::Cmd(cmd) => {
                 ctx.next_token();
 
@@ -730,7 +754,7 @@ impl<'a> MacroEngine<'a> {
             DeclareCmdOrEnv::NewEnvironment { renew, star: _ } => {
                 is_env = true;
 
-                if matches!(ctx.peek()?, Token::Left(BraceKind::Curly)) {
+                if matches!(ctx.peek_not_trivia()?, Token::Left(BraceKind::Curly)) {
                     ctx.next_token();
                     end_def = Some(ctx.read_until_balanced(BraceKind::Curly));
                 }
@@ -764,6 +788,33 @@ impl<'a> MacroEngine<'a> {
         };
 
         Some((name, action, m))
+    }
+
+    fn identify_theorem_environment(ctx: &mut StreamContext<'a>) -> Option<&'a str> {
+        ctx.next_not_trivia()
+            .filter(|nx| *nx == Token::Left(BraceKind::Curly))?;
+        ctx.next_not_trivia();
+
+        let name = ctx.peek_word_opt(BraceKind::Curly)?.1;
+
+        if matches!(ctx.peek_not_trivia(), Some(Token::Left(BraceKind::Bracket))) {
+            ctx.next_token();
+            ctx.read_until_balanced(BraceKind::Bracket);
+        }
+
+        if matches!(ctx.peek_not_trivia()?, Token::Left(BraceKind::Curly)) {
+            ctx.next_token();
+            ctx.read_until_balanced(BraceKind::Curly);
+        } else {
+            return None;
+        }
+
+        if matches!(ctx.peek_not_trivia(), Some(Token::Left(BraceKind::Bracket))) {
+            ctx.next_token();
+            ctx.read_until_balanced(BraceKind::Bracket);
+        }
+
+        Some(name)
     }
 
     // todo: insufficient macro arguments

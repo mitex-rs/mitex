@@ -188,6 +188,14 @@ fn subst_macro() {
     Word("test")
     Word("end")
     "###);
+    assert_snapshot!(tokens(
+        "\\newenvironment{f}{begin}\n{end}\\begin{f}test\\end{f}"
+    ), @r###"
+    Word("begin")
+    Word("test")
+    Word("end")
+    "###);
+    assert_snapshot!(tokens(r#"\newtheorem{mydef}{Definition}\begin{mydef}test\end{mydef}"#), @r###"Word("test")"###);
 }
 
 #[test]
