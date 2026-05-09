@@ -249,7 +249,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
     /// Lexer Interface
     /// Consume tokens until the next non-trivia token
     fn trivia(&mut self) {
-        while self.peek().as_ref().map_or(false, Token::is_trivia) {
+        while self.peek().as_ref().is_some_and(Token::is_trivia) {
             self.eat();
         }
     }
@@ -316,7 +316,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
         self.list_state = ListState::new(scope);
         self.list_state.store_start(current);
 
-        while self.peek().map_or(false, |kind| !self.stop_by_scope(kind)) {
+        while self.peek().is_some_and(|kind| !self.stop_by_scope(kind)) {
             let attachable = self.content(true);
 
             // If the item is not attachable, then we should
@@ -462,7 +462,7 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
 
         self.builder.start_node(ItemText.into());
         self.eat();
-        while self.peek().map_or(false, is_text_component) {
+        while self.peek().is_some_and(is_text_component) {
             self.eat();
         }
         self.builder.finish_node();

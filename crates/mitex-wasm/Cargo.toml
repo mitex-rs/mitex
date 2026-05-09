@@ -30,5 +30,8 @@ spec-api = []
 
 default = ["rkyv"]
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-O', '--enable-bulk-memory']
+
 [lints]
 workspace = true

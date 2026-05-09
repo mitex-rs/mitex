@@ -1,3 +1,5 @@
+//! TODO: crate doc
+#[allow(missing_docs)]
 pub mod common;
 
 mod properties {

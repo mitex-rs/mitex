@@ -123,7 +123,7 @@ fn compile(input_path: &str, output_path: &str, is_ast: bool) -> Result<(), Erro
         output_path,
         format!(
             r#"
-#import "@preview/mitex:0.2.4": *
+#import "@preview/mitex:0.2.7": *
 {preludes_str}
 
 {output}"#

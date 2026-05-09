@@ -239,7 +239,7 @@ syntax_tree_node!(
 impl FormulaItem {
     /// Checks whether it is a display formula
     pub fn is_display(&self) -> bool {
-        self.syntax().first_token().map_or(false, |node| {
+        self.syntax().first_token().is_some_and(|node| {
             (node.kind() == TokenDollar && node.text() == "$$")
                 || (node.kind() == TokenBeginMath && node.text() == "\\[")
         })
@@ -247,7 +247,7 @@ impl FormulaItem {
 
     /// Checks whether it is an inline formula
     pub fn is_inline(&self) -> bool {
-        self.syntax().first_token().map_or(false, |node| {
+        self.syntax().first_token().is_some_and(|node| {
             (node.kind() == TokenDollar && node.text() == "$")
                 || (node.kind() == TokenBeginMath && node.text() == "\\(")
         })
@@ -255,8 +255,8 @@ impl FormulaItem {
 
     /// Checks whether the formula is valid
     pub fn is_valid(&self) -> bool {
-        self.syntax().first_token().map_or(false, |first_node| {
-            self.syntax().last_token().map_or(false, |last_node| {
+        self.syntax().first_token().is_some_and(|first_node| {
+            self.syntax().last_token().is_some_and(|last_node| {
                 if first_node.kind() == TokenDollar && last_node.kind() == TokenDollar {
                     return (first_node.text() == "$" && last_node.text() == "$")
                         || (first_node.text() == "$$" && last_node.text() == "$$");

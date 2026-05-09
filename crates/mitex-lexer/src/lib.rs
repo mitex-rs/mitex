@@ -52,7 +52,7 @@ pub trait MacroifyStream<'a> {
 
 /// The default implementation of [`TokenStream`]
 ///
-/// See [`LexCache<'a>`] for implementation
+/// This provides the default token stream behavior using the trait's default methods.
 impl TokenStream<'_> for () {}
 
 /// The default implementation of [`MacroifyStream`]

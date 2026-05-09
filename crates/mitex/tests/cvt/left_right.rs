@@ -6,7 +6,7 @@ fn base() {
     assert_snapshot!(convert_math(r#"\left.a\right."#).unwrap(), @"lr( a  )");
     assert_snapshot!(convert_math(r#"\left.    \right] ,"#).unwrap(), @r###"lr(     \] ) \,"###);
     assert_snapshot!(convert_math(r#"\left  . a \right    \|"#).unwrap(), @"lr(     a       || )");
-    assert_snapshot!(convert_math(r#"\left\langle a\right\|"#).unwrap(), @"lr(angle.l  a || )");
+    assert_snapshot!(convert_math(r#"\left\langle a\right\|"#).unwrap(), @"lr(chevron.l  a || )");
     // Note: this is an invalid expression
     // Error handling
     assert_snapshot!(convert_math(r#"\left{.}a\right{.}"#).unwrap_err(), @r###"error: error unexpected: "}""###);

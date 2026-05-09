@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 0.2.7
+
+feat: support color-related optional arguments for commands
+feat: support missing commands
+feat: implement \smash command
+
+Thanks to [Shichien](https://github.com/Shichien).
+
+## 0.2.6
+
+- Fix: fix "kai is deprecated" warning for Typst v0.14.0 (https://github.com/mitex-rs/mitex/pull/201)
+
+
+## 0.2.5
+
+- Fix: assign correct class for lvert and rvert (https://github.com/mitex-rs/mitex/pull/172)
+- Fix: convert `bf` to `bold(upright(..))` (https://github.com/mitex-rs/mitex/pull/183)
+- Fix: remove xarrow and use stretch in typst v0.12.0 (https://github.com/mitex-rs/mitex/pull/184)
+- Fix: fix some symbols `\not`, `\gtreqqless` and `\gtrapprox` (https://github.com/mitex-rs/mitex/pull/185)
+
 
 ## 0.2.4
 

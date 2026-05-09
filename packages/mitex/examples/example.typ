@@ -2,9 +2,7 @@
 
 #set page(width: 500pt, height: auto, margin: 1em)
 
-#assert.eq(mitex-convert("\alpha x"), "alpha  x ")
-
-Write inline equations like #mi("x") or #mi[y].
+Write inline equations like #mi(`x`).
 
 Also block equations (this case is from #text(blue.lighten(20%), link("https://katex.org/")[katex.org])):
 

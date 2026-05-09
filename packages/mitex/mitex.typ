@@ -1,5 +1,4 @@
 #import "specs/mod.typ": mitex-scope
-#import "@preview/xarrow:0.2.0": xarrow
 #let mitex-wasm = plugin("./mitex.wasm")
 
 #let get-elem-text(it) = {
