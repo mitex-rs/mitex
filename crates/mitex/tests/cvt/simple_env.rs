@@ -11,3 +11,9 @@ fn test_abstract() {
     assert_snapshot!(convert_text(r#"\begin{abstract}\end{abstract}"#).unwrap(), @"#quote(block: true)[];");
     assert_snapshot!(convert_text(r#"\begin{abstract}yes\end{abstract}"#).unwrap(), @"#quote(block: true)[yes];");
 }
+
+#[test]
+fn test_center() {
+    assert_snapshot!(convert_text(r#"\begin{center}\end{center}"#).unwrap(), @"#align(center)[];");
+    assert_snapshot!(convert_text(r#"\begin{center}Hello\end{center}"#).unwrap(), @"#align(center)[Hello];");
+}
