@@ -812,7 +812,12 @@ impl<'a, S: TokenStream<'a>> Parser<'a, S> {
 
         if has_script {
             self.trivia();
+            let parent_state = self.list_state;
+            self.list_state.may_store_last(None);
+            self.list_state
+                .may_store_start(Some(self.builder.checkpoint()));
             self.content(false);
+            self.list_state = parent_state;
         }
 
         self.builder.finish_node();

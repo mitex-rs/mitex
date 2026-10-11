@@ -240,3 +240,42 @@ fn test_attachment_may_weird() {
     ||args(word'("b"))
     "###);
 }
+
+#[test]
+fn test_attachment_script_command() {
+    // Description: doesn't panic on left1 commands in a script
+    assert_debug_snapshot!(parse(r#"__\limits"#), @r###"
+    root
+    |attach-comp
+    ||underscore'("_")
+    ||attach-comp
+    |||underscore'("_")
+    |||cmd
+    ||||args()
+    ||||cmd-name("\\limits")
+    "###);
+    // Description: the command in a script doesn't wrap the base
+    assert_debug_snapshot!(parse(r#"a_\limits"#), @r###"
+    root
+    |attach-comp
+    ||args
+    |||text(word'("a"))
+    ||underscore'("_")
+    ||cmd
+    |||args()
+    |||cmd-name("\\limits")
+    "###);
+    assert_debug_snapshot!(parse(r#"a_\over b"#), @r###"
+    root
+    |attach-comp
+    ||args
+    |||text(word'("a"))
+    ||underscore'("_")
+    ||cmd
+    |||args()
+    |||cmd-name("\\over")
+    |||args
+    ||||space'(" ")
+    ||||text(word'("b"))
+    "###);
+}

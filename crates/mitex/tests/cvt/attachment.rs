@@ -28,3 +28,10 @@ fn test_attachment_may_weird() {
     assert_snapshot!(convert_math(r#"\frac a_c b"#).unwrap(), @"frac(a )_(c ) b ");
     assert_snapshot!(convert_math(r#"\frac {a_c} b"#).unwrap(), @"frac(a _(c ),b )");
 }
+
+#[test]
+fn test_attachment_script_command() {
+    assert_snapshot!(convert_math(r#"__\limits"#).unwrap(), @"zws_(zws_(limits()))");
+    assert_snapshot!(convert_math(r#"a_\limits"#).unwrap(), @"a _(limits())");
+    assert_snapshot!(convert_math(r#"a_\over b"#).unwrap(), @"a _(frac(, b ))");
+}
