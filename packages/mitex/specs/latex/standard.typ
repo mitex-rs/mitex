@@ -117,6 +117,7 @@
   figure: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
   table: define-glob-env("{,b}", kind: "is-figure", alias: "figure"),
   tabular: define-env(1, kind: "is-table", alias: "table"),
+  center: define-env(none, alias: "align(center)"),
   // commands for figure
   centering: ignore-sym,
   caption: define-cmd(1, alias: "mitexcaption", handle: ignore-me),
