@@ -15,3 +15,8 @@ fn unbraced_tabular_argument() {
 fn newcommand_naming_an_environment() {
     assert!(convert_math(r"\newcommand{\begin{matrix}_").is_ok());
 }
+
+#[test]
+fn macro_ending_in_hash() {
+    assert!(convert_math(r"\newcommand{\x}{a#}\x").is_ok());
+}
