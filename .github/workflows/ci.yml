@@ -22,6 +22,7 @@ jobs:
         with: { targets: wasm32-unknown-unknown }
       - uses: mozilla-actions/sccache-action@v0.0.9
       - run: cargo test --workspace --no-fail-fast
+      - run: cargo test -p mitex --no-fail-fast --features mitex-spec-gen/prebuilt
   checks:
     name: Check clippy, formatting, and documentation
     runs-on: ubuntu-latest
