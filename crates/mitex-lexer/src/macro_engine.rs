@@ -368,7 +368,13 @@ pub struct MacroEngine<'a> {
     reading_if: Vec<Option<IfState>>,
     /// Toekns used by macro stack
     pub scanned_tokens: Vec<Tok<'a>>,
+    /// Bytes of macro definitions and substituted arguments expanded so far
+    expanded_bytes: usize,
 }
+
+/// MathJax's `maxBuffer`. A self-referencing macro adds at least its own name
+/// each step, so this ends it.
+const MAX_EXPANDED_BYTES: usize = 5 * 1024;
 
 impl<'a> TokenStream<'a> for MacroEngine<'a> {
     fn bump(&mut self, ctx: &mut StreamContext<'a>) {
@@ -392,6 +398,7 @@ impl<'a> MacroEngine<'a> {
             reading_macro: Vec::new(),
             reading_if: Vec::new(),
             scanned_tokens: Vec::new(),
+            expanded_bytes: 0,
         }
     }
 
@@ -644,6 +651,10 @@ impl<'a> MacroEngine<'a> {
                 let args = Self::read_macro_args(ctx, cmd.num_args, cmd.opt.clone())?;
                 // Expand tokens by arguments
                 let expanded = Self::expand_tokens(&args, &cmd.def);
+                if !self.within_limit(&[&expanded]) {
+                    ctx.push_outer((Token::Error, "macro expansion limit"));
+                    return None;
+                }
 
                 // Push the reversed tokens to inner stream
                 ctx.extend_inner(expanded.into_iter().rev());
@@ -663,6 +674,10 @@ impl<'a> MacroEngine<'a> {
                 let body = Self::read_env_body(ctx, &env.name)?;
                 let expanded_begin = Self::expand_tokens(&args, &env.begin_def);
                 let expanded_end = Self::expand_tokens(&args, &env.end_def);
+                if !self.within_limit(&[&expanded_begin, &expanded_end]) {
+                    ctx.push_outer((Token::Error, "macro expansion limit"));
+                    return None;
+                }
 
                 ctx.extend_inner(
                     expanded_end
@@ -994,6 +1009,16 @@ impl<'a> MacroEngine<'a> {
         let _ = self.env_stack;
 
         self.macros.to_mut().rollback_to(snapshot);
+    }
+
+    /// Counts expanded tokens against the limit.
+    fn within_limit(&mut self, expanded: &[&[Tok<'a>]]) -> bool {
+        self.expanded_bytes += expanded
+            .iter()
+            .flat_map(|e| e.iter())
+            .map(|t| t.1.len())
+            .sum::<usize>();
+        self.expanded_bytes <= MAX_EXPANDED_BYTES
     }
 
     /// Peek the next token and its text
