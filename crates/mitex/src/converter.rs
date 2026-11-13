@@ -1065,11 +1065,13 @@ impl Converter {
         let arg = env
             .arguments()
             .next()
-            .expect("tabular environment must have one argument");
+            .ok_or_else(|| "tabular environment must have one argument".to_string())?;
         let arg = arg.text().to_string();
-        // remove { and } then trim
-        let arg = &arg[1..(arg.len() - 1)];
-        let arg = arg.trim();
+        let arg = arg
+            .strip_prefix('{')
+            .and_then(|arg| arg.strip_suffix('}'))
+            .ok_or_else(|| "tabular column spec must be braced".to_string())?
+            .trim();
         // split arg to get alignments and vertical lines
         let mut alignments: Vec<char> = vec![];
         let mut vlines: Vec<usize> = vec![];
