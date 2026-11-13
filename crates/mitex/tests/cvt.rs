@@ -38,6 +38,9 @@ mod cvt {
     mod fuzzing;
 
     #[cfg(test)]
+    mod macros;
+
+    #[cfg(test)]
     mod command;
 
     #[cfg(test)]
