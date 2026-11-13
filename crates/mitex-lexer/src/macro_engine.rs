@@ -1006,7 +1006,9 @@ impl<'a> MacroEngine<'a> {
         let mut empty_texts = false;
         for i in 0..def.len() {
             if def[i].0 == Token::Hash {
-                let next = def.get_mut(i + 1).unwrap();
+                let Some(next) = def.get_mut(i + 1) else {
+                    break;
+                };
                 if next.0 == Token::Word {
                     let Some(first_char) = next.1.chars().next() else {
                         continue;
