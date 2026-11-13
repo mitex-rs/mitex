@@ -10,3 +10,8 @@ fn test_fuzzing() {
 fn unbraced_tabular_argument() {
     assert_snapshot!(convert_math(r"\begin{tabular} a \end{tabular}").unwrap_err(), @"error: tabular column spec must be braced");
 }
+
+#[test]
+fn newcommand_naming_an_environment() {
+    assert!(convert_math(r"\newcommand{\begin{matrix}_").is_ok());
+}
