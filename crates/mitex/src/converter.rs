@@ -1218,7 +1218,8 @@ pub fn convert_inner(
     spec: Option<CommandSpec>,
     do_parse: fn(input: &str, spec: CommandSpec) -> SyntaxNode,
 ) -> Result<String, String> {
-    let node = do_parse(input, spec.unwrap_or_else(|| DEFAULT_SPEC.clone()));
+    let spec = spec.unwrap_or_else(|| DEFAULT_SPEC.clone());
+    let node = do_parse(input, spec.clone());
     // println!("{:#?}", node);
     // println!("{:#?}", node.text());
     let mut output = String::new();
@@ -1227,7 +1228,7 @@ pub fn convert_inner(
     let repr = TypstRepr {
         elem: LatexSyntaxElem::Node(node),
         mode,
-        spec: DEFAULT_SPEC.clone(),
+        spec,
         error: err.clone(),
     };
     core::fmt::write(&mut output, format_args!("{}", repr)).map_err(|_| err.borrow().to_owned())?;
