@@ -277,3 +277,12 @@ fn test_fuzzing() {
     assert_snapshot!(convert_math(r#"\left\0"#).unwrap_err(), @r###"error: unknown command: \0"###);
     assert_snapshot!(convert_math(r#"\end{}"#).unwrap_err(), @r###"error: error unexpected: """###);
 }
+
+#[test]
+fn test_convert_custom_spec_alias() {
+    use mitex::command_preludes::*;
+    let mut builder = SpecBuilder::default();
+    builder.add_command("partial", define_symbol("myd"));
+    let spec = builder.build();
+    assert_snapshot!(mitex_convert_math(r#"$\partial$"#, Some(spec)).unwrap(), @"myd ");
+}
