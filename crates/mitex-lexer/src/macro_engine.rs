@@ -698,8 +698,7 @@ impl<'a> MacroEngine<'a> {
         } else {
             ctx.peek_cmd_name_opt(BraceKind::Curly)?
                 .1
-                .strip_prefix('\\')
-                .unwrap()
+                .strip_prefix('\\')?
         };
 
         #[derive(Clone, Copy, PartialEq)]
