@@ -41,6 +41,9 @@ mod cvt {
     mod command;
 
     #[cfg(test)]
+    mod custom_spec;
+
+    #[cfg(test)]
     mod environment;
 
     #[cfg(test)]
